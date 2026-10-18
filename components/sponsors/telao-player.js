@@ -19,13 +19,14 @@ import {
 
 const ADS_CACHE_KEY = "vplaycast:telao:ads-cache";
 const LOG_QUEUE_KEY = "vplaycast:telao:log-queue";
-const ADS_REFRESH_INTERVAL_MS = 5_000;
+const ADS_REFRESH_INTERVAL_MS = 60_000;
 const LOG_FLUSH_INTERVAL_MS = 2 * 60 * 1000;
 export default function TelaoPlayer({
   kind = "NORMAL",
   backgroundMode = "auto",
   filterMaster = false,
   churchId,
+  churchSlug = "",
 }) {
   const [ads, setAds] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -63,27 +64,14 @@ export default function TelaoPlayer({
     const currentQueue = JSON.parse(
       localStorage.getItem(LOG_QUEUE_KEY) || "[]",
     );
-    currentQueue.push(log);
-    localStorage.setItem(LOG_QUEUE_KEY, JSON.stringify(currentQueue));
+    // Metrics are eventually consistent. Batching protects the public player
+    // and the database when many displays rotate at the same time.
+    const nextQueue = [...currentQueue, log].slice(-500);
+    localStorage.setItem(LOG_QUEUE_KEY, JSON.stringify(nextQueue));
   }, []);
 
   const registrarExibicao = useCallback(
-    async (log) => {
-      try {
-        const response = await fetch("/api/anunciantes/logs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(log),
-        });
-
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.error || "Falha ao registrar exibicao");
-        }
-      } catch {
-        enqueueLog(log);
-      }
-    },
+    async (log) => enqueueLog(log),
     [enqueueLog],
   );
 
@@ -91,32 +79,48 @@ export default function TelaoPlayer({
     const queue = JSON.parse(localStorage.getItem(LOG_QUEUE_KEY) || "[]");
     if (queue.length === 0) return;
 
+    let pending = queue;
     try {
-      const response = await fetch("/api/anunciantes/logs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logs: queue }),
-      });
-
-      if (!response.ok) throw new Error("Falha ao reenviar fila");
+      while (pending.length) {
+        const batch = pending.slice(0, 100);
+        const response = await fetch("/api/anunciantes/logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ logs: batch }),
+        });
+        if (!response.ok) throw new Error("Falha ao reenviar fila");
+        pending = pending.slice(batch.length);
+        localStorage.setItem(LOG_QUEUE_KEY, JSON.stringify(pending));
+      }
       localStorage.removeItem(LOG_QUEUE_KEY);
     } catch {
-      // Mantem a fila para nova tentativa.
+      // Mantém apenas os itens ainda não confirmados para nova tentativa.
+      localStorage.setItem(LOG_QUEUE_KEY, JSON.stringify(pending));
     }
   }, []);
 
   const carregarAnuncios = useCallback(async () => {
     try {
-      const supabase = createSupabaseBrowserClient();
-
       if (!churchId) throw new Error("Igreja não informada para o telão");
 
-      // Read public data through RPCs so the telão follows the same visibility
-      // rules as the church page and picks up its configured visual settings.
-      const [data, publicSettings] = await Promise.all([
-        fetchPublicSponsors(supabase, churchId),
-        fetchSponsorSettings(supabase, churchId),
-      ]);
+      let data;
+      let publicSettings;
+      if (churchSlug) {
+        const response = await fetch(
+          `/api/telao/${encodeURIComponent(churchSlug)}`,
+        );
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Falha ao carregar telão");
+        data = payload.sponsors || [];
+        publicSettings = payload.settings || {};
+      } else {
+        // Compatibility fallback for internal callers without a public slug.
+        const supabase = createSupabaseBrowserClient();
+        [data, publicSettings] = await Promise.all([
+          fetchPublicSponsors(supabase, churchId),
+          fetchSponsorSettings(supabase, churchId),
+        ]);
+      }
 
       // Filter by type and active status, respecting the filterMaster setting
       const filteredAds = (data || [])
@@ -187,7 +191,7 @@ export default function TelaoPlayer({
     } finally {
       setLoaded(true);
     }
-  }, [cacheKey, churchId, filterMaster, isOfflineCache, kind, preloadImages]);
+  }, [cacheKey, churchId, churchSlug, filterMaster, isOfflineCache, kind, preloadImages]);
 
   const scheduleFastRefresh = useCallback(() => {
     if (refreshTimeoutRef.current) {

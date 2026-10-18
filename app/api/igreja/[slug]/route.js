@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_CACHE_HEADERS } from "@/lib/utils/http";
-import { createSupabaseServerClient } from "@/services/supabase/server";
+import { createSupabasePublicClient } from "@/services/supabase/server";
 
 export async function GET(request) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request) {
       );
     }
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabasePublicClient();
 
     const { data, error } = await supabase
       .rpc("get_public_church_by_slug", { slug_arg: slug })

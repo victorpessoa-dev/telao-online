@@ -19,7 +19,7 @@ function useChurchFromSlug() {
   useEffect(() => {
     let cancelled = false;
     if (!slug) return undefined;
-    fetch(`/api/igreja/${encodeURIComponent(slug)}`, { cache: "no-store" })
+    fetch(`/api/igreja/${encodeURIComponent(slug)}`)
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok)
@@ -60,8 +60,13 @@ function ChurchGate({ children }) {
 export function ChurchTelaoPage() {
   return (
     <ChurchGate>
-      {({ church }) => (
-        <TelaoPlayer kind="ALL" backgroundMode="always" churchId={church.id} />
+      {({ church, slug }) => (
+        <TelaoPlayer
+          kind="ALL"
+          backgroundMode="always"
+          churchId={church.id}
+          churchSlug={slug}
+        />
       )}
     </ChurchGate>
   );
