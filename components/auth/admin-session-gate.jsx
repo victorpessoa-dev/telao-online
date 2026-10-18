@@ -12,6 +12,11 @@ export default function AdminSessionGate({ children }) {
   useEffect(() => {
     let active = true
 
+    if (!window.vPlaycastDesktop) {
+      router.replace('/')
+      return () => { active = false }
+    }
+
     async function validateSession() {
       try {
         const supabase = createSupabaseBrowserClient()

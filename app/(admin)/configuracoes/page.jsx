@@ -390,9 +390,6 @@ export default function ConfiguracoesPage() {
     try {
       const storedFiles = [
         ...ads.map((ad) => ad.src),
-        ...overlays.flatMap((overlay) =>
-          overlay.elements.map((element) => element.src),
-        ),
         sponsorSettings.designs.SHARED?.backgroundUrl,
         sponsorSettings.designs.NORMAL?.backgroundUrl,
         sponsorSettings.designs.MASTER?.backgroundUrl,
@@ -415,7 +412,7 @@ export default function ConfiguracoesPage() {
         );
       else
         toast.success(
-          "Overlays, patrocínios e configurações administrativas foram redefinidos",
+          "Patrocínios e configurações administrativas foram redefinidos",
         );
     } catch (error) {
       toast.error(
@@ -581,7 +578,7 @@ export default function ConfiguracoesPage() {
                     </div>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
                       Quando ativa, sua igreja aparece na landing page e libera
-                      /{`{slug}`}, /ads-telao, /anunciantes e /shared.
+                      /{`{slug}`}, /ads-telao e /anunciantes.
                     </p>
                   </div>
                   <Switch

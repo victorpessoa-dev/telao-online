@@ -19,7 +19,7 @@ const CONVERTIBLE_IMAGE_TYPES = new Set([
 ]);
 const WEBP_QUALITY = 0.86;
 const MAX_IMAGE_SIDE = 2560;
-const ALLOWED_UPLOAD_FOLDERS = new Set(["branding", "overlays", "sponsors"]);
+const ALLOWED_UPLOAD_FOLDERS = new Set(["branding", "sponsors"]);
 
 export function sanitizeFileName(name) {
   return name

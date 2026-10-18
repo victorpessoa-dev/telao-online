@@ -59,24 +59,6 @@ create table public.sponsors (
   )
 );
 
-create table public.overlays (
-  id uuid primary key default gen_random_uuid(),
-  church_id uuid not null references public.churches (id) on delete cascade,
-  public_id text not null default encode(gen_random_bytes (6), 'hex') unique,
-  name text not null check (length(trim(name)) > 0),
-  width integer not null default 1920 check (width > 0),
-  height integer not null default 1080 check (height > 0),
-  data jsonb not null default '{"elements":[]}'::jsonb,
-  is_public boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  check (
-    jsonb_typeof(data) = 'object'
-    and data ? 'elements'
-    and jsonb_typeof(data -> 'elements') = 'array'
-  )
-);
-
 create table public.app_settings (
   church_id uuid not null references public.churches (id) on delete cascade,
   key text not null check (length(trim(key)) > 0),
@@ -102,8 +84,6 @@ create index sponsors_public_telao_idx on public.sponsors (church_id, kind desc,
   include (id, name, media_url, media_type, image_url, website_url, duration_seconds)
   where active;
 
-create index overlays_church_public_idx on public.overlays (church_id, is_public);
-
 create index sponsor_impressions_sponsor_displayed_idx on public.sponsor_impressions (sponsor_id, displayed_at desc);
 
 create or replace function public.update_updated_at () returns trigger language plpgsql as $$
@@ -115,10 +95,6 @@ execute function public.update_updated_at ();
 
 create trigger sponsors_updated_at before
 update on public.sponsors for each row
-execute function public.update_updated_at ();
-
-create trigger overlays_updated_at before
-update on public.overlays for each row
 execute function public.update_updated_at ();
 
 create trigger app_settings_updated_at before
@@ -178,8 +154,6 @@ alter table public.churches enable row level security;
 
 alter table public.sponsors enable row level security;
 
-alter table public.overlays enable row level security;
-
 alter table public.app_settings enable row level security;
 
 alter table public.sponsor_impressions enable row level security;
@@ -221,23 +195,6 @@ select
     and public.is_public_church (church_id)
   );
 
-create policy overlays_owner_full on public.overlays for all to authenticated using (public.owns_church (church_id))
-with
-  check (public.owns_church (church_id));
-
-create policy overlays_public on public.overlays for
-select
-  using (
-    is_public
-    and public.is_public_church (church_id)
-  );
-
--- Live overlays and telões subscribe to these tables. Polling remains a
--- fallback when a broadcast is missed or the live connection reconnects.
-do $$ begin
-  alter publication supabase_realtime add table public.overlays;
-exception when duplicate_object then null; end $$;
-
 do $$ begin
   alter publication supabase_realtime add table public.sponsors;
 exception when duplicate_object then null; end $$;
@@ -270,7 +227,6 @@ select
 grant select, update on public.profiles to authenticated;
 grant select, insert, update, delete on public.churches to authenticated;
 grant select, insert, update, delete on public.sponsors to authenticated;
-grant select, insert, update, delete on public.overlays to authenticated;
 grant select, insert, update, delete on public.app_settings to authenticated;
 grant select on public.sponsor_impressions to authenticated;
 
@@ -428,20 +384,6 @@ set search_path = public as $$
   from public.churches c
   where c.slug = lower(trim(slug_arg)) and c.is_active
   limit 1
-$$;
-
-create or replace function public.get_public_overlay (public_id_arg text, church_id_arg uuid) returns table (
-  id uuid,
-  public_id text,
-  name text,
-  width integer,
-  height integer,
-  data jsonb,
-  updated_at timestamptz
-) language sql stable security definer
-set
-  search_path = public as $$
-  select o.id,o.public_id,o.name,o.width,o.height,o.data,o.updated_at from public.overlays o where o.public_id=public_id_arg and o.church_id=church_id_arg and o.is_public and public.is_public_church(o.church_id) limit 1
 $$;
 
 create or replace function public.log_sponsor_impressions (logs_arg jsonb) returns integer language plpgsql security definer

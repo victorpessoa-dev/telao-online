@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import LoadingState from "@/components/shared/loading-state";
 import TelaoPlayer from "@/components/sponsors/telao-player";
 import AnuncianteDetalhePage from "@/components/public/advertiser-detail-page";
-import PublicOverlayPage from "@/components/public/shared-overlay-page";
 
 function useChurchFromSlug() {
   const params = useParams();
@@ -78,14 +77,6 @@ export function ChurchAdvertiserPage() {
       {({ church, slug }) => (
         <AnuncianteDetalhePage churchId={church.id} slug={slug} />
       )}
-    </ChurchGate>
-  );
-}
-
-export function ChurchSharedOverlayPage() {
-  return (
-    <ChurchGate>
-      {({ church }) => <PublicOverlayPage churchId={church.id} />}
     </ChurchGate>
   );
 }

@@ -117,7 +117,6 @@ export default function OverlayEditor({ overlayId }) {
     addElement,
     updateElement,
     deleteElement,
-    churchSlug,
     isLoaded,
   } = useStore();
   const router = useRouter();
@@ -383,20 +382,12 @@ export default function OverlayEditor({ overlayId }) {
 
   const desktopOverlays =
     typeof window !== "undefined" ? window.vPlaycastDesktop?.overlays : null;
-  const publicOverlayPath = churchSlug
-    ? `/${churchSlug}/shared/${overlay?.publicId || overlayId}`
-    : "";
 
-  const getOverlayUrl = async () =>
-    desktopOverlays
-      ? desktopOverlays.getUrl(overlayId)
-      : publicOverlayPath
-        ? `${window.location.origin}${publicOverlayPath}`
-        : "";
+  const getOverlayUrl = async () => desktopOverlays?.getUrl(overlayId) || "";
 
   const copyOverlayUrl = async (background = "") => {
-    if (!desktopOverlays && !publicOverlayPath) {
-      toast.error("Defina o slug da igreja antes de compartilhar o overlay");
+    if (!desktopOverlays) {
+      toast.error("Abra o overlay pelo aplicativo V Playcast para gerar o link local.");
       return;
     }
 
@@ -1257,7 +1248,7 @@ export default function OverlayEditor({ overlayId }) {
           <Button
             variant="default"
             size="sm"
-            disabled={!desktopOverlays && !publicOverlayPath}
+            disabled={!desktopOverlays}
             onClick={async () => {
               const url = await getOverlayUrl();
               if (url) window.open(url, "_blank", "noopener,noreferrer");

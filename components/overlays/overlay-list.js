@@ -145,7 +145,7 @@ function OverlayPreview({ overlay, compact = false }) {
 }
 
 export default function OverlayList({ searchQuery = "" }) {
-  const { overlays, deleteOverlay, churchSlug, isLoaded } = useStore();
+  const { overlays, deleteOverlay, isLoaded } = useStore();
   const [overlayPendingDelete, setOverlayPendingDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -201,22 +201,17 @@ export default function OverlayList({ searchQuery = "" }) {
     }
   };
 
-  const getPublicOverlayPath = (publicId) =>
-    churchSlug ? `/${churchSlug}/shared/${publicId}` : "";
-
   const getOverlayUrl = async (id) => {
     if (window.vPlaycastDesktop?.overlays) {
       return window.vPlaycastDesktop.overlays.getUrl(id);
     }
-    const overlay = overlays.find((item) => item.id === id);
-    const path = getPublicOverlayPath(overlay?.publicId || id);
-    return path ? `${window.location.origin}${path}` : "";
+    return "";
   };
 
   const copyOverlayUrl = async (id) => {
     const url = await getOverlayUrl(id);
     if (!url) {
-      toast.error("Defina o slug da igreja antes de compartilhar o overlay");
+      toast.error("Abra o aplicativo V Playcast para copiar o link local do OBS");
       return;
     }
 
@@ -318,7 +313,7 @@ export default function OverlayList({ searchQuery = "" }) {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={!window.vPlaycastDesktop?.overlays && !churchSlug}
+                        disabled={!window.vPlaycastDesktop?.overlays}
                         onClick={async () => {
                           const url = await getOverlayUrl(overlay.id);
                           if (url) window.open(url, "_blank", "noopener,noreferrer");
@@ -417,7 +412,7 @@ export default function OverlayList({ searchQuery = "" }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={!window.vPlaycastDesktop?.overlays && !churchSlug}
+                      disabled={!window.vPlaycastDesktop?.overlays}
                       onClick={async () => {
                         const url = await getOverlayUrl(overlay.id);
                         if (url) window.open(url, "_blank", "noopener,noreferrer");

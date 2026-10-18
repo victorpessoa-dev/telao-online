@@ -49,7 +49,7 @@ export default function HomeHero() {
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
             Planeje os slides da sua comunidade, valorize anunciantes e crie
-            overlays para usar nas transmissões da sua equipe.
+            telões e patrocínios para usar nas transmissões da sua equipe.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Button

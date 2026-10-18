@@ -14,7 +14,6 @@ const PUBLIC_PATHS = [
   "/",
   "/anunciantes",
   "/login",
-  "/shared",
   "/ads-telao",
   "/esqueci-senha",
   "/redefinir-senha",

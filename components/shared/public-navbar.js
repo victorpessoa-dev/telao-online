@@ -11,7 +11,7 @@ const fallbackProfile = {
   parishLogoUrl: "/brand/virtus-playcast-mark.png",
 };
 
-export default function PublicNavbar({ church = null, showLogin = true }) {
+export default function PublicNavbar({ church = null, showLogin = false }) {
   const [profile, setProfile] = useState(() =>
     church
       ? {

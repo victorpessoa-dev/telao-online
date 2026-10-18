@@ -45,7 +45,10 @@ function LoginForm() {
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
-    if (!window.vPlaycastDesktop) return undefined;
+    if (!window.vPlaycastDesktop) {
+      router.replace("/");
+      return undefined;
+    }
     let active = true;
 
     async function restoreDesktopSession() {
