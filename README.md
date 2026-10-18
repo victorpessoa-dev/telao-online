@@ -42,6 +42,10 @@ PROVISIONING_API_KEY=
 
 As variáveis `NEXT_PUBLIC_*` podem ser expostas ao cliente. `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` são exclusivas do servidor e não podem ser versionadas ou usadas em componentes de cliente. `NEXT_PUBLIC_SITE_URL` define o destino do convite por email.
 
+## Banco de dados novo
+
+Para iniciar um projeto Supabase do zero, execute apenas [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor de um projeto vazio. O arquivo é o schema consolidado: cria tabelas, RLS, Storage, RPCs, índices do telão público e a rotina de métricas em lote. Não execute migrations históricas depois dele.
+
 ## Scripts
 
 ```bash
