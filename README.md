@@ -46,6 +46,8 @@ As variáveis `NEXT_PUBLIC_*` podem ser expostas ao cliente. `SUPABASE_SERVICE_R
 
 Para iniciar um projeto Supabase do zero, execute apenas [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor de um projeto vazio. O arquivo é o schema consolidado: cria tabelas, RLS, Storage, RPCs, índices do telão público e a rotina de métricas em lote. Não execute migrations históricas depois dele.
 
+Para reaproveitar um projeto Supabase antigo, execute primeiro [`supabase/reset-public-schema.sql`](supabase/reset-public-schema.sql). Ele apaga irreversivelmente somente o schema `public` da aplicação anterior e preserva os schemas internos do Supabase. Em seguida, execute `supabase/schema.sql` em uma segunda execução.
+
 ## Scripts
 
 ```bash
