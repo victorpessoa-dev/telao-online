@@ -1,18 +1,28 @@
 # vPlayCast
 
-vPlayCast e uma aplicacao Next.js para equipes de comunicacao paroquial gerenciarem patrocinadores, telao publico, overlays de transmissao e relatorios de exibicao.
+vPlayCast é uma aplicação para equipes de comunicação paroquial gerenciarem patrocinadores, telões públicos e relatórios de exibição. O projeto possui uma aplicação web pública e uma aplicação Windows administrativa (`V Playcast`).
 
 O projeto usa Next.js App Router, Supabase Auth/Postgres/Storage, RLS, RPCs publicas controladas, Recharts, Radix UI e Tailwind CSS.
 
 ## Como Funciona
 
-- O administrador acessa `/login` e entra no painel protegido.
+- No Windows, o administrador entra com email e senha do Supabase. A opção **Manter conectado** guarda somente a sessão cifrada pelo Windows; a senha nunca é salva.
+- Na primeira entrada do executável, o administrador escolhe o tema e informa o domínio público. O aplicativo só confirma depois de verificar `/{slug}/ads-telao` no domínio informado.
 - Patrocinadores sao cadastrados em `/painel-telao` com imagem, GIF ou video.
 - O conteudo ativo aparece em `/ads-telao` ou `/{slug}/ads-telao`.
 - O contador de exibicoes pode ser ativado por tipo de telao: NORMAL e MASTER.
 - A pagina publica `/` lista patrocinadores, mostra estatisticas e direciona para relatorios.
 - Cada patrocinador tem relatorio publico em `/{slug}/anunciantes/:id`.
-- Overlays sao criados em `/overlay`, editados em `/editor/:id` e exibidos por `/{slug}/shared/:id`.
+- Overlays do executável são projetos locais: cada criação recebe um UUID e fica em uma pasta própria no computador. O link para o OBS é `http://127.0.0.1:17850/overlay/:id`; alterações de texto, visibilidade, posição, tamanho ou mídia são atualizadas imediatamente na fonte local.
+- A exclusão de um overlay remove somente a pasta local daquele UUID. Overlays e mídias locais não são enviados ao Supabase.
+
+## Limites entre desktop e web
+
+| Executável Windows (admin) | Site público |
+| --- | --- |
+| Login, ajustes, edição de telões, patrocinadores, métricas e overlays locais | Landing page, comunidade, páginas `/{slug}`, telões `/{slug}/ads-telao` e relatórios públicos |
+| URLs locais de Browser Source para OBS | URLs web compartilháveis |
+| Dados de projeto de overlay em disco local | Dados públicos e administrativos persistidos no Supabase |
 
 ## Documentacao
 
@@ -40,6 +50,8 @@ npm run build
 npm run lint
 npm run typecheck
 npm run test
+npm run desktop:dev
+npm run desktop:build:win
 ```
 
 ## Docker
@@ -75,7 +87,9 @@ No Windows, em alguns ambientes sandbox, Vitest/Next podem falhar com `spawn EPE
 ## Seguranca
 
 - Admin bloqueado em mobile.
-- Rotas administrativas protegidas por Supabase Auth e verificacao de `profiles.is_admin`.
+- Rotas administrativas protegidas por Supabase Auth e pela propriedade da igreja (`churches.admin_id`).
+- O desktop usa apenas a chave pública/anon do Supabase; nunca inclua `SUPABASE_SERVICE_ROLE_KEY` no instalador.
+- A ponte Electron expõe métodos IPC específicos e não fornece APIs de Node.js ou de arquivos ao renderer.
 - Escritas protegidas por RLS com `public.is_admin()`.
 - APIs publicas usam RPCs e respostas `no-store`.
 - Links publicos sao filtrados para `http/https`.

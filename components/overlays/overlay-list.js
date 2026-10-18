@@ -204,16 +204,24 @@ export default function OverlayList({ searchQuery = "" }) {
   const getPublicOverlayPath = (publicId) =>
     churchSlug ? `/${churchSlug}/shared/${publicId}` : "";
 
-  const copyOverlayUrl = async (id) => {
+  const getOverlayUrl = async (id) => {
+    if (window.vPlaycastDesktop?.overlays) {
+      return window.vPlaycastDesktop.overlays.getUrl(id);
+    }
     const overlay = overlays.find((item) => item.id === id);
     const path = getPublicOverlayPath(overlay?.publicId || id);
-    if (!path) {
+    return path ? `${window.location.origin}${path}` : "";
+  };
+
+  const copyOverlayUrl = async (id) => {
+    const url = await getOverlayUrl(id);
+    if (!url) {
       toast.error("Defina o slug da igreja antes de compartilhar o overlay");
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${path}`);
+      await navigator.clipboard.writeText(url);
       toast.success("URL copiada para a área de transferência");
     } catch {
       toast.error("Não foi possível copiar a URL");
@@ -307,19 +315,17 @@ export default function OverlayList({ searchQuery = "" }) {
                           Editar
                         </Link>
                       </Button>
-                      <Button asChild variant="outline" size="sm">
-                        <Link
-                          href={
-                            getPublicOverlayPath(
-                              overlay.publicId || overlay.id,
-                            ) || "#"
-                          }
-                          target="_blank"
-                          aria-disabled={!churchSlug}
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Visualizar
-                        </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!window.vPlaycastDesktop?.overlays && !churchSlug}
+                        onClick={async () => {
+                          const url = await getOverlayUrl(overlay.id);
+                          if (url) window.open(url, "_blank", "noopener,noreferrer");
+                        }}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Visualizar
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -408,19 +414,17 @@ export default function OverlayList({ searchQuery = "" }) {
                         Editar
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" size="sm">
-                      <Link
-                        href={
-                          getPublicOverlayPath(
-                            overlay.publicId || overlay.id,
-                          ) || "#"
-                        }
-                        target="_blank"
-                        aria-disabled={!churchSlug}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Visualizar
-                      </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!window.vPlaycastDesktop?.overlays && !churchSlug}
+                      onClick={async () => {
+                        const url = await getOverlayUrl(overlay.id);
+                        if (url) window.open(url, "_blank", "noopener,noreferrer");
+                      }}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Visualizar
                     </Button>
                     <Button
                       variant="outline"

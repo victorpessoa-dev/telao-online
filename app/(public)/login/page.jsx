@@ -4,7 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
-import { createSupabaseBrowserClient } from "@/services/supabase/browser";
+import {
+  createSupabaseBrowserClient,
+  setDesktopRememberSession,
+} from "@/services/supabase/browser";
 import {
   getSafeRedirectPath,
   signInWithPasswordFlow,
@@ -37,8 +40,33 @@ function LoginForm() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
+  const [remember, setRemember] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!window.vPlaycastDesktop) return undefined;
+    let active = true;
+
+    async function restoreDesktopSession() {
+      try {
+        const [savedRemember, { data }] = await Promise.all([
+          window.vPlaycastDesktop.auth.getRemember(),
+          createSupabaseBrowserClient().auth.getSession(),
+        ]);
+        if (!active) return;
+        setRemember(savedRemember);
+        if (data.session) router.replace(redirectTo);
+      } catch {
+        // A damaged or expired local session must leave the login form usable.
+      }
+    }
+
+    restoreDesktopSession();
+    return () => {
+      active = false;
+    };
+  }, [redirectTo, router]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -46,6 +74,7 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      await setDesktopRememberSession(remember);
       const supabase = createSupabaseBrowserClient();
       await signInWithPasswordFlow({
         supabase,
@@ -122,6 +151,18 @@ function LoginForm() {
                   </button>
                 </div>
               </div>
+
+              {typeof window !== "undefined" && window.vPlaycastDesktop ? (
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(event) => setRemember(event.target.checked)}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  Manter conectado neste computador
+                </label>
+              ) : null}
 
               {accessError ? (
                 <div

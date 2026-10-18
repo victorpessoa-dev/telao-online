@@ -46,6 +46,15 @@ function isProtectedPath(pathname) {
 export async function proxy(request) {
   const { pathname, search } = request.nextUrl;
 
+  const desktopToken = process.env.V_PLAYCAST_DESKTOP_TOKEN;
+  const isTrustedDesktopRequest = Boolean(
+    desktopToken &&
+      request.nextUrl.hostname === "127.0.0.1" &&
+      request.headers.get("x-v-playcast-desktop") === desktopToken,
+  );
+
+  if (isTrustedDesktopRequest) return NextResponse.next();
+
   if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }

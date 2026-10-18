@@ -240,7 +240,7 @@ export default function OverlayEditor({ overlayId }) {
     if (!file) return;
 
     try {
-      const url = await uploadMedia(file, "overlays");
+      const url = await uploadMedia(file, `overlays/${overlayId}`);
       setNewImageUrl(url);
       toast.success("Upload enviado");
     } catch (error) {
@@ -381,19 +381,28 @@ export default function OverlayEditor({ overlayId }) {
     updateElement(overlayId, selectedElement.id, updates);
   };
 
+  const desktopOverlays =
+    typeof window !== "undefined" ? window.vPlaycastDesktop?.overlays : null;
   const publicOverlayPath = churchSlug
     ? `/${churchSlug}/shared/${overlay?.publicId || overlayId}`
     : "";
 
+  const getOverlayUrl = async () =>
+    desktopOverlays
+      ? desktopOverlays.getUrl(overlayId)
+      : publicOverlayPath
+        ? `${window.location.origin}${publicOverlayPath}`
+        : "";
+
   const copyOverlayUrl = async (background = "") => {
-    if (!publicOverlayPath) {
+    if (!desktopOverlays && !publicOverlayPath) {
       toast.error("Defina o slug da igreja antes de compartilhar o overlay");
       return;
     }
 
     try {
-      const outputPath = getOverlayOutputUrl(publicOverlayPath, background);
-      await navigator.clipboard.writeText(`${window.location.origin}${outputPath}`);
+      const baseUrl = await getOverlayUrl();
+      await navigator.clipboard.writeText(getOverlayOutputUrl(baseUrl, background));
       toast.success("URL copiada para a área de transferência");
     } catch {
       toast.error("Não foi possível copiar a URL");
@@ -1245,15 +1254,17 @@ export default function OverlayEditor({ overlayId }) {
             <CopyPlus className="w-4 h-4 mr-2" />
             Chroma verde
           </Button>
-          <Button variant="default" size="sm" asChild>
-            <Link
-              href={publicOverlayPath || "#"}
-              target="_blank"
-              aria-disabled={!publicOverlayPath}
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Visualizar
-            </Link>
+          <Button
+            variant="default"
+            size="sm"
+            disabled={!desktopOverlays && !publicOverlayPath}
+            onClick={async () => {
+              const url = await getOverlayUrl();
+              if (url) window.open(url, "_blank", "noopener,noreferrer");
+            }}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Visualizar
           </Button>
         </div>
       </header>
