@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PaginationControls from "@/components/shared/pagination-controls";
 import AppFooter from "@/components/shared/app-footer";
 import LoadingState from "@/components/shared/loading-state";
+import PageError from "@/components/shared/page-error";
 import PageContainer from "@/components/layout/page-container";
 import PublicNavbar from "@/components/shared/public-navbar";
 import { TimeSeriesLineChart } from "@/components/shared/simple-charts";
@@ -51,23 +52,6 @@ function calcularSaidaExibicao(log) {
   const startedAt = new Date(log.displayedAt);
   const duration = Math.max(0, Number(log.durationSeconds) || 0);
   return new Date(startedAt.getTime() + duration * 1000);
-}
-
-function agruparExibicoesPorDia(logs) {
-  const grouped = logs.reduce((acc, log) => {
-    const key = new Date(log.displayedAt).toLocaleDateString("pt-BR");
-    acc[key] = {
-      total: (acc[key]?.total || 0) + 1,
-      seconds: (acc[key]?.seconds || 0) + (Number(log.durationSeconds) || 0),
-    };
-    return acc;
-  }, {});
-
-  return Object.entries(grouped).map(([date, values]) => ({
-    date,
-    total: values.total,
-    seconds: values.seconds,
-  }));
 }
 
 function preverProximaExibicao(logs) {
@@ -118,7 +102,7 @@ function MediaPreview({ advertiser }) {
         ) : (
           <video
             src={advertiser.src}
-            className="pointer-events-none h-full w-full object-contain"
+            className="pointer-events-none h-full w-full object-cover object-center"
             autoPlay
             muted
             playsInline
@@ -148,7 +132,7 @@ function MediaPreview({ advertiser }) {
       <img
         src={advertiser.src}
         alt={advertiser.name}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover object-center"
         referrerPolicy="no-referrer"
       />
     </div>
@@ -158,10 +142,16 @@ function MediaPreview({ advertiser }) {
 export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
   const params = useParams();
   const id = params?.id;
-  const [data, setData] = useState({ advertiser: null, logs: [] });
+  const [data, setData] = useState({
+    advertiser: null,
+    logs: [],
+    daily: [],
+    pagination: { page: 1, pageSize: REPORT_PAGE_SIZE, totalItems: 0 },
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,12 +159,13 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     async function carregar() {
       try {
         setLoading(true);
+        setError(null);
         const query = churchId
-          ? `?churchId=${encodeURIComponent(churchId)}`
+          ? `?churchId=${encodeURIComponent(churchId)}&page=${currentPage}&pageSize=${REPORT_PAGE_SIZE}`
           : "";
         const response = await fetch(`/api/anunciantes/${id}${query}`);
-        const payload = await response.json();
-        if (!response.ok)
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.advertiser)
           throw new Error(payload.error || "Falha ao carregar anunciante");
 
         if (!cancelled) {
@@ -195,10 +186,14 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     }
 
     if (id) carregar();
+    else {
+      setError("Anunciante não encontrado");
+      setLoading(false);
+    }
     return () => {
       cancelled = true;
     };
-  }, [churchId, id]);
+  }, [churchId, currentPage, id, reloadVersion]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -206,6 +201,12 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
 
   const advertiser = data?.advertiser ?? null;
   const logs = useMemo(() => data?.logs ?? [], [data?.logs]);
+  const daily = useMemo(() => data?.daily ?? [], [data?.daily]);
+  const pagination = data?.pagination ?? {
+    page: currentPage,
+    pageSize: REPORT_PAGE_SIZE,
+    totalItems: 0,
+  };
   const chronologicalLogs = useMemo(
     () =>
       [...logs].sort(
@@ -214,8 +215,12 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     [logs],
   );
   const chartData = useMemo(
-    () => agruparExibicoesPorDia(chronologicalLogs),
-    [chronologicalLogs],
+    () =>
+      daily.map((item) => ({
+        ...item,
+        date: new Date(`${item.date}T00:00:00`).toLocaleDateString("pt-BR"),
+      })),
+    [daily],
   );
   const proximaExibicao = useMemo(
     () => preverProximaExibicao(chronologicalLogs),
@@ -223,23 +228,25 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
   );
 
   const rotaPublica = slug ? `/${slug}/ads-telao` : "";
-  const totalExibicoes = Math.max(logs.length, advertiser?.views || 0);
-  const totalDuracao = Math.max(
-    logs.reduce((sum, log) => sum + (log.durationSeconds || 0), 0),
-    advertiser?.totalSeconds || 0,
-  );
+  const totalExibicoes = advertiser?.views || 0;
+  const totalDuracao = advertiser?.totalSeconds || 0;
   const mediaPorExibicao =
     totalExibicoes > 0 ? Math.round(totalDuracao / totalExibicoes) : 0;
-  const totalPages = Math.max(1, Math.ceil(logs.length / REPORT_PAGE_SIZE));
-  const paginatedLogs = useMemo(() => {
-    const start = (currentPage - 1) * REPORT_PAGE_SIZE;
-    return chronologicalLogs
-      .slice(start, start + REPORT_PAGE_SIZE)
-      .map((log, index) => ({
+  const totalPages = Math.max(
+    1,
+    Math.ceil(pagination.totalItems / pagination.pageSize),
+  );
+  const paginatedLogs = useMemo(
+    () =>
+      logs.map((log, index) => ({
         ...log,
-        displayNumber: start + index + 1,
-      }));
-  }, [chronologicalLogs, currentPage]);
+        displayNumber:
+          pagination.totalItems -
+          (pagination.page - 1) * pagination.pageSize -
+          index,
+      })),
+    [logs, pagination.page, pagination.pageSize, pagination.totalItems],
+  );
   const viewsChartData = useMemo(
     () => chartData.map((item) => ({ label: item.date, value: item.total })),
     [chartData],
@@ -260,9 +267,11 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
 
   if (error || !advertiser) {
     return (
-      <div className="min-h-screen bg-background p-8 text-sm text-destructive">
-        {error || "Anunciante não encontrado"}
-      </div>
+      <PageError
+        title="Não foi possível carregar este anunciante."
+        description={error || "Anunciante não encontrado."}
+        onRetry={() => setReloadVersion((version) => version + 1)}
+      />
     );
   }
 
@@ -375,10 +384,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     <div className="public-page-shell min-h-screen bg-background">
       <PublicNavbar />
       <PageContainer>
-        <Link
-          href={slug ? `/${slug}` : "/"}
-          className="back-link"
-        >
+        <Link href={slug ? `/${slug}` : "/"} className="back-link">
           <ArrowLeft className="h-4 w-4" />
           Voltar para a página pública
         </Link>
@@ -499,7 +505,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
             <CardTitle>Horários no telão</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {logs.length === 0 ? (
+            {pagination.totalItems === 0 ? (
               <div className="text-sm text-muted-foreground">
                 Nenhuma exibição registrada.
               </div>
@@ -523,7 +529,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" />1
+                      <Eye className="h-4 w-4" />{log.viewsCount || 1}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock3 className="h-4 w-4" />
@@ -536,7 +542,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
             <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}
-              totalItems={logs.length}
+              totalItems={pagination.totalItems}
               itemLabel="registros"
               onPageChange={setCurrentPage}
             />

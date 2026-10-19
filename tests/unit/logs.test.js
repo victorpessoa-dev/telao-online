@@ -15,6 +15,7 @@ describe("sponsor log payload validation", () => {
       {
         sponsorId,
         durationSeconds: 12,
+        eventId: expect.any(String),
         source: "telao",
       },
     ]);

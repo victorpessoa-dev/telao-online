@@ -72,7 +72,22 @@ export default function StaticMediaFrame({
       try {
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         context.clearRect(0, 0, width, height);
-        context.drawImage(source, 0, 0, width, height);
+        const sourceWidth =
+          source.videoWidth || source.naturalWidth || source.width;
+        const sourceHeight =
+          source.videoHeight || source.naturalHeight || source.height;
+        if (!sourceWidth || !sourceHeight) return false;
+        const scale = Math.max(width / sourceWidth, height / sourceHeight);
+        const drawWidth = sourceWidth * scale;
+        const drawHeight = sourceHeight * scale;
+
+        context.drawImage(
+          source,
+          (width - drawWidth) / 2,
+          (height - drawHeight) / 2,
+          drawWidth,
+          drawHeight,
+        );
         setCaptured(true);
         return true;
       } catch {

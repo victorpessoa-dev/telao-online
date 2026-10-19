@@ -27,6 +27,22 @@ export async function GET(request, context) {
         { status: 400, headers: NO_STORE_HEADERS },
       );
 
+    const params = request?.url ? new URL(request.url).searchParams : null;
+    const page = z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(1_000_000)
+      .catch(1)
+      .parse(params?.get("page") || "1");
+    const pageSize = z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .catch(20)
+      .parse(params?.get("pageSize") || "20");
+
     if (churchId) {
       const { data: sponsor, error: sponsorError } = await supabase
         .from("sponsors")
@@ -47,6 +63,7 @@ export async function GET(request, context) {
       supabase,
       sponsorId.data,
       parsedChurchId.data,
+      { page, pageSize },
     );
     if (!payload)
       return NextResponse.json(

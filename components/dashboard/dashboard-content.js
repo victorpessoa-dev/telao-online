@@ -29,7 +29,14 @@ function formatDuration(seconds) {
     : `${remainingSeconds}s`;
 }
 
-function SummaryCard({ icon: Icon, label, value, detail, index, reduceMotion }) {
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  index,
+  reduceMotion,
+}) {
   return (
     <motion.div
       initial={reduceMotion ? false : { opacity: 0, y: 12 }}
@@ -94,18 +101,19 @@ export default function DashboardContent() {
     [metrics.activeAds],
   );
   const typeChartData = useMemo(
-    () => [
-      {
-        label: "Normal",
-        value: metrics.activeAds.filter((ad) => ad.type !== "MASTER").length,
-        className: "bg-chart-1",
-      },
-      {
-        label: "Master",
-        value: metrics.masterAds,
-        className: "bg-chart-2",
-      },
-    ].filter((item) => item.value > 0),
+    () =>
+      [
+        {
+          label: "Normal",
+          value: metrics.activeAds.filter((ad) => ad.type !== "MASTER").length,
+          className: "bg-chart-1",
+        },
+        {
+          label: "Master",
+          value: metrics.masterAds,
+          className: "bg-chart-2",
+        },
+      ].filter((item) => item.value > 0),
     [metrics.activeAds, metrics.masterAds],
   );
 

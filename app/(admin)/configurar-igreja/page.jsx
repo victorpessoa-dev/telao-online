@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import AppFooter from "@/components/shared/app-footer";
 import { HoverTip } from "@/components/shared/hover-tip";
 import { createSupabaseBrowserClient } from "@/services/supabase/browser";
@@ -33,6 +34,13 @@ const slugify = (value) =>
     .replace(/^-+|-+$/g, "");
 const suggestedSlug = (name, city) =>
   slugify([name, city].filter(Boolean).join("-")) || "nova-igreja";
+
+function formatWhatsAppUrl(value) {
+  const contact = String(value || "").trim();
+  if (!contact) return "";
+  if (/^https?:\/\//i.test(contact)) return contact;
+  return `https://wa.me/${contact.replace(/\D/g, "")}`;
+}
 
 function getErrorMessage(cause, fallback) {
   if (cause instanceof Error && cause.message) return cause.message;
@@ -137,6 +145,8 @@ export default function AdminChurchConfiguration() {
     city: "",
     logoUrl: "",
     coverUrl: "",
+    sponsorshipGuidelines: "",
+    sponsorshipWhatsApp: "",
   });
   const [logoFile, setLogoFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
@@ -216,7 +226,15 @@ export default function AdminChurchConfiguration() {
           city: form.city.trim(),
           logo_url: form.logoUrl.trim() || null,
           cover_url: form.coverUrl.trim() || null,
-          social_links: [],
+          social_links: form.sponsorshipWhatsApp.trim()
+            ? [
+                {
+                  label: "WhatsApp para patrocínios",
+                  url: formatWhatsAppUrl(form.sponsorshipWhatsApp),
+                },
+              ]
+            : [],
+          sponsorship_guidelines: form.sponsorshipGuidelines.trim(),
           is_active: true,
           setup_completed_at: new Date().toISOString(),
           admin_id: user.id,
@@ -258,10 +276,7 @@ export default function AdminChurchConfiguration() {
   return (
     <div className="flex min-h-screen flex-col bg-muted/25">
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link
-          href="/"
-          className="back-link mb-7"
-        >
+        <Link href="/" className="back-link mb-7">
           <ArrowLeft className="h-4 w-4" />
           Voltar ao início
         </Link>
@@ -333,6 +348,23 @@ export default function AdminChurchConfiguration() {
                       placeholder="Sua cidade"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="sponsorship-whatsapp">
+                      WhatsApp para contato de patrocínios
+                    </Label>
+                    <Input
+                      id="sponsorship-whatsapp"
+                      value={form.sponsorshipWhatsApp}
+                      onChange={(event) =>
+                        updateField("sponsorshipWhatsApp", event.target.value)
+                      }
+                      placeholder="5599999999999 ou https://wa.me/5599999999999"
+                    />
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Este será o canal usado quando uma empresa concluir o
+                      formulário de interesse em patrocínio.
+                    </p>
+                  </div>
                 </>
               ) : (
                 <>
@@ -360,6 +392,23 @@ export default function AdminChurchConfiguration() {
                     file={coverFile}
                     onFileChange={setCoverFile}
                   />
+                  <div className="space-y-2">
+                    <Label htmlFor="sponsorship-guidelines">
+                      Orientações para patrocinadores
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Opcional. Inclua valores, entregas e instruções; use uma
+                      linha para cada orientação.
+                    </p>
+                    <Textarea
+                      id="sponsorship-guidelines"
+                      value={form.sponsorshipGuidelines}
+                      onChange={(event) =>
+                        updateField("sponsorshipGuidelines", event.target.value)
+                      }
+                      placeholder="A partir de R$ 300: divulgação nas redes sociais e no telão."
+                    />
+                  </div>
                 </>
               )}
               {error ? (

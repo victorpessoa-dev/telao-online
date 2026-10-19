@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Building2, MapPin, Search } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, Search } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import AppFooter from "@/components/shared/app-footer";
 import PublicNavbar from "@/components/shared/public-navbar";
@@ -15,7 +15,10 @@ function ChurchCard({ church, index, reduceMotion }) {
     <motion.div
       initial={reduceMotion ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.2) }}
+      transition={{
+        duration: reduceMotion ? 0 : 0.3,
+        delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.2),
+      }}
       className="h-full"
     >
       <Link
@@ -79,7 +82,9 @@ export default function CommunityPage() {
 
     return churches.filter((church) =>
       [church.name, church.city].some((value) =>
-        String(value || "").toLocaleLowerCase("pt-BR").includes(normalizedQuery),
+        String(value || "")
+          .toLocaleLowerCase("pt-BR")
+          .includes(normalizedQuery),
       ),
     );
   }, [churches, query]);
@@ -87,7 +92,11 @@ export default function CommunityPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <PublicNavbar />
-      <main className="public-page-shell mx-auto w-full max-w-7xl flex-1 px-6 py-14 sm:px-10 lg:px-12 lg:py-20">
+      <main className="public-page-shell mx-auto w-[min(80%,1600px)] flex-1 py-14 lg:py-20 max-md:w-full max-md:px-6">
+        <Link href="/" className="back-link mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Voltar ao início
+        </Link>
         <motion.header
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -123,7 +132,7 @@ export default function CommunityPage() {
         {!loading && visibleChurches.length ? (
           <section
             aria-label="Comunidades disponíveis"
-            className="mt-10 grid auto-rows-fr gap-6 sm:grid-cols-2 xl:grid-cols-3"
+            className="mt-10 grid auto-rows-fr gap-6 sm:grid-cols-2 xl:grid-cols-4"
           >
             {visibleChurches.map((church, index) => (
               <ChurchCard

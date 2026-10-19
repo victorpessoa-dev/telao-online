@@ -30,7 +30,12 @@ export async function POST(request) {
           sponsor_id: log.sponsorId,
           displayed_at: log.displayedAt,
           duration_seconds: log.durationSeconds,
+          views_count: log.viewsCount,
+          event_id: log.eventId,
           source: log.source,
+          display_session_id: log.displaySessionId,
+          display_token: log.displayToken,
+          display_client_id: log.displayClientId,
         })),
       },
     );

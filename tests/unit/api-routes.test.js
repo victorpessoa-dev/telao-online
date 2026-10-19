@@ -45,6 +45,7 @@ describe("API routes", () => {
       supabase,
       sponsorId,
       churchId,
+      { page: 1, pageSize: 20 },
     );
   });
 

@@ -61,6 +61,7 @@ describe("sponsor mappers", () => {
       id: "log-1",
       displayedAt: "2026-07-06T12:00:00.000Z",
       durationSeconds: 0,
+      viewsCount: 1,
       source: "telao",
     });
   });

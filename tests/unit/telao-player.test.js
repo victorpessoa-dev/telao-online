@@ -62,8 +62,9 @@ describe("telao player helpers", () => {
     expect(shuffled).toEqual(["c", "a", "b"]);
   });
 
-  it("uses the configured duration for each media type", () => {
-    expect(getMediaDuration({ mediaType: "image", duration: 4 }, { image: 12 })).toBe(12);
-    expect(getMediaDuration({ mediaType: "video", duration: 4 }, { video: 24 })).toBe(24);
+  it("prioritizes each sponsor duration and uses settings as fallback", () => {
+    expect(getMediaDuration({ mediaType: "image", duration: 4 }, { image: 12 })).toBe(4);
+    expect(getMediaDuration({ mediaType: "video", duration: 4 }, { video: 24 })).toBe(4);
+    expect(getMediaDuration({ mediaType: "video" }, { video: 24 })).toBe(24);
   });
 });

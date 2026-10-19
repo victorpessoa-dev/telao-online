@@ -40,7 +40,10 @@ function AlertDialogOverlay({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        className={cn("fixed inset-0 z-50 bg-black/50 backdrop-blur-sm", className)}
+        className={cn(
+          "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
+          className,
+        )}
       />
     </AlertDialogPrimitive.Overlay>
   );
@@ -54,19 +57,16 @@ function AlertDialogContent({
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
-      <AlertDialogPrimitive.Content
-        data-slot="alert-dialog-content"
-        {...props}
-      >
+      <AlertDialogPrimitive.Content data-slot="alert-dialog-content" {...props}>
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: -12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-        className={cn(
-          "fixed left-1/2 top-1/2 z-50 grid min-h-44 max-h-[calc(100dvh-2rem)] w-[min(42rem,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto overscroll-contain rounded-xl border bg-background p-4 shadow-2xl sm:p-6",
-          "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground/40",
-          className,
-        )}
+          className={cn(
+            "fixed left-1/2 top-1/2 z-50 grid min-h-44 max-h-[calc(100dvh-2rem)] w-[min(42rem,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto overscroll-contain rounded-xl border bg-background p-4 shadow-2xl sm:p-6",
+            "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border hover:scrollbar-thumb-muted-foreground/40",
+            className,
+          )}
         >
           {children}
         </motion.div>

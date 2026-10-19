@@ -7,6 +7,7 @@ import EmptyState from "@/components/shared/empty-state";
 
 export function AdManagerToolbar({
   onCopyPublicUrl,
+  onOpenOfficialDisplay,
   publicTelaoPath,
   onOpenCreateDialog,
   metricsEnabled,
@@ -32,8 +33,8 @@ export function AdManagerToolbar({
             Patrocínios cadastrados
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Cadastre os apoiadores, publique a programação e mantenha o
-            registro de exibições disponível para consulta.
+            Cadastre os apoiadores, publique a programação e mantenha o registro
+            de exibições disponível para consulta.
           </p>
         </div>
 
@@ -124,6 +125,14 @@ export function AdManagerToolbar({
               {publicTelaoPath || "Defina o slug da igreja"}
             </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenOfficialDisplay}
+            disabled={!metricsEnabled || !publicTelaoPath}
+          >
+            Abrir telão oficial
+          </Button>
         </div>
       </div>
     </section>

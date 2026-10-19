@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 const SIDEBAR_STORAGE_KEY = "vplaycast:admin-sidebar-collapsed";
 const AdminSidebarStateContext = createContext(null);

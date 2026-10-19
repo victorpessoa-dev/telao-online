@@ -1,31 +1,62 @@
+import { Github, Instagram, Linkedin } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+
+const contactLinks = [
+  {
+    label: "GitHub",
+    href: "https://github.com/victorpessoa-dev",
+    Icon: Github,
+  },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/victorpessoa.dev/",
+    Icon: Instagram,
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/victor-pessoa-b93703241/?isSelfProfile=true",
+    Icon: Linkedin,
+  },
+];
 
 export default function AppFooter({ className }) {
   return (
     <footer
       aria-label="Rodapé"
-      className={cn("border-t border-slate-200 px-6 py-6", className)}
+      className={cn("border-t border-slate-200 bg-white px-6 py-8", className)}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 text-center text-xs text-slate-500 sm:flex-row sm:gap-3 sm:text-sm">
-        <span
-          role="img"
-          aria-label="Virtus Sistemas"
-          className="h-7 w-7 shrink-0 bg-slate-500"
-          style={{
-            maskImage: "url('/brand/virtus-sistemas-emblema.png')",
-            maskPosition: "center",
-            maskRepeat: "no-repeat",
-            maskSize: "contain",
-            WebkitMaskImage: "url('/brand/virtus-sistemas-emblema.png')",
-            WebkitMaskPosition: "center",
-            WebkitMaskRepeat: "no-repeat",
-            WebkitMaskSize: "contain",
-          }}
-        />
-        <span className="min-w-0 leading-relaxed">
-          © {new Date().getFullYear()} <span className="font-brand font-extrabold">vPlayCast</span>. Desenvolvido por Virtus
-          Sistemas.
-        </span>
+      <div className="mx-auto flex w-[min(80%,1600px)] flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left max-md:w-full max-md:px-4">
+        <div>
+          <p className="font-brand text-lg font-extrabold text-slate-950">
+            vPlayCast
+          </p>
+          <p className="mt-1 max-w-md text-sm leading-6 text-slate-500">
+            Transparência para as parcerias que apoiam novenários e festas
+            paroquiais.
+          </p>
+          <p className="mt-2 text-xs text-slate-400">
+            © {new Date().getFullYear()} vPlayCast · Desenvolvido por Victor
+            Pessoa.
+          </p>
+        </div>
+        <nav
+          aria-label="Canais de contato"
+          className="flex justify-center gap-2 sm:justify-end"
+        >
+          {contactLinks.map(({ label, href, Icon }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={label}
+              title={label}
+              className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-primary/30 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Icon className="h-4 w-4" />
+            </a>
+          ))}
+        </nav>
       </div>
     </footer>
   );

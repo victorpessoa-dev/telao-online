@@ -21,12 +21,14 @@ export const metadata = {
     default: "vPlayCast",
     template: "%s | vPlayCast",
   },
-  description: "Transmissões, telões e patrocinadores em um só lugar.",
+  description:
+    "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
   applicationName: "vPlayCast",
   keywords: [
-    "transmissão",
+    "novenário",
+    "festa paroquial",
     "telão",
-    "igreja",
+    "parcerias",
     "patrocinadores",
     "vPlayCast",
   ],
@@ -39,15 +41,15 @@ export const metadata = {
     locale: "pt_BR",
     siteName: "vPlayCast",
     title: "vPlayCast",
-    description: "Transmissões, telões e patrocinadores em um só lugar.",
-    images: [
-      { url: "/brand/virtus-playcast-mark.png", alt: "vPlayCast" },
-    ],
+    description:
+      "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
+    images: [{ url: "/brand/virtus-playcast-mark.png", alt: "vPlayCast" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "vPlayCast",
-    description: "Transmissões, telões e patrocinadores em um só lugar.",
+    description:
+      "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
     images: ["/brand/virtus-playcast-mark.png"],
   },
 };
@@ -55,7 +57,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <body className={`${poppins.variable} min-h-screen bg-background font-sans antialiased`}>
+      <body
+        className={`${poppins.variable} min-h-screen bg-background font-sans antialiased`}
+      >
         <HoverTipProvider>
           <AppMotion>{children}</AppMotion>
           <NetworkStatus />

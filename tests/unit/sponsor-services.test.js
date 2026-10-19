@@ -192,13 +192,17 @@ describe("sponsor services", () => {
             name: "Empresa inativa",
             active: false,
           },
-          get_public_sponsor_impressions: [
-            {
-              id: "log-1",
-              displayed_at: new Date().toISOString(),
-              duration_seconds: 10,
-            },
-          ],
+          get_public_sponsor_report: {
+            logs: [
+              {
+                id: "log-1",
+                displayed_at: new Date().toISOString(),
+                duration_seconds: 10,
+              },
+            ],
+            daily: [],
+            totalItems: 1,
+          },
         }),
         "inactive-id",
       ),
@@ -210,7 +214,7 @@ describe("sponsor services", () => {
       getSponsorDetailPayload(
         createSupabaseRpcMock({
           get_public_sponsor_detail: null,
-          get_public_sponsor_impressions: [],
+          get_public_sponsor_report: { logs: [], daily: [], totalItems: 0 },
         }),
         "missing-id",
       ),

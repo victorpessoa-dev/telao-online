@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { HoverTip } from "@/components/shared/hover-tip";
 import { Label } from "@/components/ui/label";
@@ -429,150 +430,194 @@ export function AppearanceSettingsSection({
         <BrandPreview {...previewProps} />
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)]">
-              <div className="space-y-6 rounded-lg border border-border p-4">
-                <div>
-                  <Label>Dados da paróquia</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Informações exibidas sobre a capa da página pública.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Nome da paróquia</Label>
-                  <Input
-                    value={settings.appearance.parishName}
-                    onChange={(e) =>
-                      updateSettings("appearance", "parishName", e.target.value)
-                    }
-                    placeholder="Ex: Paróquia São José"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Cidade</Label>
-                  <Input
-                    value={settings.appearance.parishCity}
-                    onChange={(e) =>
-                      updateSettings("appearance", "parishCity", e.target.value)
-                    }
-                    placeholder="Ex: Limeira - SP"
-                  />
-                </div>
-                <div className="space-y-5">
-                  <div className="space-y-2">
-                    <Label>Logo da paróquia</Label>
-                    <Input
-                      value={settings.appearance.parishLogoUrl}
-                      onChange={(e) =>
-                        updateSettings(
-                          "appearance",
-                          "parishLogoUrl",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="https://exemplo.com/logo.png"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Upload da logo</Label>
-                    <FileDropzone
-                      accept="image/*"
-                      onFileSelect={onUploadParishLogo}
-                      title="Arraste a logo ou clique para enviar"
-                      description="PNG, JPG ou WebP"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Capa pública</Label>
-                    <Input
-                      value={settings.appearance.parishCoverUrl}
-                      onChange={(e) =>
-                        updateSettings(
-                          "appearance",
-                          "parishCoverUrl",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="https://exemplo.com/capa.png"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Upload da capa</Label>
-                    <FileDropzone
-                      accept="image/*"
-                      onFileSelect={onUploadParishCover}
-                      title="Arraste a capa ou clique para enviar"
-                      description="PNG, JPG ou WebP"
-                    />
-                  </div>
-                </div>
+          <div className="space-y-6 rounded-lg border border-border p-4">
+            <div>
+              <Label>Dados da paróquia</Label>
+              <p className="text-sm text-muted-foreground">
+                Informações exibidas sobre a capa da página pública.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Nome da paróquia</Label>
+              <Input
+                value={settings.appearance.parishName}
+                onChange={(e) =>
+                  updateSettings("appearance", "parishName", e.target.value)
+                }
+                placeholder="Ex: Paróquia São José"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Cidade</Label>
+              <Input
+                value={settings.appearance.parishCity}
+                onChange={(e) =>
+                  updateSettings("appearance", "parishCity", e.target.value)
+                }
+                placeholder="Ex: Limeira - SP"
+              />
+            </div>
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label>Logo da paróquia</Label>
+                <Input
+                  value={settings.appearance.parishLogoUrl}
+                  onChange={(e) =>
+                    updateSettings(
+                      "appearance",
+                      "parishLogoUrl",
+                      e.target.value,
+                    )
+                  }
+                  placeholder="https://exemplo.com/logo.png"
+                />
               </div>
+              <div className="space-y-2">
+                <Label>Upload da logo</Label>
+                <FileDropzone
+                  accept="image/*"
+                  onFileSelect={onUploadParishLogo}
+                  title="Arraste a logo ou clique para enviar"
+                  description="PNG, JPG ou WebP"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Capa pública</Label>
+                <Input
+                  value={settings.appearance.parishCoverUrl}
+                  onChange={(e) =>
+                    updateSettings(
+                      "appearance",
+                      "parishCoverUrl",
+                      e.target.value,
+                    )
+                  }
+                  placeholder="https://exemplo.com/capa.png"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Upload da capa</Label>
+                <FileDropzone
+                  accept="image/*"
+                  onFileSelect={onUploadParishCover}
+                  title="Arraste a capa ou clique para enviar"
+                  description="PNG, JPG ou WebP"
+                />
+              </div>
+            </div>
+            <div className="space-y-2 border-t border-border pt-6">
+              <Label htmlFor="sponsorship-guidelines">
+                Orientações para patrocinadores
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Escreva uma orientação por linha. Informe valores, entregas,
+                prazos e instruções que devem aparecer na página de interesse.
+              </p>
+              <Textarea
+                id="sponsorship-guidelines"
+                value={settings.appearance.parishSponsorshipGuidelines}
+                onChange={(event) =>
+                  updateSettings(
+                    "appearance",
+                    "parishSponsorshipGuidelines",
+                    event.target.value,
+                  )
+                }
+                placeholder={
+                  "A partir de R$ 300: divulgação nas redes sociais e no telão.\nEnvie a logomarca em boa qualidade.\nConsulte a equipe sobre prazos e espaços disponíveis."
+                }
+                className="min-h-40 resize-y"
+              />
+            </div>
+            <div className="space-y-2 border-t border-border pt-6">
+              <Label htmlFor="sponsorship-whatsapp">
+                WhatsApp para contato de patrocínios
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Usado ao finalizar o formulário público de interesse em
+                patrocínio. Informe o número com DDI ou o link do WhatsApp.
+              </p>
+              <Input
+                id="sponsorship-whatsapp"
+                value={settings.appearance.parishSponsorshipWhatsApp || ""}
+                onChange={(event) =>
+                  updateSettings(
+                    "appearance",
+                    "parishSponsorshipWhatsApp",
+                    event.target.value,
+                  )
+                }
+                placeholder="5599999999999 ou https://wa.me/5599999999999"
+              />
+            </div>
+          </div>
 
-              <div className="space-y-4 rounded-lg border border-border p-4">
-                <div>
-                  <Label>Redes sociais públicas</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Links exibidos no canto inferior da capa pública.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <Label>Links adicionados</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Adicione Instagram, WhatsApp, YouTube, site ou outro
-                      canal.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addExtraLink}
+          <div className="space-y-4 rounded-lg border border-border p-4">
+            <div>
+              <Label>Redes sociais públicas</Label>
+              <p className="text-sm text-muted-foreground">
+                Links exibidos no canto inferior da capa pública.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <Label>Links adicionados</Label>
+                <p className="text-sm text-muted-foreground">
+                  Adicione Instagram, WhatsApp, YouTube, site ou outro canal.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addExtraLink}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar
+              </Button>
+            </div>
+
+            {extraLinks.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                Nenhuma rede social adicionada.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {extraLinks.map((item, index) => (
+                  <div
+                    key={index}
+                    className="grid gap-3 rounded-lg border border-border p-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] lg:items-end"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Adicionar
-                  </Button>
-                </div>
-
-                {extraLinks.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                    Nenhuma rede social adicionada.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {extraLinks.map((item, index) => (
-                      <div
-                        key={index}
-                        className="grid gap-3 rounded-lg border border-border p-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] lg:items-end"
+                    <Input
+                      value={item.label || ""}
+                      onChange={(e) =>
+                        updateExtraLink(index, "label", e.target.value)
+                      }
+                      placeholder="Nome da rede"
+                    />
+                    <Input
+                      value={item.url || ""}
+                      onChange={(e) =>
+                        updateExtraLink(index, "url", e.target.value)
+                      }
+                      placeholder="https://..."
+                    />
+                    <HoverTip label="Remover rede social">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeExtraLink(index)}
+                        aria-label="Remover rede social"
                       >
-                        <Input
-                          value={item.label || ""}
-                          onChange={(e) =>
-                            updateExtraLink(index, "label", e.target.value)
-                          }
-                          placeholder="Nome da rede"
-                        />
-                        <Input
-                          value={item.url || ""}
-                          onChange={(e) =>
-                            updateExtraLink(index, "url", e.target.value)
-                          }
-                          placeholder="https://..."
-                        />
-                        <HoverTip label="Remover rede social">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => removeExtraLink(index)}
-                            aria-label="Remover rede social"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </HoverTip>
-                      </div>
-                    ))}
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </HoverTip>
                   </div>
-                )}
+                ))}
               </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

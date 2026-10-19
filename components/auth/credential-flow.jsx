@@ -35,10 +35,7 @@ function Message({ children }) {
 
 function BackToHome() {
   return (
-    <Link
-      href="/"
-      className="back-link mb-3"
-    >
+    <Link href="/" className="back-link mb-3">
       <ArrowLeft className="h-4 w-4" />
       Voltar
     </Link>
@@ -141,7 +138,9 @@ export function SetPasswordForm({ invitation = false }) {
         setReady(true);
       })
       .catch((cause) =>
-        setError(getAuthErrorMessage(cause, "Não foi possível validar o link.")),
+        setError(
+          getAuthErrorMessage(cause, "Não foi possível validar o link."),
+        ),
       );
   }, [searchParams]);
 

@@ -13,7 +13,9 @@ export default function PwaServiceWorker() {
       navigator.serviceWorker
         .getRegistrations()
         .then((registrations) =>
-          Promise.all(registrations.map((registration) => registration.unregister())),
+          Promise.all(
+            registrations.map((registration) => registration.unregister()),
+          ),
         )
         .then(() => caches.keys())
         .then((keys) =>
@@ -24,7 +26,10 @@ export default function PwaServiceWorker() {
           ),
         )
         .catch((error) => {
-          console.warn("Não foi possível limpar o cache de desenvolvimento.", error);
+          console.warn(
+            "Não foi possível limpar o cache de desenvolvimento.",
+            error,
+          );
         });
       return undefined;
     }

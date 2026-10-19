@@ -48,13 +48,13 @@ export function MediaPreview({ ad, compact = false }) {
           <img
             src={youtubeThumbnail}
             alt={`Prévia de ${ad.name || "vídeo"}`}
-            className="h-full w-full object-contain"
+            className="h-full w-full object-cover object-center"
           />
         ) : (
           <StaticMediaFrame
             src={ad.src}
             type="video"
-            className="h-full w-full object-contain"
+            className="h-full w-full object-cover object-center"
           />
         )}
       </div>
@@ -70,7 +70,7 @@ export function MediaPreview({ ad, compact = false }) {
         <StaticMediaFrame
           src={ad.src}
           alt={ad.name || "Patrocínio"}
-          className="h-full w-full object-contain"
+          className="h-full w-full object-cover object-center"
         />
       </div>
     );
@@ -84,7 +84,7 @@ export function MediaPreview({ ad, compact = false }) {
       <img
         src={ad.src}
         alt={ad.name || "Patrocínio"}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover object-center"
       />
     </div>
   );
@@ -119,17 +119,24 @@ export function SponsorForm({
   allowMediaRemoval = false,
 }) {
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState("");
-  const hasUploadedMedia = ad.sourceType === "upload" && Boolean(ad.src);
+  const hasPendingMedia = ad.sourceType === "pending-upload" && Boolean(ad.src);
 
   const handleUpload = async (file) => {
     if (!file) return;
 
     setUploadError("");
     setUploading(true);
+    setProgress(5);
     onUploadStateChange?.(true);
     try {
-      await onUpload(file, setAd);
+      await onUpload(file, setAd, setProgress);
+      setProgress(100);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Não foi possível preparar o arquivo",
+      );
     } finally {
       setUploading(false);
       onUploadStateChange?.(false);
@@ -186,7 +193,6 @@ export function SponsorForm({
             </SelectContent>
           </Select>
         </div>
-
       </TabsContent>
 
       <TabsContent value="media" className="mt-5 space-y-5">
@@ -217,7 +223,7 @@ export function SponsorForm({
                 : "https://exemplo.com/imagem.png"
             }
             value={ad.src || ""}
-            readOnly={hasUploadedMedia}
+            readOnly={hasPendingMedia}
             onChange={(e) =>
               setAd((prev) => ({
                 ...prev,
@@ -226,7 +232,7 @@ export function SponsorForm({
               }))
             }
           />
-          {hasUploadedMedia ? (
+          {hasPendingMedia ? (
             <p className="text-xs text-muted-foreground">
               Upload anexado. Clique em Salvar para gravar esta mídia no
               patrocínio.
@@ -243,9 +249,7 @@ export function SponsorForm({
             disabled={uploading}
             onFileSelect={handleUpload}
             title="Arraste a mídia ou clique para enviar"
-            description={
-              "Imagens GIF, JPG, PNG, WebP, MP4 ou WebM"
-            }
+            description={"Imagens GIF, JPG, PNG, WebP, MP4 ou WebM"}
           />
           <p className="text-xs text-muted-foreground">
             A duração é definida em Configurações &gt; Telão, conforme a mídia
@@ -257,7 +261,17 @@ export function SponsorForm({
             </p>
           ) : null}
           {uploading ? (
-            <p className="text-xs text-muted-foreground">Enviando arquivo...</p>
+            <div className="space-y-1.5">
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-200"
+                  style={{ width: `${Math.max(5, progress)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Preparando arquivo… {Math.round(progress)}%
+              </p>
+            </div>
           ) : null}
         </div>
 

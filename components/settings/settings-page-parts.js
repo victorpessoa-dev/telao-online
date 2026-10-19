@@ -94,7 +94,7 @@ export function DesignAdjustmentDrop({
           Restaurar área
         </Button>
       </div>
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(24rem,0.9fr)] 2xl:items-start">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,0.9fr)] lg:items-start">
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/20 p-4">
             <SettingRow
@@ -214,7 +214,7 @@ export function DesignAdjustmentDrop({
           )}
         </div>
 
-        <div className="xl:sticky xl:top-6">
+        <div className="lg:sticky lg:top-6">
           <SponsorDesignPreview title="Prévia do telão" settings={settings} />
         </div>
       </div>
@@ -277,7 +277,9 @@ export function BrandPreview({
           ) : (
             <div className="h-full w-full bg-muted" />
           )}
-          {parishCoverUrl ? <div className="absolute inset-0 bg-black/20" /> : null}
+          {parishCoverUrl ? (
+            <div className="absolute inset-0 bg-black/20" />
+          ) : null}
         </div>
         <div className="relative p-5 sm:p-6">
           <div className="absolute -top-12 flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border-4 border-card bg-card sm:-top-14 sm:h-28 sm:w-28">

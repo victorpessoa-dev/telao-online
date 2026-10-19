@@ -363,6 +363,7 @@ export default function TelaoMedia({
     // telão without a background, or the configured frame over a background.
     // Always cover it so no unused bands remain around images or videos.
     objectFit: "cover",
+    objectPosition: "center",
   };
 
   return (

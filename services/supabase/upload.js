@@ -19,6 +19,22 @@ const CONVERTIBLE_IMAGE_TYPES = new Set([
 ]);
 const WEBP_QUALITY = 0.86;
 const MAX_IMAGE_SIDE = 2560;
+export const MAX_VIDEO_DURATION_SECONDS = 20;
+let ffmpegPromise;
+
+function loadFfmpegScript() {
+  if (window.FFmpegWASM) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    // The runtime and its worker are served by this application. Keeping them
+    // same-origin avoids browser security policies blocking the worker chunk.
+    script.src = "/api/ffmpeg/ffmpeg.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Não foi possível carregar o otimizador de vídeo"));
+    document.head.appendChild(script);
+  });
+}
 const ALLOWED_UPLOAD_FOLDERS = new Set(["branding", "sponsors"]);
 
 export function sanitizeFileName(name) {
@@ -117,13 +133,88 @@ export async function optimizeImageForUpload(file) {
   }
 }
 
-export async function uploadMedia(file, folder = "uploads", churchId = "") {
+async function getFfmpeg() {
+  if (!ffmpegPromise) {
+    ffmpegPromise = (async () => {
+      await loadFfmpegScript();
+      const { FFmpeg } = window.FFmpegWASM || {};
+      if (!FFmpeg) throw new Error("O otimizador de vídeo não foi carregado");
+      const ffmpeg = new FFmpeg();
+      const coreBase = new URL("/api/ffmpeg/", window.location.origin);
+      await ffmpeg.load({
+        coreURL: new URL("ffmpeg-core.js", coreBase).toString(),
+        wasmURL: new URL("ffmpeg-core.wasm", coreBase).toString(),
+      });
+      return ffmpeg;
+    })();
+  }
+  return ffmpegPromise;
+}
+
+async function optimizeVideoForUpload(file, onProgress) {
+  onProgress?.(20);
+  const ffmpeg = await getFfmpeg();
+  const inputName = `input-${crypto.randomUUID()}.${file.name.split(".").pop() || "mp4"}`;
+  const outputName = `video-${crypto.randomUUID()}.mp4`;
+  const reportProgress = ({ progress }) => {
+    onProgress?.(Math.min(90, Math.max(35, 35 + progress * 55)));
+  };
+  try {
+    await ffmpeg.writeFile(inputName, new Uint8Array(await file.arrayBuffer()));
+    onProgress?.(35);
+    ffmpeg.on("progress", reportProgress);
+    await ffmpeg.exec([
+      "-i", inputName,
+      "-t", String(MAX_VIDEO_DURATION_SECONDS),
+      "-vf", "scale='min(1280,iw)':-2",
+      "-c:v", "libx264",
+      "-preset", "ultrafast",
+      "-crf", "28",
+      "-c:a", "aac",
+      "-b:a", "96k",
+      "-movflags", "+faststart",
+      outputName,
+    ]);
+    onProgress?.(92);
+    const data = await ffmpeg.readFile(outputName);
+    onProgress?.(96);
+    return new File([data], `${file.name.replace(/\.[^.]+$/, "") || "video"}.mp4`, {
+      type: "video/mp4",
+      lastModified: file.lastModified,
+    });
+  } finally {
+    ffmpeg.off?.("progress", reportProgress);
+    await Promise.allSettled([
+      ffmpeg.deleteFile(inputName),
+      ffmpeg.deleteFile(outputName),
+    ]);
+  }
+}
+
+// This runs locally while the form is being edited. It never writes to
+// Storage; the actual upload remains part of the Save action.
+export async function prepareMediaForUpload(file, onProgress) {
+  validateMediaFile(file);
+  if (file.type.startsWith("video/")) {
+    return optimizeVideoForUpload(file, onProgress);
+  }
+  onProgress?.(20);
+  const optimized = await optimizeImageForUpload(file);
+  validateMediaFile(optimized);
+  onProgress?.(96);
+  return optimized;
+}
+
+export async function uploadMedia(
+  file,
+  folder = "uploads",
+  churchId = "",
+  { alreadyPrepared = false } = {},
+) {
   if (!file) return "";
   if (!ALLOWED_UPLOAD_FOLDERS.has(folder))
     throw new Error("Pasta de upload inválida");
-  validateMediaFile(file);
-  const optimizedFile = await optimizeImageForUpload(file);
-  validateMediaFile(optimizedFile);
+  const optimizedFile = alreadyPrepared ? file : await prepareMediaForUpload(file);
 
   const supabase = createSupabaseBrowserClient();
   const {

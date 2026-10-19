@@ -25,7 +25,8 @@ export default function PublicHomePage() {
     const idleCallback = window.requestIdleCallback?.(loadChurches, {
       timeout: 1_500,
     });
-    const timeoutId = idleCallback == null ? window.setTimeout(loadChurches, 250) : null;
+    const timeoutId =
+      idleCallback == null ? window.setTimeout(loadChurches, 250) : null;
 
     return () => {
       controller.abort();
@@ -50,82 +51,82 @@ export default function PublicHomePage() {
           {...reveal}
           className="landing-slice landing-slice-sky w-full scroll-mt-16"
         >
-          <div className="mx-auto w-full max-w-7xl px-6 py-24 sm:px-10 lg:px-12 lg:py-32">
+          <div className="mx-auto w-[min(80%,1600px)] py-24 lg:py-32 max-md:w-full max-md:px-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-2xl">
-            <p className="eyebrow text-primary">Eventos com transparência</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Conheça quem divulga seus patrocinadores
-            </h2>
-            <p className="mt-4 leading-7 text-muted-foreground">
-              Acesse páginas públicas com os apoiadores e os registros de
-              divulgação de cada evento.
-            </p>
+              <div className="max-w-2xl">
+                <p className="eyebrow text-primary">Festas com transparência</p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Conheça as parcerias que apoiam cada celebração
+                </h2>
+                <p className="mt-4 leading-7 text-muted-foreground">
+                  Acesse páginas públicas com parceiros e registros de
+                  divulgação de novenários, quermesses e festas paroquiais.
+                </p>
+              </div>
+              <Link
+                href="/comunidade"
+                className="shrink-0 border-b border-primary pb-1 text-sm font-semibold text-primary transition-colors hover:border-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Conhecer comunidades
+              </Link>
             </div>
-            <Link
-              href="/comunidade"
-              className="shrink-0 border-b border-primary pb-1 text-sm font-semibold text-primary transition-colors hover:border-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              Ver Mais
-            </Link>
-          </div>
             {churches.length ? (
               <div className="mt-10 grid auto-rows-fr gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 {churches.slice(0, 5).map((church) => (
-                <Link
-                  key={church.id}
-                  href={`/${church.slug}`}
-                  className="group flex h-full min-h-[18rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <div className="relative h-44 shrink-0 bg-muted">
-                    {church.cover_url ? (
-                      <img
-                        src={church.cover_url}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : null}
-                    <div className="absolute inset-0 bg-black/20" />
-                  </div>
-                  <div className="relative flex flex-1 flex-col justify-end p-6">
-                    <div className="absolute -top-10 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border-4 border-card bg-card shadow-sm">
-                      <img
-                        src={
-                          church.logo_url || "/brand/virtus-playcast-mark.png"
-                        }
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="h-full w-full object-cover"
-                      />
+                  <Link
+                    key={church.id}
+                    href={`/${church.slug}`}
+                    className="group flex h-full min-h-[18rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <div className="relative h-44 shrink-0 bg-muted">
+                      {church.cover_url ? (
+                        <img
+                          src={church.cover_url}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 bg-black/20" />
                     </div>
-                    <h3 className="mt-8 truncate text-xl font-semibold group-hover:text-primary">
-                      {church.name}
-                    </h3>
-                    {church.city ? (
-                      <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {church.city}
-                      </p>
-                    ) : null}
-                    {church.description ? (
-                      <p className="mt-4 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                        {church.description}
-                      </p>
-                    ) : null}
-                  </div>
-                </Link>
+                    <div className="relative flex flex-1 flex-col justify-end p-6">
+                      <div className="absolute -top-10 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border-4 border-card bg-card shadow-sm">
+                        <img
+                          src={
+                            church.logo_url || "/brand/virtus-playcast-mark.png"
+                          }
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <h3 className="mt-8 truncate text-xl font-semibold group-hover:text-primary">
+                        {church.name}
+                      </h3>
+                      {church.city ? (
+                        <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          {church.city}
+                        </p>
+                      ) : null}
+                      {church.description ? (
+                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-muted-foreground">
+                          {church.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </Link>
                 ))}
               </div>
             ) : (
-            <div className="mt-10 rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">
-              <Building2 className="mx-auto h-7 w-7" />
-              <p className="mt-3 text-sm">
-                Ainda não há igrejas públicas disponíveis.
-              </p>
-            </div>
+              <div className="mt-10 rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                <Building2 className="mx-auto h-7 w-7" />
+                <p className="mt-3 text-sm">
+                  Ainda não há igrejas públicas disponíveis.
+                </p>
+              </div>
             )}
           </div>
         </motion.section>
@@ -134,40 +135,40 @@ export default function PublicHomePage() {
           {...reveal}
           className="landing-slice landing-slice-indigo w-full scroll-mt-16"
         >
-          <div className="mx-auto w-full max-w-7xl px-6 py-24 sm:px-10 lg:px-12 lg:py-32">
-          <div className="max-w-2xl">
-            <p className="eyebrow text-primary">Divulgação verificável</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Clareza para organizadores, patrocinadores e público.
-            </h2>
-            <p className="mt-4 text-base leading-7 text-muted-foreground">
-              Centralize a divulgação dos apoiadores do evento e mantenha os
-              dados de exibição acessíveis em uma página pública.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-5 md:grid-cols-2">
-            <Feature
-              number="01"
-              title="Programação de patrocinadores"
-              text="Organize os materiais que serão exibidos no telão durante o evento."
-              delay={0}
-              reduceMotion={reduceMotion}
-            />
-            <Feature
-              number="02"
-              title="Relatórios públicos"
-              text="Cada patrocinador pode consultar os registros de exibição em uma página própria."
-              delay={0.06}
-              reduceMotion={reduceMotion}
-            />
-          </div>
+          <div className="mx-auto w-[min(80%,1600px)] py-24 lg:py-32 max-md:w-full max-md:px-6">
+            <div className="max-w-2xl">
+              <p className="eyebrow text-primary">Parcerias bem divulgadas</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                Clareza para a paróquia, parceiros e comunidade.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">
+                Centralize os apoiadores da festa e mantenha os dados de
+                exibição acessíveis em uma página pública.
+              </p>
+            </div>
+            <div className="mt-12 grid gap-5 md:grid-cols-2">
+              <Feature
+                number="01"
+                title="Programação para o telão"
+                text="Organize os materiais dos parceiros para cada noite do novenário ou festa."
+                delay={0}
+                reduceMotion={reduceMotion}
+              />
+              <Feature
+                number="02"
+                title="Transparência para os parceiros"
+                text="Cada apoiador pode consultar os registros de exibição em uma página própria."
+                delay={0.06}
+                reduceMotion={reduceMotion}
+              />
+            </div>
           </div>
         </motion.section>
         <motion.section
           {...reveal}
           className="landing-slice landing-slice-deep border-y border-border"
         >
-          <div className="mx-auto grid w-full max-w-7xl gap-10 px-6 py-20 sm:px-10 lg:grid-cols-[.9fr_1.1fr] lg:px-12 lg:py-28">
+          <div className="mx-auto grid w-[min(80%,1600px)] gap-10 py-20 lg:grid-cols-[.9fr_1.1fr] lg:py-28 max-md:w-full max-md:px-6">
             <div className="overflow-hidden rounded-3xl shadow-2xl shadow-slate-950/15">
               <img
                 src="/brand/background-virtus-playcast.png"
@@ -178,19 +179,21 @@ export default function PublicHomePage() {
               />
             </div>
             <div className="flex flex-col justify-center">
-              <p className="eyebrow text-primary">Feito para comunidades</p>
+              <p className="eyebrow text-primary">
+                Feito para a vida paroquial
+              </p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Transparência que valoriza cada parceria.
+                Transparência que valoriza cada apoio à festa.
               </h2>
               <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
-              A vPlayCast simplifica a organização da divulgação e ajuda a
-              demonstrar aos patrocinadores como o apoio foi apresentado.
+                A vPlayCast simplifica a divulgação dos apoiadores e ajuda a
+                demonstrar como cada parceria foi apresentada à comunidade.
               </p>
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <Highlight text="Materiais prontos para o telão" />
-                <Highlight text="Patrocinadores bem organizados" />
+                <Highlight text="Materiais organizados por celebração" />
+                <Highlight text="Parceiros identificados com clareza" />
                 <Highlight text="Registros públicos de exibição" />
-                <Highlight text="Acesso seguro pelo navegador" />
+                <Highlight text="Acesso simples pelo navegador" />
               </div>
             </div>
           </div>
@@ -199,17 +202,16 @@ export default function PublicHomePage() {
           {...reveal}
           className="landing-slice landing-slice-warm w-full bg-white text-center"
         >
-          <div className="mx-auto w-full max-w-7xl px-6 py-24 sm:px-10 lg:px-12 lg:py-32">
+          <div className="mx-auto w-[min(80%,1600px)] py-24 lg:py-32 max-md:w-full max-md:px-6">
             <div className="grid overflow-hidden rounded-3xl border border-border bg-card text-left shadow-sm lg:grid-cols-[1fr_.9fr]">
               <div className="p-7 sm:p-10 lg:p-12">
-                <p className="eyebrow text-primary">Depois do evento</p>
+                <p className="eyebrow text-primary">Depois da festa</p>
                 <h2 className="mt-3 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Prestação de contas que permanece acessível.
+                  Uma prestação de contas que permanece acessível.
                 </h2>
                 <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
-                  A divulgação dos apoiadores não termina quando o evento
-                  acaba. Cada parceria pode ser consultada com clareza pela
-                  comunidade.
+                  A divulgação dos parceiros não termina quando a festa acaba.
+                  Cada parceria pode ser consultada com clareza pela comunidade.
                 </p>
               </div>
               <div className="border-t border-border bg-muted/45 p-7 sm:p-10 lg:border-l lg:border-t-0 lg:p-12">
@@ -219,11 +221,11 @@ export default function PublicHomePage() {
                 <ul className="mt-6 space-y-5 text-sm leading-6 text-muted-foreground">
                   <li className="flex gap-3">
                     <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    Patrocinadores apresentados de forma identificável.
+                    Parceiros apresentados de forma identificável.
                   </li>
                   <li className="flex gap-3">
                     <FileCheck2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    Registros públicos das exibições realizadas.
+                    Registros públicos das exibições realizadas no telão.
                   </li>
                 </ul>
               </div>

@@ -85,7 +85,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
       <aside
         id="admin-sidebar"
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-dvh w-60 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar shadow-[8px_0_32px_rgb(0_0_0/0.12)] transition-[width,transform] duration-300 ease-in-out md:z-40 md:translate-x-0",
+          "fixed left-0 top-0 z-50 flex h-dvh w-60 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transition-[width,transform] duration-300 ease-in-out md:z-20 md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           collapsed ? "md:w-16" : "md:w-60",
         )}
@@ -210,31 +210,38 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
         </div>
 
         <div className="space-y-2 border-t border-sidebar-border px-2.5 py-6">
-          <button
-            type="button"
-            onClick={() => updateCollapsed(!collapsed)}
-            aria-label={
-              collapsed ? "Expandir menu lateral" : "Recolher menu lateral"
-            }
-            className={cn(
-              "hidden w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring xl:flex",
-              collapsed && "justify-center gap-0 px-0",
-            )}
-          >
-            {collapsed ? (
-              <ChevronRight className="h-5 w-5" />
-            ) : (
-              <ChevronLeft className="h-5 w-5" />
-            )}
-            <span
-              className={cn(
-                "overflow-hidden whitespace-nowrap opacity-100 transition-[max-width,opacity] duration-200 md:max-w-32",
-                collapsed && "md:max-w-0 md:opacity-0",
-              )}
-            >
-              Recolher menu
-            </span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => updateCollapsed(!collapsed)}
+                aria-label={
+                  collapsed ? "Expandir menu lateral" : "Recolher menu lateral"
+                }
+                className={cn(
+                  "hidden w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring md:flex",
+                  collapsed && "justify-center gap-0 px-0",
+                )}
+              >
+                {collapsed ? (
+                  <ChevronRight className="h-5 w-5" />
+                ) : (
+                  <ChevronLeft className="h-5 w-5" />
+                )}
+                <span
+                  className={cn(
+                    "overflow-hidden whitespace-nowrap opacity-100 transition-[max-width,opacity] duration-200 md:max-w-32",
+                    collapsed && "md:max-w-0 md:opacity-0",
+                  )}
+                >
+                  Recolher menu
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="font-medium">
+              {collapsed ? "Expandir menu" : "Recolher menu"}
+            </TooltipContent>
+          </Tooltip>
 
           {collapsed ? (
             <AlertDialog>

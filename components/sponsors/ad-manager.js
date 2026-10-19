@@ -5,7 +5,11 @@ import Link from "next/link";
 import { Edit2, ExternalLink, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store/store";
-import { deleteUploadedMedia, uploadMedia } from "@/services/supabase/upload";
+import {
+  deleteUploadedMedia,
+  prepareMediaForUpload,
+  uploadMedia,
+} from "@/services/supabase/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import LoadingState from "@/components/shared/loading-state";
@@ -207,28 +211,54 @@ export default function AdManager({
     [defaultDurations.IMAGE, defaultDurations.VIDEO],
   );
 
-  const readUpload = useCallback(async (file, setter) => {
+  const readUpload = useCallback(async (file, setter, onProgress) => {
     if (!file) return;
 
     try {
-      const url = await uploadMedia(file, "sponsors");
-      const uploadedMediaType = file.type?.startsWith("video/")
+      onProgress?.(12);
+      const preparedFile = await prepareMediaForUpload(file, onProgress);
+      onProgress?.(98);
+      const mediaType = preparedFile.type?.startsWith("video/")
         ? "video"
         : "image";
-      setter((prev) => ({
-        ...prev,
-        src: url,
-        sourceType: "upload",
-        mediaType: uploadedMediaType,
-      }));
+      const previewUrl = URL.createObjectURL(preparedFile);
+      setter((prev) => {
+        if (prev.pendingPreviewUrl) URL.revokeObjectURL(prev.pendingPreviewUrl);
+        return {
+          ...prev,
+          src: previewUrl,
+          pendingFile: preparedFile,
+          pendingPreviewUrl: previewUrl,
+          sourceType: "pending-upload",
+          mediaType,
+        };
+      });
+      onProgress?.(100);
       toast.success(
-        uploadedMediaType === "video" ? "Vídeo enviado" : "Imagem enviada",
+        mediaType === "video"
+          ? "Vídeo preparado. Ele será enviado ao salvar."
+          : "Imagem otimizada. Ela será enviada ao salvar.",
       );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Erro ao enviar arquivo",
       );
+      throw error;
     }
+  }, []);
+
+  const uploadPendingMedia = useCallback(async (ad) => {
+    if (!ad.pendingFile) return ad;
+    const uploadedUrl = await uploadMedia(ad.pendingFile, "sponsors", "", {
+      alreadyPrepared: true,
+    });
+    return {
+      ...ad,
+      src: uploadedUrl,
+      pendingFile: undefined,
+      pendingPreviewUrl: undefined,
+      sourceType: "upload",
+    };
   }, []);
 
   const normalizeAd = useCallback(
@@ -297,7 +327,7 @@ export default function AdManager({
   );
 
   const handleCreateAd = async () => {
-    const ad = normalizeAd(newAd);
+    let ad = normalizeAd(newAd);
 
     if (!ad.name.trim()) {
       toast.error("Digite um nome para o patrocínio");
@@ -314,13 +344,19 @@ export default function AdManager({
     }
 
     setSavingAd(true);
+    let uploadedUrl = "";
     try {
-      if (ad.mediaType === "video") await validatePublicVideoSource(ad.src);
+      ad = normalizeAd(await uploadPendingMedia(ad));
+      uploadedUrl = ad.pendingFile ? "" : ad.sourceType === "upload" ? ad.src : "";
+      if (ad.mediaType === "video" && !uploadedUrl)
+        await validatePublicVideoSource(ad.src);
       await createAd(ad);
+      if (newAd.pendingPreviewUrl) URL.revokeObjectURL(newAd.pendingPreviewUrl);
       toast.success(`Patrocínio "${ad.name}" criado`);
       setDialogOpen(false);
       setNewAd(createEmptyAd(defaultDurations));
     } catch (error) {
+      if (uploadedUrl) await deleteUploadedMedia(uploadedUrl).catch(() => {});
       toast.error(
         error instanceof Error ? error.message : "Erro ao criar patrocínio",
       );
@@ -331,7 +367,7 @@ export default function AdManager({
 
   const handleEditAd = async () => {
     if (!editingAd) return;
-    const ad = normalizeAd(editingAd);
+    let ad = normalizeAd(editingAd);
 
     if (!ad.name.trim()) {
       toast.error("Digite um nome para o patrocínio");
@@ -348,8 +384,12 @@ export default function AdManager({
     }
 
     setSavingAd(true);
+    let uploadedUrl = "";
     try {
-      if (ad.mediaType === "video") await validatePublicVideoSource(ad.src);
+      ad = normalizeAd(await uploadPendingMedia(ad));
+      uploadedUrl = ad.sourceType === "upload" && editingAd.pendingFile ? ad.src : "";
+      if (ad.mediaType === "video" && !uploadedUrl)
+        await validatePublicVideoSource(ad.src);
       const previousMediaUrl =
         ads.find((item) => item.id === editingAd.id)?.src || "";
       const updatedAd = await updateAd(editingAd.id, ad);
@@ -364,10 +404,13 @@ export default function AdManager({
           );
         }
       }
+      if (editingAd.pendingPreviewUrl)
+        URL.revokeObjectURL(editingAd.pendingPreviewUrl);
       toast.success("Patrocinio atualizado");
       setEditDialogOpen(false);
       setEditingAd(null);
     } catch (error) {
+      if (uploadedUrl) await deleteUploadedMedia(uploadedUrl).catch(() => {});
       toast.error(
         error instanceof Error ? error.message : "Erro ao atualizar patrocinio",
       );
@@ -401,6 +444,24 @@ export default function AdManager({
     toast.success(`URL ${path} copiada`);
   }, []);
 
+  const openOfficialDisplay = useCallback(async () => {
+    if (!churchSlug) return;
+    const response = await fetch("/api/telao/official-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: churchSlug }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.session) {
+      throw new Error(payload.error || "Não foi possível abrir o telão oficial");
+    }
+    const fragment = new URLSearchParams({
+      displaySession: payload.session.sessionId,
+      displayToken: payload.session.token,
+    });
+    window.open(`/${churchSlug}/ads-telao#${fragment.toString()}`, "_blank", "noopener");
+  }, [churchSlug]);
+
   if (!isLoaded) {
     return <LoadingState label="Carregando patrocinios..." />;
   }
@@ -409,6 +470,15 @@ export default function AdManager({
     <div className="space-y-5">
       <AdManagerToolbar
         onCopyPublicUrl={copyPublicUrl}
+        onOpenOfficialDisplay={() => {
+          openOfficialDisplay().catch((requestError) => {
+            toast.error(
+              requestError instanceof Error
+                ? requestError.message
+                : "Erro ao abrir telão oficial",
+            );
+          });
+        }}
         publicTelaoPath={publicTelaoPath}
         metricsEnabled={sponsorSettings.metricsEnabled}
         metricsPaused={sponsorSettings.metricsPaused}
@@ -550,8 +620,8 @@ export default function AdManager({
                         </div>
                         <TypeBadge ad={ad} />
                         <div className="text-xs text-muted-foreground">
-                          {formatDuration(getMediaDuration(ad.mediaType))} por rodada ·{" "}
-                          {ad.views || 0} exibiies
+                          {formatDuration(getMediaDuration(ad.mediaType))} por
+                          rodada · {ad.views || 0} exibiies
                         </div>
                         {ad.websiteUrl ? (
                           <div className="truncate text-xs text-muted-foreground">
@@ -649,8 +719,8 @@ export default function AdManager({
                           {ad.name}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
-                          {formatDuration(getMediaDuration(ad.mediaType))} por rodada ·{" "}
-                          {ad.views || 0} exibiies
+                          {formatDuration(getMediaDuration(ad.mediaType))} por
+                          rodada · {ad.views || 0} exibiies
                         </div>
                       </div>
                       <TypeBadge ad={ad} />

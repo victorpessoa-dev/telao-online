@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  ArrowLeft,
   BarChart3,
   Building2,
   Clock3,
@@ -20,12 +21,12 @@ import { Input } from "@/components/ui/input";
 import AppFooter from "@/components/shared/app-footer";
 import EmptyState from "@/components/shared/empty-state";
 import LoadingState from "@/components/shared/loading-state";
+import PageError from "@/components/shared/page-error";
 import PublicNavbar from "@/components/shared/public-navbar";
 import { normalizeSocialLinks } from "@/components/shared/social-links";
 import StaticMediaFrame from "@/components/shared/static-media-frame";
+import SponsorInvitation from "@/components/public/sponsor-invitation";
 import { mapSponsorRow } from "@/lib/mappers/sponsors";
-import { fetchPublicSponsorDirectory } from "@/lib/repositories/sponsors";
-import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 
 function formatDuration(seconds) {
   const total = Math.max(0, Number(seconds) || 0);
@@ -43,13 +44,20 @@ function SponsorPreview({ sponsor }) {
         src={sponsor.src}
         alt={sponsor.name}
         type={sponsor.mediaType}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover object-center"
       />
     </div>
   );
 }
 
-function ProfileMetric({ icon: Icon, label, value, detail, index, reduceMotion }) {
+function ProfileMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  index,
+  reduceMotion,
+}) {
   return (
     <motion.article
       initial={reduceMotion ? false : { opacity: 0, y: 12 }}
@@ -101,15 +109,9 @@ export default function ChurchPublicPage() {
         if (!response.ok || !payload.church)
           throw new Error(payload.error || "Igreja não encontrada.");
 
-        const supabase = createSupabaseBrowserClient();
-        // The RPC applies the active-church and active-sponsor rules in one place.
-        const data = await fetchPublicSponsorDirectory(
-          supabase,
-          payload.church.id,
-        );
         if (cancelled) return;
         setChurch(payload.church);
-        setSponsors((data || []).map(mapSponsorRow).filter(Boolean));
+        setSponsors((payload.sponsors || []).map(mapSponsorRow).filter(Boolean));
 
         void fetch(`/api/igreja/${encodeURIComponent(slug)}/visita`, {
           method: "POST",
@@ -182,9 +184,22 @@ export default function ChurchPublicPage() {
 
   if (!church) {
     return (
+      <PageError
+        title="Igreja não encontrada."
+        description={error || "Confira o endereço acessado."}
+        homeHref="/comunidade"
+        homeLabel="Ver comunidades"
+        eyebrow="Igreja não encontrada"
+      />
+    );
+    return (
       <div className="flex min-h-screen flex-col bg-background">
         <PublicNavbar />
         <main className="mx-auto grid w-full max-w-2xl flex-1 place-items-center px-6 py-16 text-center">
+          <Link href="/comunidade" className="back-link absolute left-6 top-24">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar às comunidades
+          </Link>
           <EmptyState
             icon={Building2}
             title="Igreja não encontrada"
@@ -199,7 +214,11 @@ export default function ChurchPublicPage() {
   return (
     <div className="public-page-shell flex min-h-screen flex-col bg-background">
       <PublicNavbar />
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-[min(80%,1600px)] flex-1 space-y-8 py-8 max-md:w-full max-md:px-4">
+        <Link href="/comunidade" className="back-link">
+          <ArrowLeft className="h-4 w-4" />
+          Voltar às comunidades
+        </Link>
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -260,7 +279,12 @@ export default function ChurchPublicPage() {
           </div>
         </motion.section>
 
-        <section aria-label="Resumo do evento" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SponsorInvitation church={church} slug={slug} sponsors={sponsors} />
+
+        <section
+          aria-label="Resumo do evento"
+          className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        >
           <ProfileMetric
             icon={Users}
             label="Patrocínios ativos"
@@ -337,30 +361,33 @@ export default function ChurchPublicPage() {
                 key={sponsor.id}
                 initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: reduceMotion ? 0 : 0.28, delay: reduceMotion ? 0 : Math.min(index * 0.035, 0.2) }}
+                transition={{
+                  duration: reduceMotion ? 0 : 0.28,
+                  delay: reduceMotion ? 0 : Math.min(index * 0.035, 0.2),
+                }}
               >
                 <Link
                   href={`/${slug}/anunciantes/${sponsor.id}`}
                   className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Card className="h-full overflow-hidden transition group-hover:border-primary/60 group-hover:shadow-md">
-                  <div className="aspect-video">
-                    <SponsorPreview sponsor={sponsor} />
-                  </div>
-                  <CardContent className="flex items-center justify-between gap-2 p-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold">
-                        {sponsor.name}
-                      </h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDuration(sponsor.duration)} por exibição
-                      </p>
+                    <div className="aspect-video">
+                      <SponsorPreview sponsor={sponsor} />
                     </div>
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <Eye className="h-3.5 w-3.5" />
-                      {sponsor.views}
-                    </span>
-                  </CardContent>
+                    <CardContent className="flex items-center justify-between gap-2 p-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-semibold">
+                          {sponsor.name}
+                        </h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatDuration(sponsor.duration)} por exibição
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="h-3.5 w-3.5" />
+                        {sponsor.views}
+                      </span>
+                    </CardContent>
                   </Card>
                 </Link>
               </motion.div>

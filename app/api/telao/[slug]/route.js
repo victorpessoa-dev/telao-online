@@ -6,7 +6,9 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export async function GET(_request, { params }) {
   const { slug: rawSlug } = await params;
-  const slug = String(rawSlug || "").trim().toLowerCase();
+  const slug = String(rawSlug || "")
+    .trim()
+    .toLowerCase();
 
   if (!SLUG_PATTERN.test(slug)) {
     return NextResponse.json(

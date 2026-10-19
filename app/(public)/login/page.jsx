@@ -77,7 +77,12 @@ function LoginForm() {
         redirectTo,
       });
     } catch (err) {
-      setError(getAuthErrorMessage(err, "Não foi possível entrar agora. Tente novamente."));
+      setError(
+        getAuthErrorMessage(
+          err,
+          "Não foi possível entrar agora. Tente novamente.",
+        ),
+      );
     } finally {
       setLoading(false);
     }

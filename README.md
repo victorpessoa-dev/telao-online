@@ -35,7 +35,7 @@ As variáveis `NEXT_PUBLIC_*` podem ser expostas ao cliente. `SUPABASE_SERVICE_R
 
 Para iniciar um projeto Supabase do zero, execute apenas [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor de um projeto vazio. O arquivo é o schema consolidado: cria tabelas, RLS, Storage, RPCs, índices do telão público e a rotina de métricas em lote. Não execute migrations históricas depois dele.
 
-Para reaproveitar um projeto Supabase antigo, execute primeiro [`supabase/reset-public-schema.sql`](supabase/reset-public-schema.sql). Ele apaga irreversivelmente somente o schema `public` da aplicação anterior e preserva os schemas internos do Supabase. Em seguida, execute `supabase/schema.sql` em uma segunda execução. Para adicionar somente as métricas de perfil a uma instalação já existente, use [`supabase/upgrade-public-profile-metrics.sql`](supabase/upgrade-public-profile-metrics.sql).
+Para um banco existente, mantenha os dados e aplique primeiro `supabase/upgrade-all.sql` (se ainda não tiver sido aplicado) e depois [`supabase/upgrade-global-telao-scheduling.sql`](supabase/upgrade-global-telao-scheduling.sql). Esta última habilita a agenda sincronizada e a sessão do telão oficial. Use `reset-public-schema.sql` somente quando quiser descartar todos os dados do schema `public`.
 
 ## Scripts
 

@@ -54,13 +54,8 @@ export default function ConfiguracoesPage() {
       setInitialTab(requestedTab);
     }
   }, []);
-  const {
-    sponsorSettings,
-    updateSponsorSettings,
-    ads,
-    churchId,
-    reload,
-  } = useStore();
+  const { sponsorSettings, updateSponsorSettings, ads, churchId, reload } =
+    useStore();
   const [settings, setSettings] = useState(defaultAdminSettings);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -516,105 +511,105 @@ export default function ConfiguracoesPage() {
 
   return (
     <PageContainer>
-        <SettingsHeader
-          onReset={resetSettings}
-          onSave={saveSettings}
-          hasChanges={hasChanges}
-          isSaving={isSaving}
-          isChurchReady={isClientReady && Boolean(churchId)}
-        />
-        {!churchId && (
-          <div className="-mt-4 mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            <span>Cadastre sua igreja para habilitar as configurações.</span>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/configurar-igreja">Cadastrar igreja</Link>
-            </Button>
-          </div>
-        )}
+      <SettingsHeader
+        onReset={resetSettings}
+        onSave={saveSettings}
+        hasChanges={hasChanges}
+        isSaving={isSaving}
+        isChurchReady={isClientReady && Boolean(churchId)}
+      />
+      {!churchId && (
+        <div className="-mt-4 mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <span>Cadastre sua igreja para habilitar as configurações.</span>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/configurar-igreja">Cadastrar igreja</Link>
+          </Button>
+        </div>
+      )}
 
-        <Tabs key={initialTab} defaultValue={initialTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
-            <TabsTrigger value="telao" className="gap-2">
-              <Monitor className="h-4 w-4" />
-              <span className="hidden sm:inline">Telão</span>
-            </TabsTrigger>
-            <TabsTrigger value="appearance" className="gap-2">
-              <Palette className="h-4 w-4" />
-              <span className="hidden sm:inline">Visual</span>
-            </TabsTrigger>
-            <TabsTrigger value="data" className="gap-2">
-              <Database className="h-4 w-4" />
-              <span className="hidden sm:inline">Dados</span>
-            </TabsTrigger>
-            <TabsTrigger value="account" className="gap-2">
-              <UserRound className="h-4 w-4" />
-              <span className="hidden sm:inline">Conta</span>
-            </TabsTrigger>
-          </TabsList>
+      <Tabs key={initialTab} defaultValue={initialTab} className="space-y-6">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsTrigger value="telao" className="gap-2">
+            <Monitor className="h-4 w-4" />
+            <span className="hidden sm:inline">Telão</span>
+          </TabsTrigger>
+          <TabsTrigger value="appearance" className="gap-2">
+            <Palette className="h-4 w-4" />
+            <span className="hidden sm:inline">Visual</span>
+          </TabsTrigger>
+          <TabsTrigger value="data" className="gap-2">
+            <Database className="h-4 w-4" />
+            <span className="hidden sm:inline">Dados</span>
+          </TabsTrigger>
+          <TabsTrigger value="account" className="gap-2">
+            <UserRound className="h-4 w-4" />
+            <span className="hidden sm:inline">Conta</span>
+          </TabsTrigger>
+        </TabsList>
 
-          <SettingsTabs>
-            <TabsContent value="telao" className="space-y-6">
-              <TelaoSettingsSection
-                settings={settings}
-                updateSettings={updateSettings}
-              />
-              <SponsorDesignSection
-                sponsorSettings={sponsorSettings}
-                onDesignChange={updateSponsorDesign}
-                onDesignBatchChange={updateSponsorDesignValues}
-                onUploadBackground={uploadSponsorBackground}
-              />
-            </TabsContent>
+        <SettingsTabs>
+          <TabsContent value="telao" className="space-y-6">
+            <TelaoSettingsSection
+              settings={settings}
+              updateSettings={updateSettings}
+            />
+            <SponsorDesignSection
+              sponsorSettings={sponsorSettings}
+              onDesignChange={updateSponsorDesign}
+              onDesignBatchChange={updateSponsorDesignValues}
+              onUploadBackground={uploadSponsorBackground}
+            />
+          </TabsContent>
 
-            <TabsContent value="appearance" className="space-y-6">
-              <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 font-semibold">
-                      <Globe className="h-4 w-4 text-primary" />
-                      Página pública da igreja
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      Quando ativa, sua igreja aparece na landing page e libera
-                      /{`{slug}`}, /ads-telao e /anunciantes.
-                    </p>
+          <TabsContent value="appearance" className="space-y-6">
+            <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Globe className="h-4 w-4 text-primary" />
+                    Página pública da igreja
                   </div>
-                  <Switch
-                    checked={isPublicRouteActive}
-                    disabled={isPublicRouteLoading || !churchId}
-                    onCheckedChange={changePublicRoute}
-                    aria-label="Ativar página pública"
-                    className="self-start sm:self-auto"
-                  />
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Quando ativa, sua igreja aparece na landing page e libera /
+                    {`{slug}`}, /ads-telao e /anunciantes.
+                  </p>
                 </div>
-              </section>
-              <AppearanceSettingsSection
-                settings={settings}
-                updateSettings={updateSettings}
-                onUploadParishLogo={uploadParishLogo}
-                onUploadParishCover={uploadParishCover}
-              />
-            </TabsContent>
+                <Switch
+                  checked={isPublicRouteActive}
+                  disabled={isPublicRouteLoading || !churchId}
+                  onCheckedChange={changePublicRoute}
+                  aria-label="Ativar página pública"
+                  className="self-start sm:self-auto"
+                />
+              </div>
+            </section>
+            <AppearanceSettingsSection
+              settings={settings}
+              updateSettings={updateSettings}
+              onUploadParishLogo={uploadParishLogo}
+              onUploadParishCover={uploadParishCover}
+            />
+          </TabsContent>
 
-            <TabsContent value="data" className="space-y-6">
-              <DataSettingsSection
-                onExport={exportData}
-                onImport={importData}
-                onClearData={clearAllData}
-              />
-            </TabsContent>
+          <TabsContent value="data" className="space-y-6">
+            <DataSettingsSection
+              onExport={exportData}
+              onImport={importData}
+              onClearData={clearAllData}
+            />
+          </TabsContent>
 
-            <TabsContent value="account" className="space-y-6">
-              <AccountSettingsSection
-                account={account}
-                onAccountChange={updateAccount}
-                onSaveAccount={saveAccount}
-                isLoading={isAccountLoading}
-                isSaving={isAccountSaving}
-              />
-            </TabsContent>
-          </SettingsTabs>
-        </Tabs>
+          <TabsContent value="account" className="space-y-6">
+            <AccountSettingsSection
+              account={account}
+              onAccountChange={updateAccount}
+              onSaveAccount={saveAccount}
+              isLoading={isAccountLoading}
+              isSaving={isAccountSaving}
+            />
+          </TabsContent>
+        </SettingsTabs>
+      </Tabs>
     </PageContainer>
   );
 }

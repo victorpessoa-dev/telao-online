@@ -19,10 +19,10 @@ export async function GET(request) {
     const supabase = createSupabasePublicClient();
 
     const { data, error } = await supabase
-      .rpc("get_public_church_by_slug", { slug_arg: slug })
+      .rpc("get_public_church_page", { slug_arg: slug })
       .maybeSingle();
 
-    if (!data) {
+    if (!data?.church) {
       return NextResponse.json(
         { error: "Igreja não encontrada", notFound: true },
         { status: 404, headers: PUBLIC_CACHE_HEADERS },
@@ -41,7 +41,7 @@ export async function GET(request) {
     }
 
     return NextResponse.json(
-      { church: data },
+      data,
       { headers: PUBLIC_CACHE_HEADERS },
     );
   } catch (error) {

@@ -21,7 +21,7 @@ export default function HomeHero() {
     >
       <img
         src="/brand/background-virtus-playcast.png"
-        alt="Estrutura de comunicação para eventos"
+        alt="Comunicação para novenários e festas paroquiais"
         fetchPriority="high"
         decoding="async"
         className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
@@ -44,14 +44,15 @@ export default function HomeHero() {
             <HeroBrandLogo className="h-28 w-[min(42rem,90vw)] sm:h-36" />
           </motion.div>
           <p className="mt-10 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-medium tracking-wide text-white/90 backdrop-blur-sm">
-            Transparência na divulgação de patrocínios
+            Transparência para parcerias que fazem a festa acontecer
           </p>
           <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
-            Patrocínios de eventos com visibilidade e prestação de contas.
+            Patrocinadores divulgados com clareza em novenários e festas
+            paroquiais.
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-            Organize a divulgação dos apoiadores, publique a programação no
-            telão e ofereça relatórios claros de cada exibição.
+            Organize a programação no telão, valorize cada parceiro e ofereça
+            registros públicos da divulgação para toda a comunidade.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Button
@@ -59,13 +60,13 @@ export default function HomeHero() {
               size="lg"
               className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
             >
-              <Link href="/login">Gerenciar patrocínios</Link>
+              <Link href="/login">Organizar meu evento</Link>
             </Button>
             <a
               href="#recursos"
               className="border-b border-white/45 pb-1 text-base font-semibold text-white/90 transition-colors hover:border-white hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
-              Conheça a plataforma
+              Como funciona
             </a>
           </div>
         </div>

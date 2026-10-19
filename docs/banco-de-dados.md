@@ -7,9 +7,9 @@
 - `profiles`: perfil básico do usuário Supabase.
 - `churches`: dados, slug, estado público (`is_active`) e o único administrador (`admin_id`).
 - `sponsors`: patrocinadores, tipo, midia, status, duracao e metricas.
-- `overlays`: overlays publicos/administrativos com `public_id`.
 - `app_settings`: configuracoes JSON (`sponsor_settings`, `admin_settings`).
 - `sponsor_impressions`: logs de exibicao.
+- `sponsor_impression_daily_rollups`: totais diÃ¡rios compactos para grÃ¡ficos e relatÃ³rios.
 
 ## ER
 
@@ -41,14 +41,29 @@ erDiagram
   }
   sponsor_impressions {
     uuid id PK
+    uuid event_id UK
     uuid sponsor_id FK
     integer duration_seconds
     text source
   }
+  sponsor_impression_daily_rollups {
+    uuid sponsor_id FK
+    date displayed_on
+    integer views
+    integer total_seconds
+  }
   sponsors ||--o{ sponsor_impressions : receives
+  sponsors ||--o{ sponsor_impression_daily_rollups : summarizes
 ```
 
 ## Enums
+
+## Agenda global do telão
+
+- `telao_schedules` mantém a semente determinística, versão e referência UTC compartilhadas pelo telão público.
+- `official_display_sessions` identifica, por token efêmero e dispositivo, o único telão autorizado a registrar métricas.
+- `sponsor_impressions.official_display_session_id` preserva a relação de cada registro com a sessão oficial.
+- As RPCs `get_active_telao_schedule` e `open_official_display_session` são usadas, respectivamente, para sincronizar a reprodução e iniciar o telão oficial pelo painel administrativo.
 
 - `sponsor_kind`: `NORMAL`, `MASTER`.
 - `media_type`: `image`, `video`.
@@ -59,8 +74,7 @@ erDiagram
 - Duracao positiva.
 - Midia obrigatoria e tipo `image`/`video`.
 - Dimensoes de overlay positivas.
-- `overlays.public_id` unico.
-- Indices em status/tipo de patrocinador, public id e logs por data.
+- Ãndices em status/tipo de patrocinador, public id, logs por data, `event_id` Ãºnico e resumos diÃ¡rios.
 
 ## RPCs Principais
 
@@ -68,10 +82,9 @@ erDiagram
 - `get_sponsor_settings`
 - `get_public_sponsor_directory`
 - `get_public_sponsor_detail`
-- `get_public_sponsor_impressions`
+- `get_public_sponsor_report` (histÃ³rico paginado e sÃ©rie diÃ¡ria agregada)
 - `get_public_overlay`
 - `get_public_parish_profile`
-- `log_sponsor_impression`
 - `log_sponsor_impressions`
 
 ## RLS
@@ -79,7 +92,7 @@ erDiagram
 ```mermaid
 flowchart TD
   A[Request] --> B{Operacao}
-  B -- Public read --> C[Sponsors ativos / overlays publicos / settings publicas]
+  B -- Public read --> C[Sponsors ativos e configuracoes publicas]
   B -- Admin write --> D[public.owns_church]
   D --> E[churches.admin_id pelo auth.uid]
   B -- Profile read --> F[auth.uid = profiles.id]
@@ -101,4 +114,6 @@ flowchart TD
 - Manter `schema.sql` sincronizado com migrations.
 - Revisar RPCs `security definer` ao alterar tabelas.
 - Aplicar migrations novas antes do deploy.
-- A migration `015_remove_legacy_metrics.sql` remove somente RPCs e view sem uso. A tabela histórica `telao_sessions` não é apagada automaticamente; faça backup e remova-a apenas quando confirmar que não precisa do histórico.
+- Para a instalaÃ§Ã£o atual, aplicar `supabase/upgrade-sponsor-reporting.sql` antes do deploy. Ela adiciona idempotÃªncia por `event_id`, reconstrÃ³i os resumos diÃ¡rios e cria a RPC paginada.
+- Para bancos existentes, aplique `supabase/upgrade-all.sql` e depois `supabase/upgrade-global-telao-scheduling.sql` antes do deploy.
+- O telão oficial depende da migration da agenda global; sem ela, a aplicação informa a dependência em vez de simular ciclos.

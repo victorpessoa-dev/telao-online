@@ -9,6 +9,7 @@ const emptyProfile = {
   parishLogoUrl: "/brand/virtus-playcast-mark.png",
   parishCoverUrl: "",
   parishSocialLinks: [],
+  parishSponsorshipGuidelines: "",
 };
 
 const profileUpdateSchema = z.object({
@@ -19,6 +20,7 @@ const profileUpdateSchema = z.object({
     "parishLogoUrl",
     "parishCoverUrl",
     "parishSocialLinks",
+    "parishSponsorshipGuidelines",
   ]),
   value: z.unknown(),
 });
@@ -70,6 +72,9 @@ export async function POST(request) {
       parishCoverUrl: { cover_url: value || null },
       parishSocialLinks: {
         social_links: Array.isArray(value) ? value : [],
+      },
+      parishSponsorshipGuidelines: {
+        sponsorship_guidelines: value || "",
       },
     };
 

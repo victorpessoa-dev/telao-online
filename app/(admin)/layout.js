@@ -13,19 +13,19 @@ export default function AdminLayout({ children }) {
         <AdminSidebarStateProvider>
           <AppShell>{children}</AppShell>
           <Toaster
-          closeButton
-          richColors
-          theme="light"
-          position="bottom-right"
-          duration={3600}
-          toastOptions={{
-            classNames: {
-              toast:
-                "border border-border bg-card text-card-foreground shadow-xl",
-              title: "font-medium",
-              description: "text-muted-foreground",
-            },
-          }}
+            closeButton
+            richColors
+            theme="light"
+            position="bottom-right"
+            duration={3600}
+            toastOptions={{
+              classNames: {
+                toast:
+                  "border border-border bg-card text-card-foreground shadow-xl",
+                title: "font-medium",
+                description: "text-muted-foreground",
+              },
+            }}
           />
         </AdminSidebarStateProvider>
       </StoreProvider>
