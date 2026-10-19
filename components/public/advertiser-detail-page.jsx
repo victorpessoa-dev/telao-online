@@ -372,12 +372,12 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="public-page-shell min-h-screen bg-background">
       <PublicNavbar />
       <PageContainer>
         <Link
           href={slug ? `/${slug}` : "/"}
-          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          className="back-link"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para a página pública

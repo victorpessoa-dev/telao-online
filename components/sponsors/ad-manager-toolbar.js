@@ -26,14 +26,14 @@ export function AdManagerToolbar({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            Playlist pública
+            Transparência do evento
           </div>
           <h2 className="mt-1 text-xl font-semibold text-foreground">
             Patrocínios cadastrados
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ative, edite e acompanhe os patrocinadores a partir de uma lista
-            operacional mais enxuta.
+            Cadastre os apoiadores, publique a programação e mantenha o
+            registro de exibições disponível para consulta.
           </p>
         </div>
 
@@ -54,7 +54,7 @@ export function AdManagerToolbar({
                 Contador do telão
               </label>
               <div className="mt-0.5 text-[11px] text-muted-foreground">
-                Registro de exibições por tipo
+                Registro público de exibições por tipo
               </div>
             </div>
             <Switch
@@ -109,7 +109,7 @@ export function AdManagerToolbar({
           <div className="min-w-0 flex-1">
             <div className="text-xs font-medium text-foreground/90">LINK</div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Copiar endereço público
+              Copiar link público do telão
             </div>
           </div>
           <div className="w-full sm:w-auto">

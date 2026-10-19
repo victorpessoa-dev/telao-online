@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vplaycast-v4";
+const CACHE_VERSION = "vplaycast-v5";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 const MEDIA_CACHE = `${CACHE_VERSION}-media`;

@@ -35,7 +35,11 @@ export default function LoadingState({
   className = "",
 }) {
   const content = (
-    <div className="flex flex-col items-center gap-3 text-center">
+    <div
+      className="flex flex-col items-center gap-3 text-center"
+      role="status"
+      aria-live="polite"
+    >
       <LoadingIndicator />
       {label ? <p className="text-sm text-muted-foreground">{label}</p> : null}
     </div>
@@ -44,13 +48,15 @@ export default function LoadingState({
   if (fullScreen)
     return (
       <div
-        className={`flex min-h-screen items-center justify-center bg-background ${className}`}
+        className={`flex min-h-svh items-center justify-center bg-background px-4 ${className}`}
       >
         {content}
       </div>
     );
   return (
-    <div className={`flex items-center justify-center py-12 ${className}`}>
+    <div
+      className={`flex min-h-[50svh] items-center justify-center px-4 ${className}`}
+    >
       {content}
     </div>
   );

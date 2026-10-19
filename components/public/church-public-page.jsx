@@ -3,8 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, Eye, MapPin, Play, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  BarChart3,
+  Building2,
+  Clock3,
+  Eye,
+  Gauge,
+  MapPin,
+  Play,
+  Search,
+  Users,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import AppFooter from "@/components/shared/app-footer";
@@ -39,6 +49,34 @@ function SponsorPreview({ sponsor }) {
   );
 }
 
+function ProfileMetric({ icon: Icon, label, value, detail, index, reduceMotion }) {
+  return (
+    <motion.article
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: reduceMotion ? 0 : 0.3,
+        delay: reduceMotion ? 0 : 0.08 + index * 0.05,
+        ease: "easeOut",
+      }}
+      className="rounded-xl border border-border bg-card p-4 shadow-sm"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+            {value}
+          </p>
+        </div>
+        <span className="rounded-lg bg-primary/10 p-2.5 text-primary">
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">{detail}</p>
+    </motion.article>
+  );
+}
+
 export default function ChurchPublicPage() {
   const params = useParams();
   const slug = typeof params?.slug === "string" ? params.slug : "";
@@ -47,6 +85,7 @@ export default function ChurchPublicPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +110,21 @@ export default function ChurchPublicPage() {
         if (cancelled) return;
         setChurch(payload.church);
         setSponsors((data || []).map(mapSponsorRow).filter(Boolean));
+
+        void fetch(`/api/igreja/${encodeURIComponent(slug)}/visita`, {
+          method: "POST",
+          keepalive: true,
+        })
+          .then((visitResponse) => visitResponse.json())
+          .then((visitPayload) => {
+            if (cancelled || !visitPayload?.counted) return;
+            setChurch((current) =>
+              current
+                ? { ...current, public_views: visitPayload.views }
+                : current,
+            );
+          })
+          .catch(() => {});
       } catch (cause) {
         if (!cancelled) {
           setChurch(null);
@@ -102,6 +156,26 @@ export default function ChurchPublicPage() {
   const socialLinks = normalizeSocialLinks({
     parishSocialLinks: church?.social_links,
   });
+  const profileMetrics = useMemo(() => {
+    const activeSponsors = sponsors.length;
+    const totalSeconds = sponsors.reduce(
+      (total, sponsor) => total + (Number(sponsor.totalSeconds) || 0),
+      0,
+    );
+    const totalDisplays = sponsors.reduce(
+      (total, sponsor) => total + (Number(sponsor.views) || 0),
+      0,
+    );
+
+    return {
+      activeSponsors,
+      totalSeconds,
+      totalDisplays,
+      averageSeconds:
+        activeSponsors > 0 ? Math.round(totalSeconds / activeSponsors) : 0,
+      profileViews: Number(church?.public_views) || 0,
+    };
+  }, [church?.public_views, sponsors]);
 
   if (loading)
     return <LoadingState fullScreen label="Carregando página da igreja..." />;
@@ -123,17 +197,15 @@ export default function ChurchPublicPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="public-page-shell flex min-h-screen flex-col bg-background">
       <PublicNavbar />
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+        <motion.section
+          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, ease: "easeOut" }}
+          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </Link>
-        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="relative h-40 bg-muted sm:h-52">
             {church.cover_url ? (
               <>
@@ -186,13 +258,49 @@ export default function ChurchPublicPage() {
               )}
             </div>
           </div>
+        </motion.section>
+
+        <section aria-label="Resumo do evento" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ProfileMetric
+            icon={Users}
+            label="Patrocínios ativos"
+            value={profileMetrics.activeSponsors}
+            detail="Apoiadores disponíveis neste evento"
+            index={0}
+            reduceMotion={reduceMotion}
+          />
+          <ProfileMetric
+            icon={Clock3}
+            label="Tempo exibido"
+            value={formatDuration(profileMetrics.totalSeconds)}
+            detail="Soma do tempo registrado no telão"
+            index={1}
+            reduceMotion={reduceMotion}
+          />
+          <ProfileMetric
+            icon={Gauge}
+            label="Média por patrocínio"
+            value={formatDuration(profileMetrics.averageSeconds)}
+            detail="Tempo total dividido pelos apoiadores ativos"
+            index={2}
+            reduceMotion={reduceMotion}
+          />
+          <ProfileMetric
+            icon={BarChart3}
+            label="Visitas ao perfil"
+            value={profileMetrics.profileViews.toLocaleString("pt-BR")}
+            detail={`${profileMetrics.totalDisplays.toLocaleString("pt-BR")} exibições registradas`}
+            index={3}
+            reduceMotion={reduceMotion}
+          />
         </section>
 
         <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Patrocinadores</h2>
+            <h2 className="text-lg font-semibold">Patrocinadores do evento</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Conheça quem apoia esta comunidade.
+              Conheça os apoiadores e abra cada perfil para consultar o
+              relatório público de exibições.
             </p>
           </div>
           <div className="flex w-full gap-2 sm:w-auto">
@@ -205,12 +313,14 @@ export default function ChurchPublicPage() {
                 className="pl-9"
               />
             </div>
-            <Button asChild>
-              <Link href={`/${slug}/ads-telao`} target="_blank">
-                <Play className="h-4 w-4" />
-                Telão
-              </Link>
-            </Button>
+            <Link
+              href={`/${slug}/ads-telao`}
+              target="_blank"
+              className="inline-flex shrink-0 items-center gap-2 self-center border-b-2 border-primary pb-1 text-sm font-semibold text-primary transition-colors hover:border-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Play className="h-4 w-4" />
+              Telão
+            </Link>
           </div>
         </section>
 
@@ -222,13 +332,18 @@ export default function ChurchPublicPage() {
           />
         ) : (
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {filteredSponsors.map((sponsor) => (
-              <Link
+            {filteredSponsors.map((sponsor, index) => (
+              <motion.div
                 key={sponsor.id}
-                href={`/${slug}/anunciantes/${sponsor.id}`}
-                className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: reduceMotion ? 0 : 0.28, delay: reduceMotion ? 0 : Math.min(index * 0.035, 0.2) }}
               >
-                <Card className="h-full overflow-hidden transition group-hover:border-primary/60 group-hover:shadow-md">
+                <Link
+                  href={`/${slug}/anunciantes/${sponsor.id}`}
+                  className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Card className="h-full overflow-hidden transition group-hover:border-primary/60 group-hover:shadow-md">
                   <div className="aspect-video">
                     <SponsorPreview sponsor={sponsor} />
                   </div>
@@ -246,8 +361,9 @@ export default function ChurchPublicPage() {
                       {sponsor.views}
                     </span>
                   </CardContent>
-                </Card>
-              </Link>
+                  </Card>
+                </Link>
+              </motion.div>
             ))}
           </section>
         )}

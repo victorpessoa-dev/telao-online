@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
   --background: oklch(0.975 0.004 240);
   --foreground: oklch(0.18 0.015 250);
@@ -40,50 +38,8 @@
   --sidebar-muted: oklch(0.5 0.015 245);
 }
 
-.dark {
-  --background: oklch(0.11 0.03 235);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.15 0.03 235);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.15 0.03 235);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.58 0.19 235);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.19 0.03 235);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.19 0.03 235);
-  --muted-foreground: oklch(0.55 0 0);
-  --accent: oklch(0.46 0.15 235);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.24 0.03 235);
-  --input: oklch(0.19 0.03 235);
-  --ring: oklch(0.58 0.19 235);
-  --chart-1: oklch(0.58 0.19 235);
-  --chart-2: oklch(0.5 0.14 220);
-  --chart-3: oklch(0.6 0.12 200);
-  --chart-4: oklch(0.5 0.1 260);
-  --chart-5: oklch(0.45 0.15 250);
-  --sidebar: oklch(0.09 0.035 235);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.58 0.19 235);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.17 0.035 235);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.21 0.03 235);
-  --sidebar-ring: oklch(0.58 0.19 235);
-  --sidebar-muted: oklch(0.45 0 0);
-}
-
 .brand-logo-dark {
   display: none;
-}
-.dark .brand-logo-light {
-  display: none;
-}
-.dark .brand-logo-dark {
-  display: block;
 }
 
 @keyframes virtus-logo-float {
@@ -135,70 +91,47 @@
   animation: virtus-logo-float 1.7s ease-in-out infinite;
 }
 
-@keyframes overlay-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.landing-slice {
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
 }
 
-@keyframes overlay-fade-up {
-  from { opacity: 0; transform: translate3d(0, 28px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+.landing-slice::before {
+  background: var(--landing-slice-background);
+  clip-path: polygon(0 2.5rem, 100% 0, 100% calc(100% - 2.5rem), 0 100%);
+  content: "";
+  inset: 0;
+  opacity: 0.88;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
 }
 
-@keyframes overlay-slide-left {
-  from { opacity: 0; transform: translate3d(-72px, 0, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+.landing-slice-sky {
+  --landing-slice-background: oklch(1 0 0);
 }
 
-@keyframes overlay-slide-right {
-  from { opacity: 0; transform: translate3d(72px, 0, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+.landing-slice-indigo {
+  --landing-slice-background: oklch(1 0 0);
 }
 
-@keyframes overlay-slide-down {
-  from { opacity: 0; transform: translate3d(0, -72px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+.landing-slice-deep {
+  --landing-slice-background: linear-gradient(135deg, oklch(0.18 0.055 245), oklch(0.29 0.06 235));
+  color: oklch(0.98 0.005 240);
 }
 
-@keyframes overlay-zoom {
-  from { opacity: 0; transform: scale(0.88); }
-  to { opacity: 1; transform: scale(1); }
+.landing-slice-deep .text-muted-foreground {
+  color: oklch(0.87 0.018 235);
 }
 
-@keyframes overlay-bounce {
-  0% { opacity: 0; transform: scale(0.72); }
-  60% { opacity: 1; transform: scale(1.06); }
-  80% { transform: scale(0.98); }
-  100% { transform: scale(1); }
+.landing-slice-warm {
+  --landing-slice-background: oklch(1 0 0);
 }
 
-@keyframes overlay-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.025); opacity: 0.86; }
+.public-page-shell {
+  background: oklch(1 0 0);
 }
-
-.overlay-motion-fade,
-.overlay-motion-fade-up,
-.overlay-motion-slide-left,
-.overlay-motion-slide-right,
-.overlay-motion-slide-down,
-.overlay-motion-zoom,
-.overlay-motion-bounce,
-.overlay-motion-pulse {
-  animation-duration: 420ms;
-  animation-fill-mode: both;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
-}
-
-.overlay-motion-fade { animation-name: overlay-fade; }
-.overlay-motion-fade-up { animation-name: overlay-fade-up; }
-.overlay-motion-slide-left { animation-name: overlay-slide-left; }
-.overlay-motion-slide-right { animation-name: overlay-slide-right; }
-.overlay-motion-slide-down { animation-name: overlay-slide-down; }
-.overlay-motion-zoom { animation-name: overlay-zoom; }
-.overlay-motion-bounce { animation-name: overlay-bounce; animation-duration: 560ms; }
-.overlay-motion-pulse { animation-name: overlay-pulse; animation-duration: 1.8s; animation-iteration-count: infinite; }
 
 @theme inline {
   --breakpoint-xs: 30rem;
@@ -265,46 +198,19 @@
     overflow-x: clip;
     scroll-behavior: smooth;
     scroll-padding-top: 4.5rem;
+    scrollbar-width: none;
   }
 
   body {
     overflow-x: clip;
   }
 
-  html:has([data-overlay-transparent-root]),
-  body:has([data-overlay-transparent-root]) {
-    background: transparent !important;
-  }
 }
 
-/* Custom scrollbar */
+/* The motion indicator at the top is the single visible page scrollbar. */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: oklch(0.4 0 0 / 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.4 0 0 / 0.5);
-}
-
-[data-slot="dialog-content"],
-[data-slot="alert-dialog-content"] {
-  scrollbar-width: thin;
-  scrollbar-color: oklch(0.4 0 0 / 0.24) transparent;
-}
-
-[data-slot="dialog-content"]::-webkit-scrollbar,
-[data-slot="alert-dialog-content"]::-webkit-scrollbar {
-  width: 5px;
+  width: 0;
+  height: 0;
 }
 
 /* Smooth transitions */
@@ -316,6 +222,10 @@
 }
 
 @layer components {
+  .back-link {
+    @apply inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
   .eyebrow {
     @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
   }

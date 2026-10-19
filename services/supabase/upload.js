@@ -119,25 +119,11 @@ export async function optimizeImageForUpload(file) {
 
 export async function uploadMedia(file, folder = "uploads", churchId = "") {
   if (!file) return "";
-  const localOverlayId =
-    typeof window !== "undefined" &&
-    window.vPlaycastDesktop?.overlays &&
-    /^overlays\/[0-9a-f-]{36}$/i.test(folder)
-      ? folder.slice("overlays/".length)
-      : null;
-  if (!localOverlayId && !ALLOWED_UPLOAD_FOLDERS.has(folder))
+  if (!ALLOWED_UPLOAD_FOLDERS.has(folder))
     throw new Error("Pasta de upload inválida");
   validateMediaFile(file);
   const optimizedFile = await optimizeImageForUpload(file);
   validateMediaFile(optimizedFile);
-
-  if (localOverlayId) {
-    return window.vPlaycastDesktop.overlays.saveAsset(
-      localOverlayId,
-      optimizedFile.name,
-      await optimizedFile.arrayBuffer(),
-    );
-  }
 
   const supabase = createSupabaseBrowserClient();
   const {

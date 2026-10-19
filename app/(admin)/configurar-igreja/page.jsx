@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AppFooter from "@/components/shared/app-footer";
+import { HoverTip } from "@/components/shared/hover-tip";
 import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 import {
   deleteUploadedMediaBatch,
@@ -100,14 +101,16 @@ function ImageField({
             <ImagePlus className="h-4 w-4 shrink-0 text-primary" />
             {file.name}
           </span>
-          <button
-            type="button"
-            onClick={() => onFileChange(null)}
-            className="rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
-            aria-label={`Remover ${label}`}
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <HoverTip label={`Remover ${label}`}>
+            <button
+              type="button"
+              onClick={() => onFileChange(null)}
+              className="rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
+              aria-label={`Remover ${label}`}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </HoverTip>
         </div>
       ) : (
         <div className="relative">
@@ -237,7 +240,10 @@ export default function AdminChurchConfiguration() {
           .eq("id", church.id);
         if (updateError) throw updateError;
       }
-      router.push("/painel-igreja");
+      // The admin gate verifies the new church before rendering the dashboard.
+      // Replace setup in history so a completed onboarding cannot be reopened
+      // with the browser Back action.
+      router.replace("/admin");
     } catch (cause) {
       if (uploaded.length) await deleteUploadedMediaBatch(uploaded);
       setError(
@@ -254,7 +260,7 @@ export default function AdminChurchConfiguration() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <Link
           href="/"
-          className="mb-7 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          className="back-link mb-7"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar ao início

@@ -3,6 +3,8 @@ import { Analytics } from "@vercel/analytics/next";
 import localFont from "next/font/local";
 import NetworkStatus from "@/components/shared/network-status";
 import PwaServiceWorker from "@/components/shared/pwa-service-worker";
+import AppMotion from "@/components/shared/app-motion";
+import { HoverTipProvider } from "@/components/shared/hover-tip";
 
 const poppins = localFont({
   src: "../public/fonts/Poppins-ExtraBold.ttf",
@@ -52,12 +54,14 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR">
       <body className={`${poppins.variable} min-h-screen bg-background font-sans antialiased`}>
-        {children}
-        <NetworkStatus />
-        <PwaServiceWorker />
-        <Analytics />
+        <HoverTipProvider>
+          <AppMotion>{children}</AppMotion>
+          <NetworkStatus />
+          <PwaServiceWorker />
+          <Analytics />
+        </HoverTipProvider>
       </body>
     </html>
   );

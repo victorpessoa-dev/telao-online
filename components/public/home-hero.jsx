@@ -21,7 +21,9 @@ export default function HomeHero() {
     >
       <img
         src="/brand/background-virtus-playcast.png"
-        alt="Igrejas e estrutura de mídia"
+        alt="Estrutura de comunicação para eventos"
+        fetchPriority="high"
+        decoding="async"
         className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
       />
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,12,25,.9)_0%,rgba(3,12,25,.76)_45%,rgba(3,12,25,.52)_100%)]" />
@@ -42,14 +44,14 @@ export default function HomeHero() {
             <HeroBrandLogo className="h-28 w-[min(42rem,90vw)] sm:h-36" />
           </motion.div>
           <p className="mt-10 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-medium tracking-wide text-white/90 backdrop-blur-sm">
-            Comunicação visual para igrejas
+            Transparência na divulgação de patrocínios
           </p>
           <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
-            Telões, patrocinadores e mensagens no momento certo.
+            Patrocínios de eventos com visibilidade e prestação de contas.
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-            Planeje os slides da sua comunidade, valorize anunciantes e crie
-            telões e patrocínios para usar nas transmissões da sua equipe.
+            Organize a divulgação dos apoiadores, publique a programação no
+            telão e ofereça relatórios claros de cada exibição.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Button
@@ -57,25 +59,17 @@ export default function HomeHero() {
               size="lg"
               className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
             >
-              <Link href="/login">Acessar o painel</Link>
+              <Link href="/login">Gerenciar patrocínios</Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/30 bg-white/5 text-white hover:bg-white/15 hover:text-white"
+            <a
+              href="#recursos"
+              className="border-b border-white/45 pb-1 text-base font-semibold text-white/90 transition-colors hover:border-white hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
-              <a href="#recursos">Conheça a plataforma</a>
-            </Button>
+              Conheça a plataforma
+            </a>
           </div>
         </div>
       </div>
-      <a
-        href="#recursos"
-        className="absolute bottom-7 left-1/2 -translate-x-1/2 border-b border-cyan-300/70 pb-1 text-xs text-white/70"
-      >
-        Explore a plataforma
-      </a>
     </motion.section>
   );
 }

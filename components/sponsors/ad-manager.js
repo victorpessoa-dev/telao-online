@@ -9,6 +9,7 @@ import { deleteUploadedMedia, uploadMedia } from "@/services/supabase/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import LoadingState from "@/components/shared/loading-state";
+import { HoverTip } from "@/components/shared/hover-tip";
 import {
   Dialog,
   DialogContent,
@@ -614,15 +615,17 @@ export default function AdManager({
                             Relatrio
                           </Link>
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => setAdPendingDelete(ad)}
-                          aria-label={`Excluir patrocnio ${ad.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <HoverTip label={`Excluir patrocínio ${ad.name}`}>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="text-destructive"
+                            onClick={() => setAdPendingDelete(ad)}
+                            aria-label={`Excluir patrocínio ${ad.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </HoverTip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -688,15 +691,17 @@ export default function AdManager({
                           Relatrio
                         </Link>
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => setAdPendingDelete(ad)}
-                        aria-label={`Excluir patrocnio ${ad.name}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <HoverTip label={`Excluir patrocínio ${ad.name}`}>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => setAdPendingDelete(ad)}
+                          aria-label={`Excluir patrocínio ${ad.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </HoverTip>
                     </div>
                   </div>
                 </div>

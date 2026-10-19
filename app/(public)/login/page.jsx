@@ -3,12 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 import {
-  createSupabaseBrowserClient,
-  setDesktopRememberSession,
-} from "@/services/supabase/browser";
-import {
+  getAuthErrorMessage,
   getSafeRedirectPath,
   signInWithPasswordFlow,
 } from "@/lib/services/auth";
@@ -25,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import AppFooter from "@/components/shared/app-footer";
 import PublicNavbar from "@/components/shared/public-navbar";
 import BrandLogo from "@/components/shared/brand-logo";
+import { HoverTip } from "@/components/shared/hover-tip";
 
 const loginErrorMessages = {
   missing_supabase_env:
@@ -40,32 +39,24 @@ function LoginForm() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
-  const [remember, setRemember] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
-    if (!window.vPlaycastDesktop) {
-      router.replace("/");
-      return undefined;
-    }
     let active = true;
 
-    async function restoreDesktopSession() {
+    async function restoreSession() {
       try {
-        const [savedRemember, { data }] = await Promise.all([
-          window.vPlaycastDesktop.auth.getRemember(),
-          createSupabaseBrowserClient().auth.getSession(),
-        ]);
+        const sessionPromise = createSupabaseBrowserClient().auth.getSession();
+        const { data } = await sessionPromise;
         if (!active) return;
-        setRemember(savedRemember);
         if (data.session) router.replace(redirectTo);
       } catch {
         // A damaged or expired local session must leave the login form usable.
       }
     }
 
-    restoreDesktopSession();
+    restoreSession();
     return () => {
       active = false;
     };
@@ -77,7 +68,6 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      await setDesktopRememberSession(remember);
       const supabase = createSupabaseBrowserClient();
       await signInWithPasswordFlow({
         supabase,
@@ -87,8 +77,7 @@ function LoginForm() {
         redirectTo,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Falha ao entrar";
-      setError(message);
+      setError(getAuthErrorMessage(err, "Não foi possível entrar agora. Tente novamente."));
     } finally {
       setLoading(false);
     }
@@ -97,14 +86,7 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <PublicNavbar showLogin={false} />
-      <div className="relative flex flex-1 items-center justify-center p-6">
-        <Link
-          href="/"
-          className="absolute left-4 top-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:underline sm:left-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </Link>
+      <div className="flex flex-1 items-center justify-center p-6">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-4 text-center">
             <BrandLogo className="mx-auto h-14 w-56" />
@@ -138,34 +120,26 @@ function LoginForm() {
                     aria-invalid={Boolean(error)}
                     className="pr-10"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((value) => !value)}
-                    className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={
-                      showPassword ? "Ocultar senha" : "Mostrar senha"
-                    }
+                  <HoverTip
+                    label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={
+                        showPassword ? "Ocultar senha" : "Mostrar senha"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </HoverTip>
                 </div>
               </div>
-
-              {typeof window !== "undefined" && window.vPlaycastDesktop ? (
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(event) => setRemember(event.target.checked)}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  Manter conectado neste computador
-                </label>
-              ) : null}
 
               {accessError ? (
                 <div

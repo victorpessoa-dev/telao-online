@@ -334,7 +334,6 @@ export default function TelaoMedia({
   const height = getDesignValue(design, "contentHeight", "imageHeight", 100);
   const x = getDesignValue(design, "x", null, 50);
   const y = getDesignValue(design, "y", null, 50);
-  const objectFit = design?.objectFit || "contain";
   const youtubeEmbedUrl =
     ad.mediaType === "video" ? getYouTubeEmbedUrl(ad.src) : "";
 
@@ -360,7 +359,10 @@ export default function TelaoMedia({
   const mediaStyle = {
     width: "100%",
     height: "100%",
-    objectFit: layoutEnabled ? objectFit : "contain",
+    // The media frame is the available display area in both modes: the whole
+    // telão without a background, or the configured frame over a background.
+    // Always cover it so no unused bands remain around images or videos.
+    objectFit: "cover",
   };
 
   return (

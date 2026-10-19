@@ -17,3 +17,8 @@ node_modules
 dist-electron/
 *.tsbuildinfo
 .DS_Store
+codex
+.agents/
+.planning/
+.codex/
+.aws/

@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import AppSidebar from "@/components/layout/app-sidebar";
 import AppFooter from "@/components/shared/app-footer";
+import { HoverTip } from "@/components/shared/hover-tip";
 import { Button } from "@/components/ui/button";
 
 export default function AppShell({ children }) {
@@ -46,9 +47,7 @@ export default function AppShell({ children }) {
 
   const isStandaloneAdminPage =
     pathname === "/configurar-igreja" ||
-    pathname === "/painel-igreja" ||
-    pathname.startsWith("/editor/") ||
-    /^\/overlay\/[^/]+$/.test(pathname);
+    pathname === "/painel-igreja";
 
   if (isStandaloneAdminPage) return children;
 
@@ -60,14 +59,16 @@ export default function AppShell({ children }) {
       />
       {isMobileAdmin ? (
         <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Abrir menu principal"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          <HoverTip label="Abrir menu principal" side="bottom">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Abrir menu principal"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </HoverTip>
           <span className="font-brand truncate text-sm font-extrabold">
             vPlayCast
           </span>

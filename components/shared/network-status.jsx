@@ -23,7 +23,7 @@ export default function NetworkStatus() {
   return (
     <div
       role="alert"
-      className="fixed inset-x-0 bottom-0 z-[100] border-t border-amber-500/30 bg-amber-100 px-4 py-3 text-amber-950 shadow-lg dark:bg-amber-950 dark:text-amber-100"
+      className="fixed inset-x-0 bottom-0 z-[100] border-t border-amber-500/30 bg-amber-100 px-4 py-3 text-amber-950 shadow-lg"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 text-sm">
         <span className="flex items-center gap-2">

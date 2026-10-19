@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 import {
   acceptInviteAndSetPassword,
   exchangeAuthCode,
+  getAuthErrorMessage,
   requestPasswordReset,
 } from "@/lib/services/auth";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ function BackToHome() {
   return (
     <Link
       href="/"
-      className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:underline"
+      className="back-link mb-3"
     >
       <ArrowLeft className="h-4 w-4" />
       Voltar
@@ -69,11 +70,7 @@ export function PasswordResetRequestForm() {
       });
       setSent(true);
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Não foi possível enviar o email.",
-      );
+      setError(getAuthErrorMessage(cause, "Não foi possível enviar o email."));
     } finally {
       setLoading(false);
     }
@@ -144,11 +141,7 @@ export function SetPasswordForm({ invitation = false }) {
         setReady(true);
       })
       .catch((cause) =>
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "Não foi possível validar o link.",
-        ),
+        setError(getAuthErrorMessage(cause, "Não foi possível validar o link.")),
       );
   }, [searchParams]);
 
@@ -167,11 +160,7 @@ export function SetPasswordForm({ invitation = false }) {
       router.replace(invitation ? "/configurar-igreja" : "/admin");
       router.refresh();
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Não foi possível salvar a senha.",
-      );
+      setError(getAuthErrorMessage(cause, "Não foi possível salvar a senha."));
     } finally {
       setLoading(false);
     }

@@ -57,7 +57,6 @@ export default function ConfiguracoesPage() {
   const {
     sponsorSettings,
     updateSponsorSettings,
-    overlays,
     ads,
     churchId,
     reload,
@@ -336,7 +335,6 @@ export default function ConfiguracoesPage() {
     const data = {
       settings,
       sponsorSettings,
-      overlays,
       sponsors: ads,
       exportedAt: new Date().toISOString(),
     };
@@ -517,7 +515,7 @@ export default function ConfiguracoesPage() {
   };
 
   return (
-    <PageContainer size="narrow">
+    <PageContainer>
         <SettingsHeader
           onReset={resetSettings}
           onSave={saveSettings}
@@ -569,8 +567,8 @@ export default function ConfiguracoesPage() {
             </TabsContent>
 
             <TabsContent value="appearance" className="space-y-6">
-              <section className="rounded-xl border border-border bg-card p-5">
-                <div className="flex items-center justify-between gap-5">
+              <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="flex items-center gap-2 font-semibold">
                       <Globe className="h-4 w-4 text-primary" />
@@ -586,6 +584,7 @@ export default function ConfiguracoesPage() {
                     disabled={isPublicRouteLoading || !churchId}
                     onCheckedChange={changePublicRoute}
                     aria-label="Ativar página pública"
+                    className="self-start sm:self-auto"
                   />
                 </div>
               </section>

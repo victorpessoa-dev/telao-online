@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FileDropzone } from "@/components/ui/file-dropzone";
+import { HoverTip } from "@/components/shared/hover-tip";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,12 +61,12 @@ export function SettingsHeader({
           Ajuste as preferências gerais do sistema.
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-col gap-2 xs:w-auto xs:flex-row">
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="outline"
-              className="gap-2"
+              className="w-full gap-2 xs:w-auto"
               disabled={!isChurchReady}
             >
               <RotateCcw className="h-4 w-4" />
@@ -89,7 +90,7 @@ export function SettingsHeader({
         <Button
           onClick={onSave}
           disabled={!isChurchReady || !hasChanges || isSaving}
-          className="gap-2"
+          className="w-full gap-2 xs:w-auto"
         >
           {isSaving ? (
             <Check className="h-4 w-4" />
@@ -131,7 +132,7 @@ export function AccountSettingsSection({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="account-email">Email de acesso</Label>
             <Input
@@ -164,7 +165,7 @@ export function AccountSettingsSection({
               Deixe em branco para manter a senha atual.
             </p>
           </div>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="account-new-password">Nova senha</Label>
               <div className="relative">
@@ -180,23 +181,31 @@ export function AccountSettingsSection({
                   minLength={6}
                   className="pr-10"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword((value) => !value)}
-                  disabled={isLoading || isSaving}
-                  className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                  aria-label={
+                <HoverTip
+                  label={
                     showNewPassword
                       ? "Ocultar nova senha"
                       : "Mostrar nova senha"
                   }
                 >
-                  {showNewPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((value) => !value)}
+                    disabled={isLoading || isSaving}
+                    className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                    aria-label={
+                      showNewPassword
+                        ? "Ocultar nova senha"
+                        : "Mostrar nova senha"
+                    }
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </HoverTip>
               </div>
             </div>
             <div className="space-y-2">
@@ -217,23 +226,31 @@ export function AccountSettingsSection({
                   aria-invalid={passwordMismatch}
                   className="pr-10"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((value) => !value)}
-                  disabled={isLoading || isSaving}
-                  className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                  aria-label={
+                <HoverTip
+                  label={
                     showConfirmPassword
                       ? "Ocultar confirmação de senha"
                       : "Mostrar confirmação de senha"
                   }
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((value) => !value)}
+                    disabled={isLoading || isSaving}
+                    className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                    aria-label={
+                      showConfirmPassword
+                        ? "Ocultar confirmação de senha"
+                        : "Mostrar confirmação de senha"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </HoverTip>
               </div>
               {passwordMismatch ? (
                 <p className="text-xs text-destructive">
@@ -244,11 +261,11 @@ export function AccountSettingsSection({
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-stretch sm:justify-end">
           <Button
             onClick={onSaveAccount}
             disabled={isLoading || isSaving || passwordMismatch}
-            className="gap-2"
+            className="w-full gap-2 sm:w-auto"
           >
             {isSaving ? (
               <Check className="h-4 w-4" />
@@ -274,7 +291,7 @@ export function TelaoSettingsSection({ settings, updateSettings }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2 rounded-xl border border-border p-4">
             <Label>
               Duração de imagem ({settings.telao.defaultDurationImage}s)
@@ -408,16 +425,10 @@ export function AppearanceSettingsSection({
           Organize identidade, dados da paróquia e redes sociais.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="perfil" className="space-y-4">
-          <TabsList className="grid w-full max-w-xs grid-cols-1">
-            <TabsTrigger value="perfil">Perfil público</TabsTrigger>
-          </TabsList>
+      <CardContent className="space-y-6">
+        <BrandPreview {...previewProps} />
 
-          <TabsContent value="perfil" className="space-y-6">
-            <BrandPreview {...previewProps} />
-
-            <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)]">
               <div className="space-y-6 rounded-lg border border-border p-4">
                 <div>
                   <Label>Dados da paróquia</Label>
@@ -445,7 +456,7 @@ export function AppearanceSettingsSection({
                     placeholder="Ex: Limeira - SP"
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-5">
                   <div className="space-y-2">
                     <Label>Logo da paróquia</Label>
                     <Input
@@ -502,8 +513,8 @@ export function AppearanceSettingsSection({
                     Links exibidos no canto inferior da capa pública.
                   </p>
                 </div>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <Label>Links adicionados</Label>
                     <p className="text-sm text-muted-foreground">
                       Adicione Instagram, WhatsApp, YouTube, site ou outro
@@ -530,7 +541,7 @@ export function AppearanceSettingsSection({
                     {extraLinks.map((item, index) => (
                       <div
                         key={index}
-                        className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[0.8fr_1.2fr_auto]"
+                        className="grid gap-3 rounded-lg border border-border p-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] lg:items-end"
                       >
                         <Input
                           value={item.label || ""}
@@ -546,23 +557,23 @@ export function AppearanceSettingsSection({
                           }
                           placeholder="https://..."
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeExtraLink(index)}
-                          aria-label="Remover rede social"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <HoverTip label="Remover rede social">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeExtraLink(index)}
+                            aria-label="Remover rede social"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </HoverTip>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+        </div>
       </CardContent>
     </Card>
   );
@@ -595,23 +606,25 @@ export function DataSettingsSection({ onExport, onImport, onClearData }) {
               Exporte ou importe um snapshot das configurações e do conteúdo.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col gap-4 sm:flex-row">
+          <CardContent className="space-y-5">
+            <div className="space-y-5">
               <Button
                 variant="outline"
                 onClick={onExport}
-                className="flex-1 gap-2"
+                className="w-full gap-2"
               >
                 <Download className="h-4 w-4" />
                 Exportar dados
               </Button>
-              <FileDropzone
-                className="flex-1"
-                accept="application/json,.json"
-                onFileSelect={setPendingImportFile}
-                title="Arraste o backup ou clique para importar"
-                description="Arquivo JSON exportado pelo vPlayCast"
-              />
+              <div className="space-y-2">
+                <Label>Importar backup</Label>
+                <FileDropzone
+                  accept="application/json,.json"
+                  onFileSelect={setPendingImportFile}
+                  title="Arraste o backup ou clique para importar"
+                  description="Arquivo JSON exportado pelo vPlayCast"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -639,8 +652,8 @@ export function DataSettingsSection({ onExport, onImport, onClearData }) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Isso irá apagar overlays, patrocínios e redefinir as
-                    configurações administrativas.
+                    Isso irá apagar patrocínios e redefinir as configurações
+                    administrativas.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

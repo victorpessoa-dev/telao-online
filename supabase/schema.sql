@@ -31,6 +31,7 @@ create table public.churches (
   cover_url text,
   social_links jsonb not null default '[]'::jsonb,
   settings jsonb not null default '{}'::jsonb,
+  public_views integer not null default 0 check (public_views >= 0),
   -- Controls visibility on the landing page and every /{slug}/... public URL.
   is_active boolean not null default true,
   setup_completed_at timestamptz,
@@ -86,6 +87,81 @@ create index sponsors_public_telao_idx on public.sponsors (church_id, kind desc,
 
 create index sponsor_impressions_sponsor_displayed_idx on public.sponsor_impressions (sponsor_id, displayed_at desc);
 
+create or replace function public.owns_church (target_church_id uuid) returns boolean language sql stable security definer
+set
+  search_path = public as $$
+  select exists (select 1 from public.churches where id = target_church_id and admin_id = auth.uid())
+$$;
+
+-- Administrative sponsor mutations are exposed as RPCs so the API contract
+-- remains explicit while ownership is checked again inside the database.
+create or replace function public.create_admin_sponsor (
+  name_arg text,
+  kind_arg public.sponsor_kind,
+  media_url_arg text,
+  media_type_arg public.media_type,
+  website_url_arg text,
+  duration_seconds_arg integer,
+  active_arg boolean,
+  church_id_arg uuid
+) returns setof public.sponsors
+language plpgsql security definer
+set search_path = public as $$
+begin
+  if not public.owns_church(church_id_arg) then
+    raise exception 'Você não tem permissão para criar patrocínios nesta igreja'
+      using errcode = '42501';
+  end if;
+
+  return query
+  insert into public.sponsors (
+    church_id, name, kind, media_url, media_type, website_url,
+    duration_seconds, active
+  ) values (
+    church_id_arg,
+    trim(name_arg),
+    kind_arg,
+    nullif(trim(media_url_arg), ''),
+    media_type_arg,
+    nullif(trim(website_url_arg), ''),
+    greatest(coalesce(duration_seconds_arg, 10), 1),
+    coalesce(active_arg, true)
+  ) returning *;
+end $$;
+
+create or replace function public.update_admin_sponsor (
+  sponsor_id_arg uuid,
+  name_arg text,
+  kind_arg public.sponsor_kind,
+  media_url_arg text,
+  media_type_arg public.media_type,
+  website_url_arg text,
+  duration_seconds_arg integer,
+  active_arg boolean
+) returns setof public.sponsors
+language plpgsql security definer
+set search_path = public as $$
+begin
+  return query
+  update public.sponsors as s
+  set
+    name = trim(name_arg),
+    kind = kind_arg,
+    media_url = nullif(trim(media_url_arg), ''),
+    media_type = media_type_arg,
+    website_url = nullif(trim(website_url_arg), ''),
+    duration_seconds = greatest(coalesce(duration_seconds_arg, 10), 1),
+    active = coalesce(active_arg, true)
+  where s.id = sponsor_id_arg
+    and public.owns_church(s.church_id)
+  returning s.*;
+
+  if not found then
+    raise exception 'Patrocínio não encontrado ou sem permissão para alteração'
+      using errcode = '42501';
+  end if;
+end $$;
+
 create or replace function public.update_updated_at () returns trigger language plpgsql as $$
 begin new.updated_at = now(); return new; end $$;
 
@@ -115,12 +191,6 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users for each row
 execute function public.handle_new_user ();
-
-create or replace function public.owns_church (target_church_id uuid) returns boolean language sql stable security definer
-set
-  search_path = public as $$
-  select exists (select 1 from public.churches where id = target_church_id and admin_id = auth.uid())
-$$;
 
 create or replace function public.is_admin () returns boolean language sql stable security definer
 set
@@ -250,12 +320,29 @@ create or replace function public.get_public_church_by_slug (slug_arg text) retu
   city text,
   logo_url text,
   cover_url text,
-  social_links jsonb
+  social_links jsonb,
+  public_views integer
 ) language sql stable security definer
 set
   search_path = public as $$
-  select c.id,c.name,c.slug,c.city,c.logo_url,c.cover_url,c.social_links from public.churches c where c.slug=slug_arg and c.is_active limit 1
+  select c.id,c.name,c.slug,c.city,c.logo_url,c.cover_url,c.social_links,c.public_views from public.churches c where c.slug=slug_arg and c.is_active limit 1
 $$;
+
+create or replace function public.record_public_church_visit (slug_arg text) returns integer
+language plpgsql security definer
+set search_path = public as $$
+declare
+  next_views integer;
+begin
+  update public.churches
+  set public_views = public_views + 1
+  where slug = lower(trim(slug_arg)) and is_active
+  returning public_views into next_views;
+
+  return coalesce(next_views, 0);
+end $$;
+
+grant execute on function public.record_public_church_visit(text) to anon, authenticated;
 
 create or replace function public.is_church_slug_available (slug_arg text) returns boolean language sql stable security definer
 set

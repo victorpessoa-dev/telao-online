@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   LogOut,
   Megaphone,
-  Monitor,
   Play,
   Settings,
 } from "lucide-react";
@@ -34,12 +33,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useStore } from "@/lib/store/store";
 import { cn } from "@/lib/utils/cn";
-import ThemeToggle from "@/components/shared/theme-toggle";
 import { useAdminSidebarState } from "@/components/layout/admin-sidebar-state";
 
 const navItems = [
   { title: "Início", href: "/admin", icon: LayoutDashboard },
-  { title: "Overlays", href: "/overlay", icon: Monitor },
   { title: "Patrocínios", href: "/painel-telao", icon: Megaphone },
   {
     title: "Configurações",
@@ -213,14 +210,6 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
         </div>
 
         <div className="space-y-2 border-t border-sidebar-border px-2.5 py-6">
-          <div
-            className={cn(
-              "flex w-full items-center",
-              collapsed ? "justify-center" : "justify-start pl-1",
-            )}
-          >
-            <ThemeToggle compact />
-          </div>
           <button
             type="button"
             onClick={() => updateCollapsed(!collapsed)}

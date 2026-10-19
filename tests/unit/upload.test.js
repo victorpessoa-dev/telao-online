@@ -45,11 +45,6 @@ describe("media upload validation", () => {
         "https://project.supabase.co/storage/v1/object/public/v-playcast-midia/sponsors/video%20teste.mp4",
       ),
     ).toBe("sponsors/video teste.mp4");
-    expect(
-      getUploadedMediaPath(
-        "https://project.supabase.co/storage/v1/object/public/pascom-media/overlays/logo.png",
-      ),
-    ).toBe("overlays/logo.png");
     expect(getUploadedMediaPath("https://youtube.com/watch?v=abc")).toBe("");
   });
 });

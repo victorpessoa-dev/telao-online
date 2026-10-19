@@ -1,11 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  getAuthErrorMessage,
   getSafeRedirectPath,
   signInWithPasswordFlow,
   signOutFlow,
 } from "@/lib/services/auth";
 
 describe("auth flows", () => {
+  it("maps provider credential errors to a clear, safe message", () => {
+    expect(
+      getAuthErrorMessage({
+        code: "invalid_credentials",
+        message: "Invalid login credentials",
+      }),
+    ).toBe(
+      "Não foi possível entrar com este email e senha. Confira os dados ou redefina sua senha.",
+    );
+  });
+
   it("keeps login redirects inside the app", () => {
     expect(getSafeRedirectPath("/painel-telao")).toBe("/painel-telao");
     expect(getSafeRedirectPath("//evil.example")).toBe("/admin");

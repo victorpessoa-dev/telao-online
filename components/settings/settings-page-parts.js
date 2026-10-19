@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Globe, RotateCcw } from "lucide-react";
+import { Globe, MapPin, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,8 @@ import { getSocialIcon } from "@/components/shared/social-links";
 
 export function SettingRow({ title, description, control }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="min-w-0">
         <Label>{title}</Label>
         {description ? (
           <p className="text-sm text-muted-foreground">{description}</p>
@@ -94,7 +94,7 @@ export function DesignAdjustmentDrop({
           Restaurar área
         </Button>
       </div>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)] xl:items-start">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(24rem,0.9fr)] 2xl:items-start">
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/20 p-4">
             <SettingRow
@@ -119,7 +119,7 @@ export function DesignAdjustmentDrop({
                     somente no preview.
                   </p>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-5">
                   <div className="space-y-2">
                     <Label>Imagem de fundo</Label>
                     <Input
@@ -266,55 +266,50 @@ export function BrandPreview({
   return (
     <div className="rounded-2xl border border-border bg-card/50 p-4">
       <div className="text-sm font-medium">Prévia da marca</div>
-      <div className="mt-4 overflow-hidden rounded-xl border border-sidebar-border bg-sidebar">
-        <div className="relative min-h-52 bg-sidebar-accent sm:min-h-60">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="relative h-40 bg-muted sm:h-52">
           {parishCoverUrl ? (
             <img
               src={parishCoverUrl}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover"
+              className="h-full w-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_34%),linear-gradient(135deg,_rgba(59,130,246,0.30),_rgba(15,23,42,0.7))]" />
+            <div className="h-full w-full bg-muted" />
           )}
-          <div
-            className={
-              parishCoverUrl
-                ? "absolute inset-0 bg-black/30"
-                : "absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
-            }
-          />
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-4 sm:p-5">
-            <div className="flex min-w-0 items-center gap-3 pr-12 text-left sm:gap-4 sm:pr-32">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-primary sm:h-20 sm:w-20">
-                <img
-                  src={parishLogoUrl || "/brand/virtus-playcast-mark.png"}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
+          {parishCoverUrl ? <div className="absolute inset-0 bg-black/20" /> : null}
+        </div>
+        <div className="relative p-5 sm:p-6">
+          <div className="absolute -top-12 flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border-4 border-card bg-card sm:-top-14 sm:h-28 sm:w-28">
+            <img
+              src={parishLogoUrl || "/brand/virtus-playcast-mark.png"}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="mt-11 flex flex-col gap-4 sm:mt-14 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 text-left">
+              <div className="truncate text-2xl font-bold sm:text-3xl">
+                {parishName || "Nome da paróquia"}
               </div>
-              <div className="min-w-0 text-white drop-shadow">
-                <div className="max-w-[16rem] truncate text-sm font-semibold tracking-tight sm:max-w-[34rem] sm:text-lg">
-                  {parishName || "Nome da paróquia"}
+              {parishCity ? (
+                <div className="mt-2 flex items-center gap-2 truncate text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  {parishCity}
                 </div>
-                {parishCity ? (
-                  <div className="mt-1 truncate text-xs text-white/75">
-                    {parishCity}
-                  </div>
-                ) : null}
-              </div>
+              ) : null}
             </div>
             {visibleSocialLinks.length > 0 ? (
-              <div className="absolute bottom-4 right-4 flex max-w-[44%] flex-wrap justify-end gap-1.5 sm:bottom-5 sm:right-5 sm:max-w-xs">
+              <div className="flex flex-wrap gap-2">
                 {visibleSocialLinks.map(({ key, label }) => {
                   const Icon = getSocialIcon(label) || Globe;
 
                   return (
                     <span
                       key={key}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25 sm:h-8 sm:w-8"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted/40 text-muted-foreground"
                     >
-                      <Icon className="h-3.5 w-3.5" />
+                      <Icon className="h-4 w-4" />
                       <span className="sr-only">{label || "Link"}</span>
                     </span>
                   );
