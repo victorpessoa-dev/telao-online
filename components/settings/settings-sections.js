@@ -30,6 +30,7 @@ import { HoverTip } from "@/components/shared/hover-tip";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatWhatsAppNumber } from "@/lib/utils/whatsapp";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -339,6 +340,20 @@ export function SponsorDesignSection({
   onDesignBatchChange,
   onUploadBackground,
 }) {
+  const [profile, setProfile] = useState("DESKTOP");
+  const profiles = {
+    MOBILE: "Mobile",
+    TABLET: "Tablet",
+    DESKTOP: "Desktop",
+  };
+  const profilePreviewClasses = {
+    MOBILE: "aspect-[9/16] max-w-[20rem]",
+    TABLET: "aspect-[4/3]",
+    DESKTOP: "aspect-video",
+  };
+  const settings =
+    sponsorSettings.designs[profile] || defaultSponsorSettings.designs[profile];
+
   return (
     <Card>
       <CardHeader>
@@ -349,19 +364,38 @@ export function SponsorDesignSection({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div
+          className="mb-5 grid grid-cols-3 gap-2"
+          role="group"
+          aria-label="Tamanho de tela"
+        >
+          {Object.entries(profiles).map(([key, label]) => (
+            <Button
+              key={key}
+              type="button"
+              size="sm"
+              variant={profile === key ? "default" : "outline"}
+              onClick={() => setProfile(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
         <DesignAdjustmentDrop
-          settings={sponsorSettings.designs.SHARED}
-          onChange={onDesignChange}
+          profileLabel={profiles[profile]}
+          previewClassName={profilePreviewClasses[profile]}
+          settings={settings}
+          onChange={(key, value) => onDesignChange(profile, key, value)}
           onModeChange={(checked) =>
-            onDesignBatchChange({
+            onDesignBatchChange(profile, {
               enabled: checked,
               backgroundEnabled: checked,
             })
           }
-          onUpload={onUploadBackground}
+          onUpload={(file) => onUploadBackground(profile, file)}
           onRestore={() => {
-            const defaults = defaultSponsorSettings.designs.SHARED;
-            onDesignBatchChange({
+            const defaults = defaultSponsorSettings.designs[profile];
+            onDesignBatchChange(profile, {
               contentWidth: defaults.contentWidth,
               contentHeight: defaults.contentHeight,
               x: defaults.x,
@@ -520,7 +554,7 @@ export function AppearanceSettingsSection({
                   updateSettings(
                     "appearance",
                     "parishSponsorshipGuidelines",
-                    event.target.value,
+                    formatWhatsAppNumber(event.target.value),
                   )
                 }
                 placeholder={
@@ -547,7 +581,10 @@ export function AppearanceSettingsSection({
                     event.target.value,
                   )
                 }
-                placeholder="5599999999999 ou https://wa.me/5599999999999"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="+55 (87) 99106-8478"
               />
             </div>
           </div>

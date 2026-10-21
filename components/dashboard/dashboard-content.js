@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { BarChart3, Clock3, Eye, Megaphone } from "lucide-react";
 import PageContainer from "@/components/layout/page-container";
-import LoadingState from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DonutChart,
   HorizontalBarChart,
@@ -62,6 +62,55 @@ function SummaryCard({
         </CardContent>
       </Card>
     </motion.div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <PageContainer size="narrow" aria-busy="true">
+      <span className="sr-only" role="status">
+        Carregando painel...
+      </span>
+      <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-44" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-28" />
+        </div>
+      </header>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Card key={index} className="h-[118px]">
+            <CardContent className="flex items-center gap-4 p-5">
+              <Skeleton className="h-11 w-11 shrink-0 rounded-lg" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        {["chart", "composition"].map((key) => (
+          <Card key={key} className="h-[326px]">
+            <CardHeader className="space-y-3">
+              <Skeleton className="h-5 w-52" />
+              <Skeleton className="h-4 w-full max-w-sm" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-4/5" />
+              <Skeleton className="h-10 w-3/5" />
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+    </PageContainer>
   );
 }
 
@@ -117,7 +166,7 @@ export default function DashboardContent() {
     [metrics.activeAds, metrics.masterAds],
   );
 
-  if (!isLoaded) return <LoadingState label="Carregando painel..." />;
+  if (!isLoaded) return <DashboardSkeleton />;
 
   return (
     <PageContainer size="narrow">

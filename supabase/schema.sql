@@ -65,10 +65,17 @@ create table public.sponsors (
 create table public.app_settings (
   church_id uuid not null references public.churches (id) on delete cascade,
   key text not null check (length(trim(key)) > 0),
+  -- For key = 'sponsor_settings', value.designs stores independent telão
+  -- layouts for MOBILE, TABLET, and DESKTOP. Each profile has its own
+  -- backgroundUrl and media-area values (contentWidth, contentHeight, x, y).
+  -- SHARED remains supported as the legacy layout during migration.
   value jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
   primary key (church_id, key)
 );
+
+comment on column public.app_settings.value is
+  'For sponsor_settings, designs.MOBILE, designs.TABLET and designs.DESKTOP each store backgroundUrl, contentWidth, contentHeight, x and y. designs.SHARED is legacy-only.';
 
 create table public.sponsor_impressions (
   id uuid primary key default gen_random_uuid(),

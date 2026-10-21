@@ -27,6 +27,25 @@ const LOG_FLUSH_INTERVAL_MS = 2 * 60 * 1000;
 const LOG_BATCH_SIZE = 100;
 const DISPLAY_CLIENT_KEY = "vplaycast:official-display-client";
 
+function getTelaoProfile(width) {
+  if (width < 768) return "MOBILE";
+  if (width < 1024) return "TABLET";
+  return "DESKTOP";
+}
+
+function useTelaoProfile() {
+  const [profile, setProfile] = useState("DESKTOP");
+
+  useEffect(() => {
+    const updateProfile = () => setProfile(getTelaoProfile(window.innerWidth));
+    updateProfile();
+    window.addEventListener("resize", updateProfile);
+    return () => window.removeEventListener("resize", updateProfile);
+  }, []);
+
+  return profile;
+}
+
 function readLogQueue(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key) || "[]");
@@ -502,8 +521,20 @@ export default function TelaoPlayer({
     () => ads[currentIndex] || ads[0],
     [ads, currentIndex],
   );
-  // A single design keeps every sponsor in the same visual composition.
-  const design = currentAd ? sponsorSettings?.designs?.SHARED : null;
+  const telaoProfile = useTelaoProfile();
+  const design = currentAd
+    ? sponsorSettings?.designs?.[telaoProfile] ||
+      sponsorSettings?.designs?.DESKTOP ||
+      sponsorSettings?.designs?.SHARED
+    : null;
+  const canvasClassName = {
+    MOBILE:
+      "absolute left-1/2 top-1/2 aspect-[9/16] w-[min(100vw,56.25dvh)] -translate-x-1/2 -translate-y-1/2",
+    TABLET:
+      "absolute left-1/2 top-1/2 aspect-[4/3] w-[min(100vw,133.333dvh)] -translate-x-1/2 -translate-y-1/2",
+    DESKTOP:
+      "absolute left-1/2 top-1/2 aspect-video w-[min(100vw,177.777dvh)] -translate-x-1/2 -translate-y-1/2",
+  }[telaoProfile];
   const currentAdDuration = getMediaDuration(
     currentAd,
     sponsorSettings.mediaDurations,
@@ -553,7 +584,7 @@ export default function TelaoPlayer({
       className="fixed inset-0 h-[100dvh] w-screen overflow-hidden bg-black select-none"
       style={{ userSelect: "none" }}
     >
-      <div className="absolute left-1/2 top-1/2 aspect-video w-[min(100vw,177.777dvh)] -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-black">
+      <div className={`${canvasClassName} overflow-hidden bg-black`}>
         {showBackground ? (
           <>
             <img

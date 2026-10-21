@@ -12,8 +12,8 @@ import {
 } from "@/services/supabase/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import LoadingState from "@/components/shared/loading-state";
 import { HoverTip } from "@/components/shared/hover-tip";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,48 @@ import {
 import { validatePublicVideoSource } from "@/lib/utils/video-source";
 
 const ADMIN_PAGE_SIZE = 10;
+
+function AdManagerSkeleton() {
+  return (
+    <div className="space-y-5" aria-busy="true">
+      <span className="sr-only" role="status">
+        Carregando patrocínios...
+      </span>
+      <div className="rounded-xl border border-border/80 p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-44" />
+            <Skeleton className="h-4 w-72 max-w-full" />
+          </div>
+          <Skeleton className="h-10 w-36" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 border-b border-border/70 pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-3 w-28" />
+        </div>
+        <Skeleton className="h-10 w-full sm:w-80" />
+      </div>
+      <div className="overflow-hidden rounded-xl border border-border/80">
+        {Array.from({ length: 5 }, (_, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-4 border-b border-border/70 p-4 last:border-b-0"
+          >
+            <Skeleton className="h-14 w-24 shrink-0 rounded-lg" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="hidden h-8 w-24 sm:block" />
+            <Skeleton className="h-9 w-20" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function createEmptyAd(defaultDurations) {
   return {
@@ -463,7 +505,7 @@ export default function AdManager({
   }, [churchSlug]);
 
   if (!isLoaded) {
-    return <LoadingState label="Carregando patrocinios..." />;
+    return <AdManagerSkeleton />;
   }
 
   return (

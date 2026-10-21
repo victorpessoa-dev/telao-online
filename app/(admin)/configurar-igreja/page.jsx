@@ -23,6 +23,10 @@ import {
   deleteUploadedMediaBatch,
   uploadMedia,
 } from "@/services/supabase/upload";
+import {
+  formatWhatsAppNumber,
+  getWhatsAppUrl,
+} from "@/lib/utils/whatsapp";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const slugify = (value) =>
@@ -34,13 +38,6 @@ const slugify = (value) =>
     .replace(/^-+|-+$/g, "");
 const suggestedSlug = (name, city) =>
   slugify([name, city].filter(Boolean).join("-")) || "nova-igreja";
-
-function formatWhatsAppUrl(value) {
-  const contact = String(value || "").trim();
-  if (!contact) return "";
-  if (/^https?:\/\//i.test(contact)) return contact;
-  return `https://wa.me/${contact.replace(/\D/g, "")}`;
-}
 
 function getErrorMessage(cause, fallback) {
   if (cause instanceof Error && cause.message) return cause.message;
@@ -198,9 +195,11 @@ export default function AdminChurchConfiguration() {
     const slug = form.slug.trim().toLowerCase();
     if (!SLUG_PATTERN.test(slug))
       return setError("Use um slug com letras minúsculas, números e hífens.");
-    if (!(await validateSlug()))
-      return setError("Escolha outro slug para continuar.");
-    if (step === 1) return setStep(2);
+    if (step === 1) {
+      if (!(await validateSlug()))
+        return setError("Escolha outro slug para continuar.");
+      return setStep(2);
+    }
     setSaving(true);
     const uploaded = [];
     try {
@@ -217,7 +216,13 @@ export default function AdminChurchConfiguration() {
         .eq("admin_id", user.id)
         .maybeSingle();
       if (existingChurchError) throw existingChurchError;
-      if (existing) return router.replace("/admin");
+      if (existing) {
+        router.replace("/admin");
+        router.refresh();
+        return;
+      }
+      if (!(await validateSlug()))
+        throw new Error("Escolha outro slug para continuar.");
       const { data: church, error: createError } = await supabase
         .from("churches")
         .insert({
@@ -230,7 +235,7 @@ export default function AdminChurchConfiguration() {
             ? [
                 {
                   label: "WhatsApp para patrocínios",
-                  url: formatWhatsAppUrl(form.sponsorshipWhatsApp),
+                  url: getWhatsAppUrl(form.sponsorshipWhatsApp),
                 },
               ]
             : [],
@@ -262,6 +267,7 @@ export default function AdminChurchConfiguration() {
       // Replace setup in history so a completed onboarding cannot be reopened
       // with the browser Back action.
       router.replace("/admin");
+      router.refresh();
     } catch (cause) {
       if (uploaded.length) await deleteUploadedMediaBatch(uploaded);
       setError(
@@ -356,9 +362,15 @@ export default function AdminChurchConfiguration() {
                       id="sponsorship-whatsapp"
                       value={form.sponsorshipWhatsApp}
                       onChange={(event) =>
-                        updateField("sponsorshipWhatsApp", event.target.value)
+                        updateField(
+                          "sponsorshipWhatsApp",
+                          formatWhatsAppNumber(event.target.value),
+                        )
                       }
-                      placeholder="5599999999999 ou https://wa.me/5599999999999"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="+55 (87) 99106-8478"
                     />
                     <p className="mt-1 text-sm text-muted-foreground">
                       Este será o canal usado quando uma empresa concluir o

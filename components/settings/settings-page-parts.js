@@ -23,7 +23,11 @@ export function SettingRow({ title, description, control }) {
   );
 }
 
-export function SponsorDesignPreview({ title, settings }) {
+export function SponsorDesignPreview({
+  title,
+  settings,
+  previewClassName = "aspect-video",
+}) {
   const modeEnabled = Boolean(settings.enabled);
   const width = modeEnabled ? (settings.contentWidth ?? 58) : 100;
   const height = modeEnabled ? (settings.contentHeight ?? 58) : 100;
@@ -33,7 +37,9 @@ export function SponsorDesignPreview({ title, settings }) {
   return (
     <div className="space-y-3">
       <div className="text-sm font-medium">{title}</div>
-      <div className="relative aspect-video overflow-hidden rounded-xl border border-border bg-black">
+      <div
+        className={`relative ${previewClassName} overflow-hidden rounded-xl border border-border bg-black`}
+      >
         {modeEnabled && settings.backgroundUrl ? (
           <img
             src={settings.backgroundUrl}
@@ -64,6 +70,8 @@ export function SponsorDesignPreview({ title, settings }) {
 }
 
 export function DesignAdjustmentDrop({
+  profileLabel,
+  previewClassName,
   settings,
   onChange,
   onModeChange,
@@ -77,7 +85,7 @@ export function DesignAdjustmentDrop({
     <div className="rounded-xl border border-border p-4">
       <div className="mb-6 flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="font-medium">Modelo único do telão</div>
+          <div className="font-medium">Modelo para {profileLabel}</div>
           <div className="text-sm text-muted-foreground">
             Este fundo e esta área de mídia são aplicados a todos os patrocínios
             do telão público.
@@ -215,7 +223,11 @@ export function DesignAdjustmentDrop({
         </div>
 
         <div className="lg:sticky lg:top-6">
-          <SponsorDesignPreview title="Prévia do telão" settings={settings} />
+          <SponsorDesignPreview
+            title={`Prévia ${profileLabel}`}
+            settings={settings}
+            previewClassName={previewClassName}
+          />
         </div>
       </div>
     </div>

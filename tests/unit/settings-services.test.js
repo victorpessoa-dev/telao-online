@@ -94,7 +94,7 @@ describe("settings services", () => {
     ).toMatchObject({ mediaDurations: { image: 12, video: 24 } });
   });
 
-  it("uses one shared design and migrates the legacy normal layout", () => {
+  it("keeps responsive designs while migrating the legacy normal layout", () => {
     const settings = mergeSponsorSettings({
       designs: {
         NORMAL: {
@@ -104,11 +104,35 @@ describe("settings services", () => {
       },
     });
 
-    expect(settings.designs).toEqual({
-      SHARED: expect.objectContaining({
-        backgroundUrl: "https://cdn.example/legacy-background.webp",
-        contentWidth: 64,
-      }),
+    expect(settings.designs.SHARED).toMatchObject({
+      backgroundUrl: "https://cdn.example/legacy-background.webp",
+      contentWidth: 64,
+    });
+    expect(settings.designs.MOBILE).toMatchObject({ backgroundUrl: "" });
+    expect(settings.designs.TABLET).toMatchObject({ backgroundUrl: "" });
+    expect(settings.designs.DESKTOP).toMatchObject({ backgroundUrl: "" });
+  });
+
+  it("preserves independent backgrounds for each screen profile", () => {
+    const settings = mergeSponsorSettings({
+      designs: {
+        MOBILE: { backgroundUrl: "https://cdn.example/mobile.webp", x: 42 },
+        TABLET: { backgroundUrl: "https://cdn.example/tablet.webp", y: 44 },
+        DESKTOP: { backgroundUrl: "https://cdn.example/desktop.webp", contentWidth: 70 },
+      },
+    });
+
+    expect(settings.designs.MOBILE).toMatchObject({
+      backgroundUrl: "https://cdn.example/mobile.webp",
+      x: 42,
+    });
+    expect(settings.designs.TABLET).toMatchObject({
+      backgroundUrl: "https://cdn.example/tablet.webp",
+      y: 44,
+    });
+    expect(settings.designs.DESKTOP).toMatchObject({
+      backgroundUrl: "https://cdn.example/desktop.webp",
+      contentWidth: 70,
     });
   });
 });

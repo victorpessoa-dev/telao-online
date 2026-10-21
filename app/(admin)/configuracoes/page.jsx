@@ -384,6 +384,9 @@ export default function ConfiguracoesPage() {
       const storedFiles = [
         ...ads.map((ad) => ad.src),
         sponsorSettings.designs.SHARED?.backgroundUrl,
+        sponsorSettings.designs.MOBILE?.backgroundUrl,
+        sponsorSettings.designs.TABLET?.backgroundUrl,
+        sponsorSettings.designs.DESKTOP?.backgroundUrl,
         sponsorSettings.designs.NORMAL?.backgroundUrl,
         sponsorSettings.designs.MASTER?.backgroundUrl,
       ];
@@ -414,12 +417,12 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const updateSponsorDesignValues = async (values) => {
+  const updateSponsorDesignValues = async (profile, values) => {
     try {
       await updateSponsorSettings({
         designs: {
-          SHARED: {
-            ...sponsorSettings.designs.SHARED,
+          [profile]: {
+            ...sponsorSettings.designs[profile],
             ...values,
           },
         },
@@ -431,13 +434,13 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const updateSponsorDesign = async (key, value) => {
-    await updateSponsorDesignValues({ [key]: value });
+  const updateSponsorDesign = async (profile, key, value) => {
+    await updateSponsorDesignValues(profile, { [key]: value });
   };
 
-  const uploadSponsorBackground = async (file) => {
+  const uploadSponsorBackground = async (profile, file) => {
     if (!file) return;
-    const previousUrl = sponsorSettings.designs.SHARED?.backgroundUrl || "";
+    const previousUrl = sponsorSettings.designs[profile]?.backgroundUrl || "";
     if (
       previousUrl &&
       !window.confirm(
@@ -447,7 +450,7 @@ export default function ConfiguracoesPage() {
       return;
     try {
       const url = await uploadMedia(file, "sponsors");
-      await updateSponsorDesign("backgroundUrl", url);
+      await updateSponsorDesign(profile, "backgroundUrl", url);
       const storageErrors = await deleteUploadedMediaBatch([previousUrl]);
       if (storageErrors.length) {
         toast.warning(

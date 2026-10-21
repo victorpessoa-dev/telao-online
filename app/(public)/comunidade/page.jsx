@@ -6,8 +6,8 @@ import { ArrowLeft, Building2, MapPin, Search } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import AppFooter from "@/components/shared/app-footer";
 import PublicNavbar from "@/components/shared/public-navbar";
-import LoadingState from "@/components/shared/loading-state";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchPublicChurches } from "@/lib/services/churches";
 
 function ChurchCard({ church, index, reduceMotion }) {
@@ -60,6 +60,37 @@ function ChurchCard({ church, index, reduceMotion }) {
         </div>
       </Link>
     </motion.div>
+  );
+}
+
+function CommunitySkeleton() {
+  return (
+    <section
+      aria-label="Carregando comunidades"
+      aria-busy="true"
+      className="mt-10 grid auto-rows-fr gap-6 sm:grid-cols-2 xl:grid-cols-4"
+    >
+      <span className="sr-only" role="status">
+        Carregando comunidades...
+      </span>
+      {Array.from({ length: 4 }, (_, index) => (
+        <div
+          key={index}
+          className="min-h-[22rem] overflow-hidden rounded-2xl border border-border bg-card"
+        >
+          <Skeleton className="h-44 w-full rounded-none" />
+          <div className="relative space-y-4 p-6 pt-12">
+            <Skeleton className="absolute -top-10 h-20 w-20 rounded-2xl border-4 border-card" />
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-2/5" />
+            <div className="space-y-2 pt-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -127,7 +158,7 @@ export default function CommunityPage() {
           />
         </div>
 
-        {loading ? <LoadingState label="Carregando comunidades..." /> : null}
+        {loading ? <CommunitySkeleton /> : null}
 
         {!loading && visibleChurches.length ? (
           <section
