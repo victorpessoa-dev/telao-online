@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Edit2, ExternalLink, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -54,6 +54,7 @@ import {
   AdManagerToolbar,
 } from "@/components/sponsors/ad-manager-toolbar";
 import { validatePublicVideoSource } from "@/lib/utils/video-source";
+import { flushPendingSponsorLogs } from "@/lib/services/sponsor-log-flush";
 
 const ADMIN_PAGE_SIZE = 10;
 
@@ -108,7 +109,7 @@ function createEmptyAd(defaultDurations) {
     mediaType: "image",
     sourceType: "link",
     websiteUrl: "",
-    imageCrop: { zoom: 1, x: 50, y: 50, aspect: "source", backgroundColor: "#050505" },
+    imageCrop: { zoom: 1, x: 50, y: 50, aspect: "landscape", backgroundColor: "#050505" },
   };
 }
 
@@ -132,6 +133,7 @@ export default function AdManager({
 }) {
   const {
     metricAds: ads,
+    churchId,
     createAd,
     updateAd,
     deleteAd,
@@ -150,6 +152,7 @@ export default function AdManager({
   const [savingAd, setSavingAd] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [replacementPending, setReplacementPending] = useState(null);
+  const officialDisplayWindowRef = useRef(null);
   const orderedAds = useMemo(
     () =>
       [...ads].sort((a, b) => {
@@ -322,31 +325,85 @@ export default function AdManager({
     [getMediaDuration],
   );
 
+  const openOfficialDisplay = useCallback(
+    async (displayWindow = null) => {
+      if (!churchSlug) throw new Error("Igreja não identificada para abrir o telão");
+      const response = await fetch("/api/telao/official-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: churchSlug }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.session) {
+        throw new Error(payload.error || "Não foi possível abrir o telão oficial");
+      }
+      const fragment = new URLSearchParams({
+        displaySession: payload.session.sessionId,
+        displayToken: payload.session.token,
+      });
+      const url = `/${churchSlug}/ads-telao#${fragment.toString()}`;
+
+      if (displayWindow && !displayWindow.closed) {
+        displayWindow.opener = null;
+        displayWindow.location.replace(url);
+        officialDisplayWindowRef.current = displayWindow;
+        return;
+      }
+      officialDisplayWindowRef.current = window.open(url, "_blank", "noopener");
+    },
+    [churchSlug],
+  );
+
   const updateMetricsEnabled = useCallback(
     async (checked) => {
+      // Open immediately while this switch interaction is still a trusted user
+      // gesture; awaiting the settings request first would trigger popup blocking.
+      const displayWindow = checked ? window.open("", "_blank") : null;
       if (
         checked &&
         activeSponsorCounts.NORMAL === 0 &&
         activeSponsorCounts.MASTER === 0
       ) {
+        displayWindow?.close();
         throw new Error(
           "Ative pelo menos um patrocinador NORMAL ou MASTER antes de ligar o contador",
         );
       }
 
-      await updateSponsorSettings({
-        metricsEnabled: checked,
-        metricsPaused: checked
-          ? {
-              NORMAL: activeSponsorCounts.NORMAL === 0,
-              MASTER: activeSponsorCounts.MASTER === 0,
-            }
-          : sponsorSettings.metricsPaused,
-      });
+      try {
+        if (!checked) {
+          // The SQL function accepts logs only while the official session and
+          // metrics setting remain active. Persist completed rotations before
+          // revoking the session or closing its display window.
+          await flushPendingSponsorLogs({
+            storage: window.localStorage,
+            churchId,
+          });
+        }
+        await updateSponsorSettings({
+          metricsEnabled: checked,
+          metricsPaused: checked
+            ? {
+                NORMAL: activeSponsorCounts.NORMAL === 0,
+                MASTER: activeSponsorCounts.MASTER === 0,
+              }
+            : sponsorSettings.metricsPaused,
+        });
+        if (!checked) {
+          officialDisplayWindowRef.current?.close();
+          officialDisplayWindowRef.current = null;
+        }
+        if (checked) await openOfficialDisplay(displayWindow);
+      } catch (error) {
+        displayWindow?.close();
+        throw error;
+      }
     },
     [
       activeSponsorCounts.MASTER,
       activeSponsorCounts.NORMAL,
+      churchId,
+      openOfficialDisplay,
       sponsorSettings.metricsPaused,
       updateSponsorSettings,
     ],
@@ -506,24 +563,6 @@ export default function AdManager({
     toast.success(`URL ${path} copiada`);
   }, []);
 
-  const openOfficialDisplay = useCallback(async () => {
-    if (!churchSlug) return;
-    const response = await fetch("/api/telao/official-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug: churchSlug }),
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || !payload.session) {
-      throw new Error(payload.error || "Não foi possível abrir o telão oficial");
-    }
-    const fragment = new URLSearchParams({
-      displaySession: payload.session.sessionId,
-      displayToken: payload.session.token,
-    });
-    window.open(`/${churchSlug}/ads-telao#${fragment.toString()}`, "_blank", "noopener");
-  }, [churchSlug]);
-
   if (!isLoaded) {
     return <AdManagerSkeleton />;
   }
@@ -661,7 +700,6 @@ export default function AdManager({
                 <TableRow>
                   <TableHead className="w-[110px]">Prvvia</TableHead>
                   <TableHead>Patrocinador</TableHead>
-                  <TableHead className="w-[120px]">Rota</TableHead>
                   <TableHead className="w-[130px]">ltima exibio</TableHead>
                   <TableHead className="w-[110px]">Tempo no ar</TableHead>
                   <TableHead className="w-[92px] text-center">Ativo</TableHead>
@@ -695,9 +733,6 @@ export default function AdManager({
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {publicTelaoPath || "/{slug}/ads-telao"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
                       {formatDateTime(ad.lastDisplayedAt)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -729,7 +764,6 @@ export default function AdManager({
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Button
-                          variant="outline"
                           size="sm"
                           onClick={() => {
                             setEditingAd(ad);
@@ -739,7 +773,12 @@ export default function AdManager({
                           <Edit2 className="mr-2 h-4 w-4" />
                           Editar
                         </Button>
-                        <Button asChild variant="outline" size="sm">
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="border-primary/30 text-primary hover:border-primary-hover hover:bg-primary-hover hover:text-primary-foreground"
+                        >
                           <Link
                             href={getReportPath(ad.id) || "#"}
                             target="_blank"
@@ -751,9 +790,8 @@ export default function AdManager({
                         </Button>
                         <HoverTip label={`Excluir patrocínio ${ad.name}`}>
                           <Button
-                            variant="outline"
+                            variant="destructive"
                             size="icon"
-                            className="text-destructive"
                             onClick={() => setAdPendingDelete(ad)}
                             aria-label={`Excluir patrocínio ${ad.name}`}
                           >
@@ -772,12 +810,12 @@ export default function AdManager({
             {paginatedAds.map((ad) => (
               <div
                 key={ad.id}
-                className={`border border-border/80 p-3 ${!ad.active ? "opacity-65" : ""}`}
+                className={`rounded-xl border border-border/80 p-4 ${!ad.active ? "opacity-65" : ""}`}
               >
                 <div className="flex gap-3">
                   <MediaPreview ad={ad} compact />
                   <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
                         <div className="truncate font-medium text-foreground">
                           {ad.name}
@@ -787,58 +825,97 @@ export default function AdManager({
                           rodada · {ad.views || 0} exibiies
                         </div>
                       </div>
-                      <TypeBadge ad={ad} />
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        <div>
-                          Rota: {publicTelaoPath || "/{slug}/ads-telao"}
-                        </div>
-                        <div>
-                          Ultima exibio: {formatDateTime(ad.lastDisplayedAt)}
-                        </div>
-                        <div>
-                          Tempo no ar: {formatDuration(ad.totalSeconds)}
-                        </div>
-                        {ad.websiteUrl ? (
-                          <div className="truncate">{ad.websiteUrl}</div>
-                        ) : null}
+                      <div className="shrink-0">
+                        <TypeBadge ad={ad} />
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingAd(ad);
-                          setEditDialogOpen(true);
-                        }}
-                      >
-                        <Edit2 className="mr-2 h-4 w-4" />
-                        Editar
-                      </Button>
-                      <Button asChild variant="outline" size="sm">
-                        <Link
-                          href={getReportPath(ad.id) || "#"}
-                          target="_blank"
-                          aria-disabled={!churchSlug}
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Relatrio
-                        </Link>
-                      </Button>
-                      <HoverTip label={`Excluir patrocínio ${ad.name}`}>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => setAdPendingDelete(ad)}
-                          aria-label={`Excluir patrocínio ${ad.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </HoverTip>
-                    </div>
+
+                    <dl className="grid gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-2">
+                      <div className="min-w-0">
+                        <dt className="font-medium text-foreground/80">Rota</dt>
+                        <dd className="truncate">
+                          {publicTelaoPath || "/{slug}/ads-telao"}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="font-medium text-foreground/80">Última exibição</dt>
+                        <dd className="truncate">{formatDateTime(ad.lastDisplayedAt)}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium text-foreground/80">Tempo no ar</dt>
+                        <dd>{formatDuration(ad.totalSeconds)}</dd>
+                      </div>
+                      {ad.websiteUrl ? (
+                        <div className="min-w-0">
+                          <dt className="font-medium text-foreground/80">Site</dt>
+                          <dd className="truncate">{ad.websiteUrl}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
                   </div>
                 </div>
+
+                <div className="mt-4 flex flex-col gap-3 border-t border-border/70 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="flex w-fit items-center gap-2 text-sm text-muted-foreground">
+                    <Switch
+                      checked={ad.active}
+                      onCheckedChange={async () => {
+                        try {
+                          await updateAd(ad.id, { active: !ad.active });
+                          toast.success(
+                            !ad.active
+                              ? "Patrocinador ativado no telao"
+                              : "Patrocinador removido do telao",
+                          );
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Erro ao atualizar patrocinador",
+                          );
+                        }
+                      }}
+                    />
+                    Ativo no telão
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEditingAd(ad);
+                        setEditDialogOpen(true);
+                      }}
+                    >
+                      <Edit2 className="mr-2 h-4 w-4" />
+                      Editar
+                    </Button>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-primary/30 text-primary hover:border-primary-hover hover:bg-primary-hover hover:text-primary-foreground"
+                    >
+                      <Link
+                        href={getReportPath(ad.id) || "#"}
+                        target="_blank"
+                        aria-disabled={!churchSlug}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Relatrio
+                      </Link>
+                    </Button>
+                    <HoverTip label={`Excluir patrocínio ${ad.name}`}>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => setAdPendingDelete(ad)}
+                        aria-label={`Excluir patrocínio ${ad.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </HoverTip>
+                  </div>
+                  </div>
               </div>
             ))}
           </div>
@@ -931,7 +1008,7 @@ export default function AdManager({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAd}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
             >
               Excluir
             </AlertDialogAction>

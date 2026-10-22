@@ -58,7 +58,7 @@ export default function HomeHero() {
             <Button
               asChild
               size="lg"
-              className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+              className="bg-primary text-primary-foreground hover:bg-primary-hover"
             >
               <Link href="/login">Organizar meu evento</Link>
             </Button>

@@ -27,6 +27,21 @@ describe("global telão schedule", () => {
     ]);
   });
 
+  it("changes the order between consecutive cycles without repeating sponsors", () => {
+    let previousOrder = getCycleOrder(ads, "cycle-rotation-seed", 0);
+
+    for (let cycle = 1; cycle <= 100; cycle += 1) {
+      const currentOrder = getCycleOrder(ads, "cycle-rotation-seed", cycle);
+      expect(currentOrder.map((ad) => ad.id).sort()).toEqual(["a", "b", "c"]);
+      expect(currentOrder.map((ad) => ad.id)).not.toEqual(
+        previousOrder.map((ad) => ad.id),
+      );
+      expect(currentOrder[0].id).not.toBe(previousOrder[0].id);
+      expect(currentOrder[0].id).not.toBe(previousOrder.at(-1).id);
+      previousOrder = currentOrder;
+    }
+  });
+
   it("places a visitor directly in the ad currently in progress", () => {
     const enteredAt = Date.parse("2026-01-01T00:00:07.000Z");
     const firstDisplay = getSchedulePosition(ads, schedule, enteredAt);

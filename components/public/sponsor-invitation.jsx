@@ -73,7 +73,7 @@ export default function SponsorInvitation({ church, slug, sponsors = [] }) {
         </p>
         <Button
           asChild
-          className="mt-6 bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+          className="mt-6 bg-primary text-primary-foreground hover:bg-primary-hover"
         >
           <Link href={interestPath}>
             Quero ser parceiro

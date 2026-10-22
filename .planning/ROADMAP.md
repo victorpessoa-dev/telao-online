@@ -1,61 +1,61 @@
-# Roadmap: Desktop Admin and Local Overlays
+# Roadmap: Segurança e operação do vPlayCast Web
 
-## Phase 1: Desktop foundation and secure login
+## Fase 1: Modelo de ameaças e autorização
 
-**Goal:** Establish a Windows Electron shell with a secure bridge and authenticated administrative session.
+**Objetivo:** tornar verificável a segurança de Auth, proxy, RLS, RPCs e Storage na arquitetura web existente.
 
-**Requirements:** DESK-01, AUTH-01, AUTH-02, AUTH-03, AUTH-04
+**Requisitos:** SEC-01, SEC-02
 
-**Deliverables:** Electron process structure, packaged development workflow, encrypted session storage, Supabase login gate, admin-role guard, logout, security baseline and tests.
+## Fase 2: Proteção de conteúdo e APIs
 
-## Phase 2: Local overlay projects and editor persistence
+**Objetivo:** fortalecer CSP, validação de entradas, uploads, URLs e limites de abuso sem quebrar os fluxos públicos.
 
-**Goal:** Make overlay projects local-first, with UUID folders and durable editor state.
+**Requisitos:** SEC-03, SEC-04
 
-**Requirements:** OVR-01, OVR-02, OVR-03, OVR-04
+## Fase 3: Regressão dos fluxos web essenciais
 
-**Deliverables:** Local project schema, filesystem repository, project creation/duplicate/delete, local media handling, autosave/backup and migration importer from existing overlay exports.
+**Objetivo:** preservar painel, telões, overlays, relatórios e páginas públicas com testes de integração por igreja.
 
-## Phase 3: OBS runtime and instant local updates
+**Requisitos:** AUTH-01, AUTH-02, ADM-01, DISP-01, OVR-01, PUB-01, DATA-01
 
-**Goal:** Run every local overlay through a loopback URL and reflect edits immediately in OBS.
+## Fase 4: Confiabilidade operacional
 
-**Requirements:** OVR-05, OVR-06, RUN-01, RUN-02, RUN-03, RUN-04
+**Objetivo:** validar backup, restauração, migrations, deploy e sinais operacionais do Supabase e do telão.
 
-**Deliverables:** Loopback HTTP/WebSocket runtime, transparent renderer, stable UUID links, live editor event protocol, file watcher and resilience tests.
+**Requisitos:** REL-01, REL-02, OPS-01
 
-## Phase 4: Move online administration to desktop
+## Fase 5: Documentação e liberação web
 
-**Goal:** Make the desktop the only operational interface for sponsors, telões and settings.
+**Objetivo:** manter guias de operação, segurança e deploy alinhados ao comportamento verificado.
 
-**Requirements:** ADM-01, ADM-02
+**Requisitos:** DOC-01
 
-**Deliverables:** Desktop navigation and pages for patrocinadores, ajustes, edição de telões e métricas; Supabase repositories/services compatible with Electron, media upload flows, protected admin actions and regression suite.
+## Fase 6: Grade TV administrativa
 
-## Phase 5: Public-site reduction and Supabase overlay retirement
+**Objetivo:** oferecer uma visualização administrativa da programação do telão sem duplicar sua lógica, gerar métricas ou alterar o comportamento público.
 
-**Goal:** Keep the hosted app public-only and remove the obsolete remote overlay domain safely.
+**Requisitos:** TVG-01
 
-**Requirements:** PUB-01, PUB-02, PUB-03, URL-01, DB-01, DB-02, DB-03
+**Critérios de implementação:**
 
-**Deliverables:** Public-only landing, comunidade, slugs, telões web e relatórios; removed overlay/admin routes and APIs; corrected URL actions by destination; backup runbook, reviewed destructive migration, schema snapshot and Storage cleanup audit.
+- Rota administrativa protegida por Auth/proxy e sem link público.
+- Reutiliza `lib/services/telao-schedule.js`, agenda global, versão do cronograma e horário do servidor como fonte de verdade.
+- Mostra oito ciclos por vez e alterna os grupos 1–8, 9–16 e seguintes automaticamente.
+- Usa blocos proporcionais à duração e cores determinísticas pelo identificador do patrocinador.
+- Mostra detalhes no hover e no toque, sem carregar mídia.
+- Destaca o ciclo ativo somente quando a contagem oficial estiver ligada.
+- Não cria impressões, visualizações, segundos exibidos ou consultas adicionais por ciclo, hover ou destaque.
 
-## Phase 6: Packaging, operations and documentation
-
-**Goal:** Deliver a supportable Windows release with complete operator documentation.
-
-**Requirements:** DOC-01, DOC-02
-
-**Deliverables:** Windows installer/release checks, OBS setup guide, local backup/restore guide, revised README and technical documentation, smoke test and rollback guide.
-
-## Dependency order
+## Dependências
 
 ```mermaid
 flowchart LR
-  P1[1 Desktop + Login] --> P2[2 Local Projects]
-  P2 --> P3[3 OBS Runtime]
-  P1 --> P4[4 Desktop Admin]
-  P3 --> P5[5 Public + Supabase Cleanup]
-  P4 --> P5
-  P5 --> P6[6 Packaging + Docs]
+  P1[1 Autorização] --> P2[2 Conteúdo e APIs]
+  P2 --> P3[3 Regressão web]
+  P3 --> P4[4 Operação]
+  P4 --> P5[5 Documentação]
+  P3 --> P6[6 Grade TV]
 ```
+
+---
+*Atualizado em 2026-10-22. O roadmap não inclui Electron ou runtime local.*

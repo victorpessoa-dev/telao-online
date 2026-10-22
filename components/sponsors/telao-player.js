@@ -24,7 +24,7 @@ import { SPONSOR_LOG_QUEUE_PREFIX } from "@/lib/services/sponsor-local-metrics";
 const ADS_CACHE_KEY = "vplaycast:telao:ads-cache";
 const LOG_QUEUE_KEY = SPONSOR_LOG_QUEUE_PREFIX.slice(0, -1);
 const ADS_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-const LOG_FLUSH_INTERVAL_MS = 3 * 60 * 1000;
+const LOG_FLUSH_INTERVAL_MS = 90 * 1000;
 const LOG_BATCH_SIZE = 100;
 const DISPLAY_CLIENT_KEY = "vplaycast:official-display-client";
 
@@ -78,8 +78,23 @@ function getDisplaySessionFromHash() {
     clientId = createEventId();
     sessionStorage.setItem(DISPLAY_CLIENT_KEY, clientId);
   }
-  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
   return { sessionId, token, clientId };
+}
+
+function clearDisplaySessionHash() {
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}`,
+  );
+}
+
+function sameOfficialDisplay(left, right) {
+  return (
+    left?.sessionId === right?.sessionId &&
+    left?.token === right?.token &&
+    left?.clientId === right?.clientId
+  );
 }
 export default function TelaoPlayer({
   kind = "NORMAL",
@@ -102,6 +117,8 @@ export default function TelaoPlayer({
   const globalScheduleRef = useRef(null);
   const serverClockOffsetRef = useRef(0);
   const officialDisplayRef = useRef(null);
+  const officialDisplayCandidateRef = useRef(null);
+  const officialClaimRequestRef = useRef(null);
   const startTimeRef = useRef(Date.now());
   const flushTimerRef = useRef(null);
   const rotationTimerRef = useRef(null);
@@ -125,31 +142,46 @@ export default function TelaoPlayer({
   }, [globalSchedule]);
 
   useEffect(() => {
-    const officialDisplay = getDisplaySessionFromHash();
+    // Keep the URL fragment until the server confirms the claim. In React
+    // development Strict Mode effects are replayed; consuming the fragment in
+    // the first pass used to leave the second pass without a token, even though
+    // the database had already accepted the claim.
+    const officialDisplay =
+      officialDisplayCandidateRef.current || getDisplaySessionFromHash();
     if (!officialDisplay) return undefined;
+    officialDisplayCandidateRef.current = officialDisplay;
 
-    let cancelled = false;
+    if (officialClaimRequestRef.current) return undefined;
+
     // Claim the official display before its first rotation. This locks the
-    // session to this browser and its request IP; waiting for the first batch
-    // would leave a three-minute window for another device to take it over.
-    fetch("/api/telao/official-session/claim", {
+    // session to this browser; waiting for the first batch would leave a
+    // window for another device to take it over.
+    officialClaimRequestRef.current = fetch("/api/telao/official-session/claim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(officialDisplay),
     })
       .then((response) => response.json().then((body) => ({ response, body })))
       .then(({ response, body }) => {
-        if (!cancelled && response.ok && body.claimed) {
+        if (response.ok && body.claimed) {
           officialDisplayRef.current = officialDisplay;
+          clearDisplaySessionHash();
+          return;
         }
+        if (sameOfficialDisplay(officialDisplayCandidateRef.current, officialDisplay)) {
+          officialDisplayCandidateRef.current = null;
+        }
+        console.warn("O telão não foi autorizado para registrar exibições.");
       })
-      .catch(() => {
-        // A display that cannot claim the session must never record metrics.
+      .catch((error) => {
+        if (sameOfficialDisplay(officialDisplayCandidateRef.current, officialDisplay)) {
+          officialDisplayCandidateRef.current = null;
+        }
+        console.warn("Não foi possível autorizar o telão para contagem.", error);
+      })
+      .finally(() => {
+        officialClaimRequestRef.current = null;
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   useEffect(() => {
@@ -176,6 +208,8 @@ export default function TelaoPlayer({
     if (!loaded || (sponsorSettings.metricsEnabled && !metricsPaused)) return;
     // Once disabled or paused, pending local impressions must not look valid
     // in the admin preview and must not be sent in a later batch.
+    officialDisplayRef.current = null;
+    officialDisplayCandidateRef.current = null;
     localStorage.removeItem(logQueueKey);
   }, [kind, loaded, logQueueKey, sponsorSettings.metricsEnabled, sponsorSettings.metricsPaused]);
 
@@ -223,11 +257,6 @@ export default function TelaoPlayer({
     [logQueueKey],
   );
 
-  const registrarExibicao = useCallback(
-    async (log) => enqueueLog(log),
-    [enqueueLog],
-  );
-
   const flushLogQueue = useCallback(async () => {
     if (flushingLogsRef.current) return;
 
@@ -237,25 +266,60 @@ export default function TelaoPlayer({
     flushingLogsRef.current = true;
     let pending = queue;
     try {
-      while (pending.length) {
-        const batch = pending.slice(0, LOG_BATCH_SIZE);
-        const response = await fetch("/api/anunciantes/logs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ logs: batch }),
-        });
-        if (!response.ok) throw new Error("Falha ao reenviar fila");
-        pending = pending.slice(batch.length);
-        localStorage.setItem(logQueueKey, JSON.stringify(pending));
+      // An older, expired session must not stop later valid sessions from
+      // being sent. The SQL RPC authorizes a batch from its first item, so
+      // submit each session group separately.
+      const groups = new Map();
+      pending.forEach((log) => {
+        const key = [
+          log.displaySessionId || "",
+          log.displayToken || "",
+          log.displayClientId || "",
+        ].join(":");
+        const group = groups.get(key) || [];
+        group.push(log);
+        groups.set(key, group);
+      });
+
+      const unconfirmed = [];
+      for (const group of groups.values()) {
+        let groupPending = group;
+        try {
+          while (groupPending.length) {
+            const batch = groupPending.slice(0, LOG_BATCH_SIZE);
+            const response = await fetch("/api/anunciantes/logs", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ logs: batch }),
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || Number(payload.processed) < 1) {
+              throw new Error(payload.error || "O banco não confirmou a exibição");
+            }
+            groupPending = groupPending.slice(batch.length);
+          }
+        } catch (error) {
+          unconfirmed.push(...groupPending);
+          console.warn("Não foi possível salvar algumas exibições do telão.", error);
+        }
       }
-      localStorage.removeItem(logQueueKey);
-    } catch {
-      // Mantém apenas os itens ainda não confirmados para nova tentativa.
-      localStorage.setItem(logQueueKey, JSON.stringify(pending));
+      pending = unconfirmed;
+      if (pending.length) {
+        localStorage.setItem(logQueueKey, JSON.stringify(pending));
+      } else {
+        localStorage.removeItem(logQueueKey);
+      }
     } finally {
       flushingLogsRef.current = false;
     }
   }, [logQueueKey]);
+
+  const registrarExibicao = useCallback(
+    (log) => {
+      enqueueLog(log);
+    },
+    [enqueueLog],
+  );
 
   const carregarAnuncios = useCallback(async () => {
     try {
@@ -265,8 +329,13 @@ export default function TelaoPlayer({
       let publicSettings;
       let payloadSchedule = null;
       if (churchSlug) {
+        const isOfficialDisplay = Boolean(officialDisplayCandidateRef.current);
+        const cacheSuffix = isOfficialDisplay
+          ? `?official=${Date.now()}`
+          : "";
         const response = await fetch(
-          `/api/telao/${encodeURIComponent(churchSlug)}`,
+          `/api/telao/${encodeURIComponent(churchSlug)}${cacheSuffix}`,
+          isOfficialDisplay ? { cache: "no-store" } : undefined,
         );
         const payload = await response.json().catch(() => ({}));
         if (!response.ok)
@@ -542,7 +611,7 @@ export default function TelaoPlayer({
       Math.min(ADS_REFRESH_INTERVAL_MS, 30_000),
     );
     const scheduleNextFlush = () => {
-      const jitterMs = Math.round((Math.random() - 0.5) * 60_000);
+      const jitterMs = Math.round((Math.random() - 0.5) * 10_000);
       flushTimerRef.current = window.setTimeout(async () => {
         if (navigator.onLine) await flushLogQueue();
         scheduleNextFlush();
@@ -577,6 +646,24 @@ export default function TelaoPlayer({
     DESKTOP:
       "absolute left-1/2 top-1/2 aspect-video w-[min(100dvw,177.777dvh)] -translate-x-1/2 -translate-y-1/2",
   }[telaoProfile];
+  const masterOnlyMode = Boolean(filterMaster || sponsorSettings.adsFilterMaster);
+  const activeCanvasClassName = masterOnlyMode
+    ? "absolute left-1/2 top-1/2 aspect-video w-[min(100dvw,177.777dvh)] -translate-x-1/2 -translate-y-1/2"
+    : canvasClassName;
+
+  useEffect(() => {
+    if (!masterOnlyMode) return undefined;
+    const root = document.documentElement;
+    const body = document.body;
+    const previousRootBackground = root.style.backgroundColor;
+    const previousBodyBackground = body.style.backgroundColor;
+    root.style.backgroundColor = "transparent";
+    body.style.backgroundColor = "transparent";
+    return () => {
+      root.style.backgroundColor = previousRootBackground;
+      body.style.backgroundColor = previousBodyBackground;
+    };
+  }, [masterOnlyMode]);
   const currentAdDuration = getMediaDuration(
     currentAd,
     sponsorSettings.mediaDurations,
@@ -587,7 +674,6 @@ export default function TelaoPlayer({
     };
   }, []);
 
-  const masterOnlyMode = Boolean(filterMaster || sponsorSettings.adsFilterMaster);
   // Master-only is a clean playback mode: it hides the background as well as
   // excluding NORMAL ads. The setting stays authoritative across all screens.
   const showBackground = useMemo(() => {
@@ -600,7 +686,7 @@ export default function TelaoPlayer({
 
   if (!loaded) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
+      <div className={`fixed inset-0 flex items-center justify-center overflow-hidden ${masterOnlyMode ? "bg-transparent" : "bg-black"}`}>
         <LoadingIndicator className="[&_img]:brightness-0 [&_img]:invert" />
       </div>
     );
@@ -609,7 +695,7 @@ export default function TelaoPlayer({
   if (!currentAd) {
     return (
       <main
-        className="ads-telao-screen fixed inset-0 flex items-center justify-center overflow-hidden bg-black select-none"
+        className={`ads-telao-screen fixed inset-0 flex items-center justify-center overflow-hidden select-none ${masterOnlyMode ? "bg-transparent" : "bg-black"}`}
         style={{ userSelect: "none" }}
       >
         <div className="max-w-lg px-6 text-center">
@@ -626,10 +712,10 @@ export default function TelaoPlayer({
 
   return (
     <main
-      className="ads-telao-screen fixed inset-0 overflow-hidden bg-black select-none"
+      className={`ads-telao-screen fixed inset-0 overflow-hidden select-none ${masterOnlyMode ? "bg-transparent" : "bg-black"}`}
       style={{ userSelect: "none" }}
     >
-      <div className={`${canvasClassName} overflow-hidden bg-black`}>
+      <div className={`${activeCanvasClassName} overflow-hidden ${masterOnlyMode ? "bg-transparent" : "bg-black"}`}>
         {showBackground ? (
           <>
             <img
@@ -641,17 +727,17 @@ export default function TelaoPlayer({
             <div className="absolute inset-0">
               <TelaoMedia
                 ad={currentAd}
-                design={design}
+                design={masterOnlyMode ? undefined : design}
                 onVideoEnded={avancarAd}
                 videoDurationLimit={currentAdDuration}
               />
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className={`absolute inset-0 flex items-center justify-center ${masterOnlyMode ? "bg-transparent" : "bg-black"}`}>
             <TelaoMedia
               ad={currentAd}
-              design={design}
+              design={masterOnlyMode ? undefined : design}
               onVideoEnded={avancarAd}
               videoDurationLimit={currentAdDuration}
             />

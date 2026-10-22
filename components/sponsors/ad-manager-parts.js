@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Image as ImageIcon, Trash2, Video, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +139,118 @@ export function TypeBadge({ ad }) {
   );
 }
 
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+function ImageCropCanvas({ ad, setAd }) {
+  const frameRef = useRef(null);
+  const dragRef = useRef(null);
+  const [imageRatio, setImageRatio] = useState(16 / 9);
+  const crop = ad.imageCrop || {};
+  const zoom = clamp(Number(crop.zoom) || 1, 1, 3);
+  const cropX = clamp(Number(crop.x ?? 50), 0, 100);
+  const cropY = clamp(Number(crop.y ?? 50), 0, 100);
+  const aspect = crop.aspect || "source";
+  const frameAspect =
+    { square: 1, landscape: 16 / 9, portrait: 9 / 16 }[aspect] ||
+    imageRatio;
+
+  const updateCrop = (updates) => {
+    setAd((current) => ({
+      ...current,
+      imageCrop: { ...current.imageCrop, ...updates },
+    }));
+  };
+
+  const handleWheel = (event) => {
+    event.preventDefault();
+    const direction = event.deltaY < 0 ? 1 : -1;
+    const nextZoom = clamp(zoom + direction * 0.1, 1, 3);
+    updateCrop({ zoom: Number(nextZoom.toFixed(2)) });
+  };
+
+  const handlePointerDown = (event) => {
+    const frame = frameRef.current;
+    if (!frame) return;
+
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      cropX,
+      cropY,
+      width: Math.max(1, frame.clientWidth),
+      height: Math.max(1, frame.clientHeight),
+    };
+  };
+
+  const handlePointerMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const nextX = clamp(
+      drag.cropX - ((event.clientX - drag.startX) / drag.width) * (100 / zoom),
+      0,
+      100,
+    );
+    const nextY = clamp(
+      drag.cropY - ((event.clientY - drag.startY) / drag.height) * (100 / zoom),
+      0,
+      100,
+    );
+    updateCrop({ x: Math.round(nextX), y: Math.round(nextY) });
+  };
+
+  const stopDragging = (event) => {
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Posicione a imagem</Label>
+        <p className="text-sm text-muted-foreground">
+          Arraste a imagem para enquadrar. Use a roda do mouse para aproximar ou afastar.
+        </p>
+      </div>
+      <div
+        ref={frameRef}
+        className="relative w-full cursor-grab touch-none select-none overflow-hidden rounded-lg border border-border bg-muted shadow-inner active:cursor-grabbing"
+        style={{ aspectRatio: frameAspect }}
+        onWheel={handleWheel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={stopDragging}
+        onPointerCancel={stopDragging}
+        role="application"
+        aria-label="Editor de recorte da imagem"
+      >
+        <img
+          src={ad.src}
+          alt="Prévia do recorte da imagem"
+          draggable={false}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          style={{
+            objectPosition: `${cropX}% ${cropY}%`,
+            transform: zoom === 1 ? undefined : `scale(${zoom})`,
+            transformOrigin: `${cropX}% ${cropY}%`,
+          }}
+          onLoad={(event) => {
+            const { naturalWidth, naturalHeight } = event.currentTarget;
+            if (naturalWidth && naturalHeight)
+              setImageRatio(naturalWidth / naturalHeight);
+          }}
+        />
+        <div className="pointer-events-none absolute inset-0 border-2 border-primary/70" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,transparent_33.2%,hsl(var(--border)/0.55)_33.5%,transparent_33.8%,transparent_66.2%,hsl(var(--border)/0.55)_66.5%,transparent_66.8%),linear-gradient(to_bottom,transparent_33.2%,hsl(var(--border)/0.55)_33.5%,transparent_33.8%,transparent_66.2%,hsl(var(--border)/0.55)_66.5%,transparent_66.8%)]" />
+        <div className="pointer-events-none absolute bottom-2 right-2 rounded bg-background/85 px-2 py-1 text-xs font-medium tabular-nums text-foreground shadow-sm">
+          {zoom.toFixed(2)}×
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SponsorForm({
   ad,
   setAd,
@@ -175,9 +286,14 @@ export function SponsorForm({
 
   return (
     <Tabs defaultValue="data" className="py-4">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList
+        className={`grid w-full ${ad.mediaType === "image" && hasPendingMedia ? "grid-cols-3" : "grid-cols-2"}`}
+      >
         <TabsTrigger value="data">Dados</TabsTrigger>
         <TabsTrigger value="media">Mídia e prévia</TabsTrigger>
+        {ad.mediaType === "image" && hasPendingMedia ? (
+          <TabsTrigger value="adjustment">Ajustar imagem</TabsTrigger>
+        ) : null}
       </TabsList>
 
       <TabsContent value="data" className="mt-5 space-y-5">
@@ -305,121 +421,6 @@ export function SponsorForm({
           ) : null}
         </div>
 
-        {ad.mediaType === "image" && hasPendingMedia ? (
-          <div className="space-y-5 rounded-lg border border-border p-4">
-            <div>
-              <Label>Ajuste da imagem</Label>
-              <p className="text-sm text-muted-foreground">
-                O arquivo final será recortado e salvo em WebP ao confirmar.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between gap-3">
-                <Label>Zoom</Label>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {Number(ad.imageCrop?.zoom || 1).toFixed(2)}×
-                </span>
-              </div>
-              <Slider
-                value={[Number(ad.imageCrop?.zoom || 1)]}
-                min={1}
-                max={3}
-                step={0.05}
-                onValueChange={([zoom]) =>
-                  setAd((prev) => ({
-                    ...prev,
-                    imageCrop: { ...prev.imageCrop, zoom },
-                  }))
-                }
-              />
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {[
-                ["x", "Posição horizontal"],
-                ["y", "Posição vertical"],
-              ].map(([key, label]) => (
-                <div key={key} className="space-y-2">
-                  <div className="flex justify-between gap-3">
-                    <Label>{label}</Label>
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      {ad.imageCrop?.[key] ?? 50}%
-                    </span>
-                  </div>
-                  <Slider
-                    value={[Number(ad.imageCrop?.[key] ?? 50)]}
-                    min={0}
-                    max={100}
-                    step={1}
-                    onValueChange={([value]) =>
-                      setAd((prev) => ({
-                        ...prev,
-                        imageCrop: { ...prev.imageCrop, [key]: value },
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2">
-              <Label>Formato do corte</Label>
-              <Select
-                value={ad.imageCrop?.aspect || "source"}
-                onValueChange={(aspect) =>
-                  setAd((prev) => ({
-                    ...prev,
-                    imageCrop: { ...prev.imageCrop, aspect },
-                  }))
-                }
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="source">Proporção original</SelectItem>
-                  <SelectItem value="landscape">Paisagem 16:9</SelectItem>
-                  <SelectItem value="square">Quadrado 1:1</SelectItem>
-                  <SelectItem value="portrait">Retrato 9:16</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Cor de fundo para transparência</Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  type="color"
-                  aria-label="Cor de fundo da imagem transparente"
-                  value={ad.imageCrop?.backgroundColor || "#050505"}
-                  onChange={(event) =>
-                    setAd((prev) => ({
-                      ...prev,
-                      imageCrop: {
-                        ...prev.imageCrop,
-                        backgroundColor: event.target.value,
-                      },
-                    }))
-                  }
-                  className="h-10 w-14 cursor-pointer p-1"
-                />
-                <Input
-                  value={ad.imageCrop?.backgroundColor || "#050505"}
-                  onChange={(event) =>
-                    setAd((prev) => ({
-                      ...prev,
-                      imageCrop: {
-                        ...prev.imageCrop,
-                        backgroundColor: event.target.value,
-                      },
-                    }))
-                  }
-                  className="max-w-32 font-mono uppercase"
-                  maxLength={7}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                A paleta é aplicada aos pixels transparentes antes de salvar o WebP.
-              </p>
-            </div>
-          </div>
-        ) : null}
-
         {ad.src ? (
           <div className="space-y-3">
             <MediaPreview ad={ad} />
@@ -442,7 +443,7 @@ export function SponsorForm({
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
                       onClick={() => {
                         setAd((prev) => ({ ...prev, src: "", sourceType: "link" }));
                         setUploadError("");
@@ -462,6 +463,71 @@ export function SponsorForm({
           </p>
         ) : null}
       </TabsContent>
+
+      {ad.mediaType === "image" && hasPendingMedia ? (
+        <TabsContent value="adjustment" className="mt-5 space-y-5">
+          <ImageCropCanvas ad={ad} setAd={setAd} />
+          <div className="space-y-2">
+            <Label>Formato do corte</Label>
+            <Select
+              value={ad.imageCrop?.aspect || "source"}
+              onValueChange={(aspect) =>
+                setAd((prev) => ({
+                  ...prev,
+                  imageCrop: { ...prev.imageCrop, aspect },
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="source">Proporção original</SelectItem>
+                <SelectItem value="landscape">Paisagem 16:9</SelectItem>
+                <SelectItem value="square">Quadrado 1:1</SelectItem>
+                <SelectItem value="portrait">Retrato 9:16</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Cor de fundo para transparência</Label>
+            <div className="flex items-center gap-3">
+              <Input
+                type="color"
+                aria-label="Cor de fundo da imagem transparente"
+                value={ad.imageCrop?.backgroundColor || "#050505"}
+                onChange={(event) =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: {
+                      ...prev.imageCrop,
+                      backgroundColor: event.target.value,
+                    },
+                  }))
+                }
+                className="h-10 w-14 cursor-pointer p-1"
+              />
+              <Input
+                value={ad.imageCrop?.backgroundColor || "#050505"}
+                onChange={(event) =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: {
+                      ...prev.imageCrop,
+                      backgroundColor: event.target.value,
+                    },
+                  }))
+                }
+                className="max-w-32 font-mono uppercase"
+                maxLength={7}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O arquivo final será recortado e salvo em WebP ao confirmar.
+            </p>
+          </div>
+        </TabsContent>
+      ) : null}
     </Tabs>
   );
 }

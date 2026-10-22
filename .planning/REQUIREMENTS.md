@@ -1,71 +1,48 @@
-# Requirements: PASCOM Stream View Desktop and Local Overlays
+# Requisitos: vPlayCast Web
 
-**Defined:** 2026-10-18
-**Core Value:** Operar overlays locais, reativos e seguros no OBS sem expor a administração ou arquivos locais.
+**Definido:** 2026-10-22
+**Valor central:** operar patrocinadores, telões e overlays pela web sem expor dados de uma igreja a outra.
 
-## v1 Requirements
+## Requisitos validados no código atual
 
-### Desktop and authentication
+- **AUTH-01**: Administrador entra por e-mail e senha do Supabase e acessa o painel somente quando possui uma igreja em `churches.admin_id`.
+- **AUTH-02**: `proxy.js` protege as rotas administrativas e o layout revalida a sessão no cliente.
+- **ADM-01**: Painel gerencia patrocinadores, mídia, configurações, perfil da igreja e telões.
+- **DISP-01**: Telões NORMAL e MASTER são públicos por slug, têm agenda/sessão oficial e podem registrar métricas.
+- **OVR-01**: Overlays são criados e editados na web, persistidos no Supabase e publicados em links compartilháveis por igreja.
+- **PUB-01**: Landing, comunidade, perfil público, patrocinadores e relatórios são disponíveis sem acesso ao painel.
+- **DATA-01**: RLS, Storage policies e RPCs controlam acesso aos dados por igreja.
+- **OPS-01**: O projeto possui testes, build, documentação de deploy, backup e smoke test.
 
-- [ ] **DESK-01**: Administrador instala e abre um executável Windows assinado/empacotado.
-- [ ] **AUTH-01**: Administrador entra no desktop usando e-mail e senha do Supabase e somente o proprietário de uma igreja (`churches.admin_id`) acessa a gestão.
-- [ ] **AUTH-02**: A opção “Manter conectado” restaura uma sessão válida sem guardar a senha em texto ou arquivo comum.
-- [ ] **AUTH-03**: Usuário pode sair, revogando a sessão local; sessão expirada ou inválida exige novo login.
-- [ ] **AUTH-04**: O desktop usa isolamento de contexto, sandbox e APIs IPC estritamente permitidas.
+## Requisitos de evolução
 
-### Local overlays
+- [ ] **SEC-01**: Documentar o modelo de ameaças web, fronteiras de confiança e critérios de aceite para Auth, RLS, APIs, Storage, mídia e links públicos.
+- [ ] **SEC-02**: Cobrir por testes automatizados acessos anônimo, autenticado sem igreja, administrador de outra igreja e administrador proprietário.
+- [ ] **SEC-03**: Adotar uma Content Security Policy compatível com as origens usadas pelo app e testá-la em produção.
+- [ ] **SEC-04**: Validar e limitar uploads, URLs, payloads de API e logs de exibição contra abuso e conteúdo não confiável.
+- [ ] **REL-01**: Exercitar backup e restauração do Supabase e verificar migrations antes de cada deploy.
+- [ ] **REL-02**: Monitorar falhas de APIs, Auth, RPCs e sessão oficial do telão sem registrar segredos ou dados pessoais desnecessários.
+- [ ] **DOC-01**: Manter README e documentação técnica coerentes com a arquitetura web atual.
+- [ ] **TVG-01**: Disponibilizar uma Grade TV exclusiva para administradores, baseada em `lib/services/telao-schedule.js`, que apresente oito ciclos por grupo, blocos proporcionais à duração e detalhes por hover/toque sem produzir métricas nem consultas adicionais por ciclo.
 
-- [ ] **OVR-01**: Criar overlay gera UUID e pasta exclusiva com manifesto, assets e backups.
-- [ ] **OVR-02**: Editor salva localmente nome, resolução, elementos, posições, tamanho, camadas, visibilidade e animações.
-- [ ] **OVR-03**: A lista permite abrir editor, prévia, pasta local, duplicar, copiar o link OBS e excluir um projeto.
-- [ ] **OVR-04**: A exclusão confirmada encerra o runtime do projeto, remove sua pasta e torna seu link indisponível.
-- [ ] **OVR-05**: Alterações de mostrar/ocultar, texto, mídia, posição, tamanho, camada e animação aparecem no OBS sem recarregar a fonte.
-- [ ] **OVR-06**: Alterações durante arraste têm prévia limitada a uma taxa segura; a posição final é persistida ao concluir a interação.
+## Fora de escopo
 
-### Local OBS runtime
-
-- [ ] **RUN-01**: O desktop inicia servidor HTTP/WebSocket limitado a `127.0.0.1`.
-- [ ] **RUN-02**: Cada overlay possui link estável `http://127.0.0.1:<porta>/overlay/<uuid>` copiável para Browser Source do OBS.
-- [ ] **RUN-03**: O runtime entrega fundo transparente, assets locais e estado inicial do overlay.
-- [ ] **RUN-04**: Arquivos alterados externamente são validados, recarregados e notificados às fontes conectadas.
-
-### Online administration and public web
-
-- [ ] **ADM-01**: O executável permite gerir patrocinadores, telões e configurações online com as mesmas regras de autorização atuais.
-- [ ] **ADM-02**: O executável concentra ajustes, edição de telões, métricas e todas as operações administrativas; o site não disponibiliza essas funções.
-- [ ] **PUB-01**: O site público mantém `/`, `/telao`, `/telao-master` e relatórios de patrocinadores.
-- [ ] **PUB-02**: O site hospedado não expõe login/admin, editor, lista, API nem links públicos de overlays.
-- [ ] **PUB-03**: O site público oferece somente landing page, comunidade, páginas públicas por slug, telões web e relatórios de patrocinadores.
-- [ ] **URL-01**: A interface oferece links de overlay somente em `127.0.0.1`, links de telão/landing/comunidade/slug no domínio público e valida URLs externas como `http` ou `https`.
-- [ ] **URL-02**: No primeiro acesso do desktop, administrador escolhe tema e domínio público; o aplicativo valida `/{slug}/ads-telao` antes de confirmar a configuração.
-
-### Supabase migration and documentation
-
-- [ ] **DB-01**: Exportação verificável preserva linhas e objetos de overlay antes da remoção.
-- [ ] **DB-02**: Migration remove `overlays`, políticas, índices e RPCs exclusivos de overlay sem afetar patrocinadores ou Storage deles.
-- [ ] **DB-03**: Objetos de Storage exclusivos de overlay são removidos somente depois do backup e de auditoria por prefixo.
-- [ ] **DOC-01**: README, arquitetura, banco, APIs, segurança, deploy e guia do usuário/desenvolvedor refletem o novo limite desktop/público.
-- [ ] **DOC-02**: Existe runbook de instalação, login, backup/restauração local e configuração do OBS.
-
-## Out of Scope
-
-| Feature | Reason |
+| Item | Motivo |
 | --- | --- |
-| URLs públicas de overlay | Contraria a decisão de execução somente local. |
-| Sincronização entre computadores | Exige conflitos, identidade de dispositivos e novo modelo de produto. |
-| MFA | Explicitamente excluído nesta versão. |
-| Acesso remoto ao servidor local | Aumenta superfície de ataque e não é necessário para OBS local. |
+| Electron e aplicativo Windows | O produto é operado no navegador. |
+| Projetos de overlay locais e links loopback | Os overlays existentes são compartilhados pela web. |
+| Exclusão de overlays do Supabase | Essa remoção quebraria editor, Storage e links públicos atuais. |
 
-## Traceability
+## Rastreabilidade
 
-| Requirement | Phase | Status |
-| --- | --- | --- |
-| DESK-01, AUTH-01..04 | 1 | Pending |
-| OVR-01..04 | 2 | Pending |
-| OVR-05..06, RUN-01..04 | 3 | Pending |
-| ADM-01..02 | 4 | Pending |
-| PUB-01..03, URL-01, DB-01..03 | 5 | Pending |
-| DOC-01..02 | 6 | Pending |
+| Requisito | Fase |
+| --- | --- |
+| SEC-01, SEC-02 | 1 |
+| SEC-03, SEC-04 | 2 |
+| ADM-01, DISP-01, OVR-01, PUB-01, DATA-01 | 3 |
+| REL-01, REL-02 | 4 |
+| DOC-01 | 5 |
+| TVG-01 | 6 |
 
 ---
-*Requirements defined: 2026-10-18*
+*Atualizado em 2026-10-22.*

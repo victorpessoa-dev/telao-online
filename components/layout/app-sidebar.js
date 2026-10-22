@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
+  Monitor,
   Church,
   ExternalLink,
   Globe,
@@ -38,9 +39,10 @@ import { useAdminSidebarState } from "@/components/layout/admin-sidebar-state";
 const navItems = [
   { title: "Início", href: "/admin", icon: LayoutDashboard },
   { title: "Patrocínios", href: "/painel-telao", icon: Megaphone },
+  { title: "Grade Ads", href: "/grade-ads", icon: Monitor },
   {
     title: "Configurações",
-    href: "/configuracoes?tab=visual",
+    href: "/configuracoes?tab=telao",
     icon: Settings,
   },
 ];
@@ -250,7 +252,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
                   <AlertDialogTrigger asChild>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-center rounded-lg p-2.5 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      className="flex w-full items-center justify-center rounded-lg p-2.5 text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
                     >
                       <LogOut className="h-5 w-5" />
                     </button>
@@ -267,7 +269,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
               <AlertDialogTrigger asChild>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                   <LogOut className="h-5 w-5 flex-shrink-0" />
                   <span>Sair</span>
@@ -294,7 +296,12 @@ function LogoutDialogContent({ onConfirm }) {
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-        <AlertDialogAction onClick={onConfirm}>Sair</AlertDialogAction>
+        <AlertDialogAction
+          onClick={onConfirm}
+          className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
+        >
+          Sair
+        </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   );

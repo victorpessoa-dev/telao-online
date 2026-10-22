@@ -1,22 +1,27 @@
-# Project State
+# Estado do projeto
 
-## Project Reference
+## Referência
 
-See: `.planning/PROJECT.md` (updated 2026-10-18)
+Veja `.planning/PROJECT.md` (atualizado em 2026-10-22).
 
-**Core value:** Overlays locais e reativos no OBS sem administração pública ou exposição de arquivos.
-**Current focus:** Phase 1 — Desktop foundation and secure login (implemented locally; pending Windows smoke test and commit).
+**Valor central:** operação web segura de patrocinadores, telões, overlays e relatórios por igreja.
 
-## Decisions locked for this milestone
+**Foco atual:** alinhar o plano de segurança à aplicação Next.js + Supabase existente.
 
-- Overlays nunca são publicados nem sincronizados ao Supabase.
-- O OBS acessa cada overlay via URL `127.0.0.1` e UUID local.
-- Criação gera pasta por UUID; exclusão confirmada remove somente essa pasta.
-- Atualizações do editor devem chegar imediatamente ao runtime aberto no OBS.
-- Admin autentica somente com e-mail e senha; não haverá MFA.
-- “Manter conectado” salva sessão criptografada, nunca a senha.
-- A remoção do domínio de overlays no Supabase é autorizada somente após backup e migração de código.
+## Decisões confirmadas
 
-## Next action
+- Não haverá Electron, aplicativo desktop, instalador Windows, IPC ou `safeStorage`.
+- Administração, editor de overlays e configurações continuam no painel web autenticado.
+- Overlays continuam no Supabase e são exibidos por links públicos associados ao slug da igreja.
+- Autorização é aplicada por Supabase Auth, `proxy.js`, RLS e RPCs; a UI não é a fronteira de segurança.
+- O bucket `v-playcast-midia` continua sendo o repositório de mídia autorizado por policies de Storage.
+- Qualquer migration deve preservar os fluxos atuais de patrocinadores, telões e overlays.
 
-Validate the Electron flow on Windows: login, remembered-session restart, logout, first-run public-route validation and local overlay Browser Source. Then complete the public-overlay retirement and Supabase migration phases.
+## Próxima ação
+
+Executar a Fase 1: registrar o modelo de ameaças web e criar testes de autorização entre igrejas antes de mudar políticas, RPCs ou rotas.
+
+## Trabalho futuro registrado
+
+- A Fase 6 prevê uma Grade TV administrativa. A referência funcional está em `docs/atualizacao-futura-grade-tv.md`.
+- A implementação deve reutilizar a agenda global em `lib/services/telao-schedule.js`; o telão público, a agenda e a versão de cronograma continuam sendo a fonte de verdade.

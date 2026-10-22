@@ -327,6 +327,7 @@ export default function TelaoMedia({
   design,
   onVideoEnded,
   videoDurationLimit,
+  transparentBackground = false,
 }) {
   const backgroundColor = useMediaBackgroundColor(ad?.src, ad?.mediaType);
   const layoutEnabled = Boolean(design?.enabled);
@@ -345,15 +346,19 @@ export default function TelaoMedia({
         left: `${x}%`,
         top: `${y}%`,
         transform: "translate(-50%, -50%)",
-        backgroundColor,
-        backgroundImage: `radial-gradient(circle at center, color-mix(in srgb, ${backgroundColor} 82%, white 18%), ${backgroundColor})`,
+        backgroundColor: transparentBackground ? "transparent" : backgroundColor,
+        backgroundImage: transparentBackground
+          ? "none"
+          : `radial-gradient(circle at center, color-mix(in srgb, ${backgroundColor} 82%, white 18%), ${backgroundColor})`,
       }
     : {
         width: "100%",
         height: "100%",
         position: "relative",
-        backgroundColor,
-        backgroundImage: `radial-gradient(circle at center, color-mix(in srgb, ${backgroundColor} 82%, white 18%), ${backgroundColor})`,
+        backgroundColor: transparentBackground ? "transparent" : backgroundColor,
+        backgroundImage: transparentBackground
+          ? "none"
+          : `radial-gradient(circle at center, color-mix(in srgb, ${backgroundColor} 82%, white 18%), ${backgroundColor})`,
       };
 
   const mediaStyle = {

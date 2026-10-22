@@ -263,11 +263,10 @@ export default function AdminChurchConfiguration() {
           .eq("id", church.id);
         if (updateError) throw updateError;
       }
-      // The admin gate verifies the new church before rendering the dashboard.
-      // Replace setup in history so a completed onboarding cannot be reopened
-      // with the browser Back action.
-      router.replace("/admin");
-      router.refresh();
+      // `/admin` is guarded by `proxy.js`, which must see the church created
+      // above before rendering the dashboard. A full replacement navigation
+      // avoids reusing the setup route's client-side state during first login.
+      window.location.replace("/admin");
     } catch (cause) {
       if (uploaded.length) await deleteUploadedMediaBatch(uploaded);
       setError(

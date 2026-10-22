@@ -19,6 +19,8 @@ Comece por [docs/projeto-como-funciona.md](docs/projeto-como-funciona.md).
 
 Indice completo: [docs/README.md](docs/README.md).
 
+Planos e requisitos versionados: [docs/planejamento/README.md](docs/planejamento/README.md).
+
 ## Variaveis Principais
 
 ```env

@@ -26,7 +26,7 @@ export function AdManagerToolbar({
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
             Transparência do evento
@@ -40,20 +40,17 @@ export function AdManagerToolbar({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end">
           <label
-            className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+            className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors sm:w-auto sm:justify-start ${
               masterFilterEnabled
                 ? "border-primary/35 bg-primary/10 text-primary shadow-sm"
                 : "border-border bg-muted/40 text-muted-foreground"
             }`}
           >
-            <span>
-              <span className="font-semibold">Somente Master</span>
-              <span className="ml-1 text-[10px] opacity-75">
-                {masterFilterEnabled ? "Ativo" : "Desativado"}
-              </span>
-            </span>
+            <span className="font-semibold">Somente Master</span>
             <Switch
               checked={Boolean(masterFilterEnabled)}
               onCheckedChange={onMasterFilterToggle}
@@ -64,18 +61,17 @@ export function AdManagerToolbar({
             <Plus className="mr-2 h-4 w-4" />
             Novo patrocínio
           </Button>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 rounded-xl border border-border/80 bg-card p-3 shadow-[0_1px_2px_oklch(0.18_0.02_250/0.03)] lg:grid-cols-2 lg:items-stretch">
-        <div className="rounded-lg border border-border/50 px-3 py-2.5">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
+        <div className="space-y-3 rounded-lg border border-border/50 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <label
                 htmlFor="metrics-enabled"
                 className="cursor-pointer text-xs font-medium text-foreground/90"
               >
-                Contador do telão
+                Contador de exibição
               </label>
               <div className="mt-0.5 text-[11px] text-muted-foreground">
                 Registro público de exibições por tipo
@@ -88,9 +84,9 @@ export function AdManagerToolbar({
               disabled={!hasAnyActiveSponsor}
               onCheckedChange={onMetricsToggle}
             />
+          </div>
 
-            <div className="hidden h-5 w-px bg-border sm:block" />
-
+          <div className="flex flex-wrap gap-x-5 gap-y-3 border-t border-border/60 pt-3">
             <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
               <span>
                 <span className="font-medium text-foreground/80">NORMAL</span> ·{" "}
@@ -129,35 +125,39 @@ export function AdManagerToolbar({
           ) : null}
         </div>
 
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border/50 px-3 py-2.5">
-          <div className="min-w-0 flex-1">
+        <div className="min-w-0 space-y-3 rounded-lg border border-border/50 px-3 py-2.5">
+          <div className="min-w-0">
             <div className="text-xs font-medium text-foreground/90">
               Link público do telão
             </div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Copie para compartilhar; use Abrir telão para contabilizar.
+              Use esta rota para compartilhar ou abrir o telão oficial.
             </div>
           </div>
-          <div className="w-full sm:w-auto">
+          <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
+            <div className="w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onCopyPublicUrl(publicTelaoPath)}
               disabled={!publicTelaoPath}
-              className="w-full min-w-40 justify-start"
+              className="group w-full min-w-0 justify-start border-primary/30 sm:w-80 hover:border-primary-hover hover:bg-primary-hover hover:text-primary-foreground"
             >
-              <Copy className="mr-2 h-4 w-4" />
-              Copiar link
+              <Copy className="h-4 w-4 shrink-0" />
+              <span className="shrink-0">Copiar</span>
+              <span className="min-w-0 flex-1 whitespace-nowrap text-[10px] leading-none text-muted-foreground transition-colors group-hover:text-primary-foreground/90">
+                {publicTelaoPath || "/{slug}/ads-telao"}
+              </span>
+            </Button>
+            </div>
+            <Button
+              size="sm"
+              onClick={onOpenOfficialDisplay}
+              disabled={!metricsEnabled || !publicTelaoPath}
+            >
+              Abrir telão
             </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenOfficialDisplay}
-            disabled={!metricsEnabled || !publicTelaoPath}
-          >
-            Abrir telão
-          </Button>
         </div>
       </div>
     </section>
