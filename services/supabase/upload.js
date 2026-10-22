@@ -12,11 +12,6 @@ const ALLOWED_MEDIA_TYPES = new Set([
   "video/mp4",
   "video/webm",
 ]);
-const CONVERTIBLE_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
 const WEBP_QUALITY = 0.86;
 const MAX_IMAGE_SIDE = 2560;
 export const MAX_VIDEO_DURATION_SECONDS = 20;
@@ -98,8 +93,6 @@ async function loadImageBitmap(file) {
 }
 
 export async function optimizeImageForUpload(file) {
-  if (!CONVERTIBLE_IMAGE_TYPES.has(file.type)) return file;
-
   const bitmap = await loadImageBitmap(file);
   try {
     const scale = Math.min(
@@ -125,9 +118,60 @@ export async function optimizeImageForUpload(file) {
       lastModified: file.lastModified,
     });
 
-    return optimizedFile.size < file.size || file.type !== "image/webp"
-      ? optimizedFile
-      : file;
+    return optimizedFile;
+  } finally {
+    bitmap.close?.();
+  }
+}
+
+export async function cropImageForUpload(file, crop = {}) {
+  const bitmap = await loadImageBitmap(file);
+  try {
+    const valueOr = (value, fallback) =>
+      Number.isFinite(Number(value)) ? Number(value) : fallback;
+    const zoom = Math.min(3, Math.max(1, valueOr(crop.zoom, 1)));
+    const cropX = Math.min(100, Math.max(0, valueOr(crop.x, 50)));
+    const cropY = Math.min(100, Math.max(0, valueOr(crop.y, 50)));
+    const aspect = { square: 1, landscape: 16 / 9, portrait: 9 / 16 }[
+      crop.aspect
+    ] || bitmap.width / bitmap.height;
+    const sourceAspect = bitmap.width / bitmap.height;
+    const baseWidth = sourceAspect > aspect ? bitmap.height * aspect : bitmap.width;
+    const baseHeight = sourceAspect > aspect ? bitmap.height : bitmap.width / aspect;
+    const sourceWidth = baseWidth / zoom;
+    const sourceHeight = baseHeight / zoom;
+    const sourceX = (bitmap.width - sourceWidth) * (cropX / 100);
+    const sourceY = (bitmap.height - sourceHeight) * (cropY / 100);
+    const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(sourceWidth, sourceHeight));
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Não foi possível recortar a imagem");
+
+    canvas.width = width;
+    canvas.height = height;
+    context.fillStyle = /^#[0-9a-f]{6}$/i.test(crop.backgroundColor || "")
+      ? crop.backgroundColor
+      : "#050505";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(
+      bitmap,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      width,
+      height,
+    );
+
+    const blob = await canvasToBlob(canvas, "image/webp", WEBP_QUALITY);
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "image"}.webp`, {
+      type: "image/webp",
+      lastModified: file.lastModified,
+    });
   } finally {
     bitmap.close?.();
   }

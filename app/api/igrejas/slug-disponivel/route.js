@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { NO_STORE_HEADERS } from "@/lib/utils/http";
 import { createSupabaseServerClient } from "@/services/supabase/server";
+import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export async function GET(request) {
+  const rate = await checkRateLimit(`church-slug-check:${getClientIp(request)}`, {
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { available: false, error: "Muitas consultas. Tente novamente em instantes." },
+      { status: 429, headers: NO_STORE_HEADERS },
+    );
+  }
   const slug =
     new URL(request.url).searchParams.get("slug")?.trim().toLowerCase() || "";
 

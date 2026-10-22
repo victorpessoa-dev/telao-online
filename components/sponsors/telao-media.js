@@ -359,11 +359,10 @@ export default function TelaoMedia({
   const mediaStyle = {
     width: "100%",
     height: "100%",
-    // The media frame is the available display area in both modes: the whole
-    // telão without a background, or the configured frame over a background.
-    // Always cover it so no unused bands remain around images or videos.
-    objectFit: "cover",
-    objectPosition: "center",
+    // The configured media area is the source of truth. Do not apply another
+    // responsive crop inside it: the uploaded image has already been cropped
+    // and must fill these exact dimensions.
+    objectFit: ad?.mediaType === "image" ? "fill" : "cover",
   };
 
   return (

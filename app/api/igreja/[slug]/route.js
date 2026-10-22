@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_CACHE_HEADERS } from "@/lib/utils/http";
 import { createSupabasePublicClient } from "@/services/supabase/server";
+import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
 
 export async function GET(request) {
   try {
+    const rate = await checkRateLimit(`public-church:${getClientIp(request)}`, {
+      limit: 120,
+      windowMs: 60_000,
+    });
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Muitas consultas. Tente novamente em instantes." },
+        { status: 429, headers: { "Cache-Control": "no-store" } },
+      );
+    }
     // Extract slug from pathname
     const { pathname } = new URL(request.url);
     const segments = pathname.split("/").filter((s) => s.length > 0);

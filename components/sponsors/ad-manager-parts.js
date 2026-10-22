@@ -7,6 +7,18 @@ import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -20,8 +32,22 @@ import { useMediaBackgroundColor } from "@/components/sponsors/telao-media";
 import { getYouTubeThumbnail } from "@/lib/utils/video-source";
 
 export function MediaPreview({ ad, compact = false }) {
-  const sizeClass = compact ? "h-14 w-20" : "aspect-video w-full";
-  const backgroundColor = useMediaBackgroundColor(ad?.src, ad?.mediaType);
+  const previewAspect = {
+    square: "aspect-square",
+    portrait: "aspect-[9/16] max-w-[18rem]",
+    landscape: "aspect-video",
+  }[ad?.imageCrop?.aspect] || "aspect-video";
+  const sizeClass = compact ? "h-14 w-20" : `${previewAspect} w-full`;
+  const detectedBackgroundColor = useMediaBackgroundColor(ad?.src, ad?.mediaType);
+  const backgroundColor = ad?.imageCrop?.backgroundColor || detectedBackgroundColor;
+  const zoom = Number(ad?.imageCrop?.zoom) || 1;
+  const cropX = Number(ad?.imageCrop?.x ?? 50);
+  const cropY = Number(ad?.imageCrop?.y ?? 50);
+  const mediaStyle = {
+    objectPosition: `${cropX}% ${cropY}%`,
+    transform: zoom === 1 ? undefined : `scale(${zoom})`,
+    transformOrigin: `${cropX}% ${cropY}%`,
+  };
   const backgroundStyle = {
     backgroundColor,
     backgroundImage: `radial-gradient(circle at center, color-mix(in srgb, ${backgroundColor} 82%, white 18%), ${backgroundColor})`,
@@ -48,7 +74,8 @@ export function MediaPreview({ ad, compact = false }) {
           <img
             src={youtubeThumbnail}
             alt={`Prévia de ${ad.name || "vídeo"}`}
-            className="h-full w-full object-cover object-center"
+            className="h-full w-full object-cover"
+            style={mediaStyle}
           />
         ) : (
           <StaticMediaFrame
@@ -70,7 +97,8 @@ export function MediaPreview({ ad, compact = false }) {
         <StaticMediaFrame
           src={ad.src}
           alt={ad.name || "Patrocínio"}
-          className="h-full w-full object-cover object-center"
+          className="h-full w-full object-cover"
+          style={mediaStyle}
         />
       </div>
     );
@@ -84,7 +112,8 @@ export function MediaPreview({ ad, compact = false }) {
       <img
         src={ad.src}
         alt={ad.name || "Patrocínio"}
-        className="h-full w-full object-cover object-center"
+        className="h-full w-full object-cover"
+        style={mediaStyle}
       />
     </div>
   );
@@ -121,6 +150,7 @@ export function SponsorForm({
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState("");
+  const [removeMediaOpen, setRemoveMediaOpen] = useState(false);
   const hasPendingMedia = ad.sourceType === "pending-upload" && Boolean(ad.src);
 
   const handleUpload = async (file) => {
@@ -249,7 +279,7 @@ export function SponsorForm({
             disabled={uploading}
             onFileSelect={handleUpload}
             title="Arraste a mídia ou clique para enviar"
-            description={"Imagens GIF, JPG, PNG, WebP, MP4 ou WebM"}
+            description={"Imagens são convertidas para WebP; vídeos aceitam MP4 ou WebM"}
           />
           <p className="text-xs text-muted-foreground">
             A duração é definida em Configurações &gt; Telão, conforme a mídia
@@ -275,28 +305,154 @@ export function SponsorForm({
           ) : null}
         </div>
 
+        {ad.mediaType === "image" && hasPendingMedia ? (
+          <div className="space-y-5 rounded-lg border border-border p-4">
+            <div>
+              <Label>Ajuste da imagem</Label>
+              <p className="text-sm text-muted-foreground">
+                O arquivo final será recortado e salvo em WebP ao confirmar.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between gap-3">
+                <Label>Zoom</Label>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {Number(ad.imageCrop?.zoom || 1).toFixed(2)}×
+                </span>
+              </div>
+              <Slider
+                value={[Number(ad.imageCrop?.zoom || 1)]}
+                min={1}
+                max={3}
+                step={0.05}
+                onValueChange={([zoom]) =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: { ...prev.imageCrop, zoom },
+                  }))
+                }
+              />
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {[
+                ["x", "Posição horizontal"],
+                ["y", "Posição vertical"],
+              ].map(([key, label]) => (
+                <div key={key} className="space-y-2">
+                  <div className="flex justify-between gap-3">
+                    <Label>{label}</Label>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {ad.imageCrop?.[key] ?? 50}%
+                    </span>
+                  </div>
+                  <Slider
+                    value={[Number(ad.imageCrop?.[key] ?? 50)]}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onValueChange={([value]) =>
+                      setAd((prev) => ({
+                        ...prev,
+                        imageCrop: { ...prev.imageCrop, [key]: value },
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Label>Formato do corte</Label>
+              <Select
+                value={ad.imageCrop?.aspect || "source"}
+                onValueChange={(aspect) =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: { ...prev.imageCrop, aspect },
+                  }))
+                }
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="source">Proporção original</SelectItem>
+                  <SelectItem value="landscape">Paisagem 16:9</SelectItem>
+                  <SelectItem value="square">Quadrado 1:1</SelectItem>
+                  <SelectItem value="portrait">Retrato 9:16</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Cor de fundo para transparência</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="color"
+                  aria-label="Cor de fundo da imagem transparente"
+                  value={ad.imageCrop?.backgroundColor || "#050505"}
+                  onChange={(event) =>
+                    setAd((prev) => ({
+                      ...prev,
+                      imageCrop: {
+                        ...prev.imageCrop,
+                        backgroundColor: event.target.value,
+                      },
+                    }))
+                  }
+                  className="h-10 w-14 cursor-pointer p-1"
+                />
+                <Input
+                  value={ad.imageCrop?.backgroundColor || "#050505"}
+                  onChange={(event) =>
+                    setAd((prev) => ({
+                      ...prev,
+                      imageCrop: {
+                        ...prev.imageCrop,
+                        backgroundColor: event.target.value,
+                      },
+                    }))
+                  }
+                  className="max-w-32 font-mono uppercase"
+                  maxLength={7}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A paleta é aplicada aos pixels transparentes antes de salvar o WebP.
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {ad.src ? (
           <div className="space-y-3">
             <MediaPreview ad={ad} />
             {allowMediaRemoval ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full text-destructive hover:text-destructive"
-                onClick={() => {
-                  if (
-                    !window.confirm(
-                      "Remover a mídia atual? O arquivo será excluído do armazenamento depois que a nova mídia for salva.",
-                    )
-                  )
-                    return;
-                  setAd((prev) => ({ ...prev, src: "", sourceType: "link" }));
-                  setUploadError("");
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Remover mídia atual
-              </Button>
+              <AlertDialog open={removeMediaOpen} onOpenChange={setRemoveMediaOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="outline" className="w-full text-destructive hover:text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remover mídia atual
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remover mídia atual?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      A mídia será removida do formulário. Envie uma nova antes
+                      de salvar o patrocínio para substituir o arquivo atual.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => {
+                        setAd((prev) => ({ ...prev, src: "", sourceType: "link" }));
+                        setUploadError("");
+                      }}
+                    >
+                      Remover mídia
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             ) : null}
           </div>
         ) : allowMediaRemoval ? (

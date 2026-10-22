@@ -99,6 +99,16 @@ create table public.sponsor_impression_daily_rollups (
   primary key (sponsor_id, displayed_on)
 );
 
+-- Hashes are stored instead of addresses, account IDs, or tokens. This gives
+-- all API routes one distributed abuse-control primitive without retaining
+-- personal identifiers in the rate-limit table.
+create table public.api_rate_limits (
+  rate_key text primary key check (length(rate_key) = 64),
+  window_started_at timestamptz not null default now(),
+  request_count integer not null default 0 check (request_count >= 0),
+  updated_at timestamptz not null default now()
+);
+
 create index sponsors_church_active_idx on public.sponsors (church_id, active);
 
 -- Covers the hot public telão read path. The HTTP endpoint adds browser/CDN
@@ -270,6 +280,42 @@ alter table public.app_settings enable row level security;
 alter table public.sponsor_impressions enable row level security;
 
 alter table public.sponsor_impression_daily_rollups enable row level security;
+alter table public.api_rate_limits enable row level security;
+
+revoke all on table public.api_rate_limits from anon, authenticated;
+
+create or replace function public.check_api_rate_limit(
+  rate_key_arg text,
+  limit_arg integer,
+  window_seconds_arg integer
+) returns jsonb language plpgsql security definer set search_path = public as $$
+declare current_count integer; window_start timestamptz;
+begin
+  if rate_key_arg !~ '^[a-f0-9]{64}$' then
+    raise exception 'invalid rate limit key' using errcode = '22023';
+  end if;
+  if limit_arg < 1 or limit_arg > 10000 or window_seconds_arg < 1 or window_seconds_arg > 86400 then
+    raise exception 'invalid rate limit configuration' using errcode = '22023';
+  end if;
+  insert into public.api_rate_limits as target (rate_key, window_started_at, request_count, updated_at)
+  values (rate_key_arg, now(), 1, now())
+  on conflict (rate_key) do update set
+    window_started_at = case
+      when target.window_started_at + make_interval(secs => window_seconds_arg) <= now() then now()
+      else target.window_started_at
+    end,
+    request_count = case
+      when target.window_started_at + make_interval(secs => window_seconds_arg) <= now() then 1
+      else target.request_count + 1
+    end,
+    updated_at = now()
+  returning request_count, window_started_at into current_count, window_start;
+  return jsonb_build_object(
+    'allowed', current_count <= limit_arg,
+    'remaining', greatest(limit_arg - current_count, 0),
+    'resetAt', window_start + make_interval(secs => window_seconds_arg)
+  );
+end $$;
 
 create policy profiles_select_own on public.profiles for
 select
@@ -749,6 +795,18 @@ begin
   return jsonb_build_object('sessionId', session_id, 'token', raw_token, 'expiresAt', now() + interval '12 hours');
 end $$;
 
+create or replace function public.claim_official_display_session(
+  session_id_arg uuid, token_arg text, client_id_arg uuid
+) returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  update public.official_display_sessions ods
+  set client_id = client_id_arg
+  where ods.id = session_id_arg and ods.token_hash = md5(token_arg)
+    and ods.revoked_at is null and ods.expires_at > now()
+    and (ods.client_id is null or ods.client_id = client_id_arg);
+  return found;
+end $$;
+
 create or replace function public.log_sponsor_impressions(logs_arg jsonb)
 returns integer language plpgsql security definer set search_path = public as $$
 declare count_processed integer := 0; session_id_arg uuid; token_arg text; client_id_arg uuid;
@@ -760,11 +818,12 @@ begin
   token_arg := logs_arg->0->>'display_token';
   client_id_arg := (logs_arg->0->>'display_client_id')::uuid;
   if session_id_arg is null or token_arg is null or client_id_arg is null then return 0; end if;
-  update public.official_display_sessions ods set client_id = client_id_arg
-  where ods.id = session_id_arg and ods.token_hash = md5(token_arg)
-    and ods.revoked_at is null and ods.expires_at > now()
-    and (ods.client_id is null or ods.client_id = client_id_arg);
-  if not found then return 0; end if;
+  if not exists (
+    select 1 from public.official_display_sessions ods
+    where ods.id = session_id_arg and ods.token_hash = md5(token_arg)
+      and ods.client_id = client_id_arg
+      and ods.revoked_at is null and ods.expires_at > now()
+  ) then return 0; end if;
   with logs as (
     select coalesce((item->>'event_id')::uuid, gen_random_uuid()) event_id,
       (item->>'sponsor_id')::uuid sponsor_id,
@@ -813,10 +872,12 @@ revoke execute on function public.create_admin_sponsor(
   text, public.sponsor_kind, text, public.media_type, text, integer, boolean, uuid
 ) from anon;
 revoke execute on function public.open_official_display_session(text) from anon;
+revoke all on function public.check_api_rate_limit(text, integer, integer) from public;
 grant execute on function public.create_admin_sponsor(
   text, public.sponsor_kind, text, public.media_type, text, integer, boolean, uuid
 ) to authenticated;
 grant execute on function public.open_official_display_session(text) to authenticated;
+grant execute on function public.check_api_rate_limit(text, integer, integer) to anon, authenticated;
 
 -- Refresh PostgREST's function signature cache after installing the schema.
 notify pgrst, 'reload schema';

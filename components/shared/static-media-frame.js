@@ -16,6 +16,7 @@ export default function StaticMediaFrame({
   alt = "",
   type = "image",
   className = "",
+  style,
   draggable = false,
   onError,
 }) {
@@ -131,6 +132,7 @@ export default function StaticMediaFrame({
         <video
           src={src}
           className={className}
+          style={style}
           muted
           playsInline
           disablePictureInPicture
@@ -148,6 +150,7 @@ export default function StaticMediaFrame({
         src={src}
         alt={alt}
         className={className}
+        style={style}
         draggable={draggable}
         loading="lazy"
         decoding="async"

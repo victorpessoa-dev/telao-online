@@ -213,6 +213,15 @@
   height: 0;
 }
 
+.ads-telao-screen {
+  overscroll-behavior: none;
+  scrollbar-width: none;
+}
+
+.ads-telao-screen::-webkit-scrollbar {
+  display: none;
+}
+
 /* Smooth transitions */
 .transition-sidebar {
   transition:

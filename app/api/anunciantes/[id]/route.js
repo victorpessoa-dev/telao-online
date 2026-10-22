@@ -6,9 +6,20 @@ import {
   PUBLIC_DETAIL_CACHE_HEADERS,
 } from "@/lib/utils/http";
 import { createSupabaseServerClient } from "@/services/supabase/server";
+import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
 
 export async function GET(request, context) {
   try {
+    const rate = await checkRateLimit(`public-sponsor-report:${getClientIp(request)}`, {
+      limit: 60,
+      windowMs: 60_000,
+    });
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Muitas consultas. Tente novamente em instantes." },
+        { status: 429, headers: NO_STORE_HEADERS },
+      );
+    }
     const { id } = await context.params;
     const sponsorId = z.string().uuid().safeParse(id);
     if (!sponsorId.success)

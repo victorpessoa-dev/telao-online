@@ -15,6 +15,8 @@ export function AdManagerToolbar({
   activeCounts,
   onMetricsToggle,
   onMetricsPauseToggle,
+  masterFilterEnabled,
+  onMasterFilterToggle,
 }) {
   const normalPaused = Boolean(metricsPaused?.NORMAL);
   const masterPaused = Boolean(metricsPaused?.MASTER);
@@ -38,10 +40,31 @@ export function AdManagerToolbar({
           </p>
         </div>
 
-        <Button onClick={onOpenCreateDialog} className="w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo patrocínio
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <label
+            className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+              masterFilterEnabled
+                ? "border-primary/35 bg-primary/10 text-primary shadow-sm"
+                : "border-border bg-muted/40 text-muted-foreground"
+            }`}
+          >
+            <span>
+              <span className="font-semibold">Somente Master</span>
+              <span className="ml-1 text-[10px] opacity-75">
+                {masterFilterEnabled ? "Ativo" : "Desativado"}
+              </span>
+            </span>
+            <Switch
+              checked={Boolean(masterFilterEnabled)}
+              onCheckedChange={onMasterFilterToggle}
+              aria-label="Exibir somente patrocinadores Master no telão"
+            />
+          </label>
+          <Button onClick={onOpenCreateDialog} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            Novo patrocínio
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 rounded-xl border border-border/80 bg-card p-3 shadow-[0_1px_2px_oklch(0.18_0.02_250/0.03)] lg:grid-cols-2 lg:items-stretch">
@@ -108,9 +131,11 @@ export function AdManagerToolbar({
 
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border/50 px-3 py-2.5">
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-medium text-foreground/90">LINK</div>
+            <div className="text-xs font-medium text-foreground/90">
+              Link público do telão
+            </div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Copiar link público do telão
+              Copie para compartilhar; use Abrir telão para contabilizar.
             </div>
           </div>
           <div className="w-full sm:w-auto">
@@ -122,7 +147,7 @@ export function AdManagerToolbar({
               className="w-full min-w-40 justify-start"
             >
               <Copy className="mr-2 h-4 w-4" />
-              {publicTelaoPath || "Defina o slug da igreja"}
+              Copiar link
             </Button>
           </div>
           <Button
@@ -131,7 +156,7 @@ export function AdManagerToolbar({
             onClick={onOpenOfficialDisplay}
             disabled={!metricsEnabled || !publicTelaoPath}
           >
-            Abrir telão oficial
+            Abrir telão
           </Button>
         </div>
       </div>

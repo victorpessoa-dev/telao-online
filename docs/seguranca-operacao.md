@@ -48,9 +48,23 @@ Configurados em `next.config.mjs`:
 
 URLs publicas externas sao filtradas para aceitar apenas `http` e `https`. Isso vale para redes sociais e links de patrocinadores.
 
+## Rate limit e abuso
+
+As rotas API usam `check_api_rate_limit`, uma RPC atômica que persiste somente
+o hash da chave de limite. Por isso o limite funciona entre instâncias e não
+armazena IP, token ou email em texto puro.
+
+- leituras públicas continuam abertas e recebem limites amplos para preservar a disponibilidade;
+- escrita administrativa, convite e sessão oficial possuem limites curtos e específicos;
+- IP é um sinal de abuso, nunca autorização de acesso a conteúdo público;
+- a tabela de rate limit não pode ser lida nem alterada pelo cliente.
+
 ## Logs e Contador
 
-Logs de exibicao usam `/api/anunciantes/logs` e RPCs no banco. O payload e validado com Zod e tem rate limit em memoria por IP.
+Logs de exibicao usam `/api/anunciantes/logs` e RPCs no banco. O payload é
+validado com Zod e recebe rate limit distribuído por origem. A sessão oficial é
+autorizada pelo token efêmero e pelo dispositivo que a reivindicou; IP não é
+usado como requisito de acesso.
 
 O contador:
 
@@ -72,7 +86,8 @@ Upload valida:
 
 ## Operacao
 
-- Aplicar migrations antes do deploy.
+- Aplicar migrations antes do deploy, incluindo `upgrade-api-security.sql`.
+- Configurar CAPTCHA no Supabase Auth para login e recuperação de senha (Turnstile ou hCaptcha) e revisar os limites de Authentication > Rate Limits. O app não deve tentar substituir os limites próprios do provedor de autenticação.
 - Garantir que cada igreja tenha exatamente um `admin_id` e que a conta seja criada por convite.
 - Revisar RPCs `security definer` sempre que tabelas publicas mudarem.
 - Fazer smoke test em `/`, `/login`, `/{slug}`, `/{slug}/ads-telao`, `/painel-telao` e `/overlay`.

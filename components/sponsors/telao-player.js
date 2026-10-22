@@ -19,11 +19,12 @@ import {
   getSchedulePosition,
   millisecondsUntilScheduleChange,
 } from "@/lib/services/telao-schedule";
+import { SPONSOR_LOG_QUEUE_PREFIX } from "@/lib/services/sponsor-local-metrics";
 
 const ADS_CACHE_KEY = "vplaycast:telao:ads-cache";
-const LOG_QUEUE_KEY = "vplaycast:telao:log-queue";
+const LOG_QUEUE_KEY = SPONSOR_LOG_QUEUE_PREFIX.slice(0, -1);
 const ADS_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-const LOG_FLUSH_INTERVAL_MS = 2 * 60 * 1000;
+const LOG_FLUSH_INTERVAL_MS = 3 * 60 * 1000;
 const LOG_BATCH_SIZE = 100;
 const DISPLAY_CLIENT_KEY = "vplaycast:official-display-client";
 
@@ -124,7 +125,31 @@ export default function TelaoPlayer({
   }, [globalSchedule]);
 
   useEffect(() => {
-    officialDisplayRef.current = getDisplaySessionFromHash();
+    const officialDisplay = getDisplaySessionFromHash();
+    if (!officialDisplay) return undefined;
+
+    let cancelled = false;
+    // Claim the official display before its first rotation. This locks the
+    // session to this browser and its request IP; waiting for the first batch
+    // would leave a three-minute window for another device to take it over.
+    fetch("/api/telao/official-session/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(officialDisplay),
+    })
+      .then((response) => response.json().then((body) => ({ response, body })))
+      .then(({ response, body }) => {
+        if (!cancelled && response.ok && body.claimed) {
+          officialDisplayRef.current = officialDisplay;
+        }
+      })
+      .catch(() => {
+        // A display that cannot claim the session must never record metrics.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -144,6 +169,15 @@ export default function TelaoPlayer({
       body.style.overscrollBehavior = previousBodyOverscroll;
     };
   }, []);
+
+  useEffect(() => {
+    const metricsPaused =
+      kind !== "ALL" && Boolean(sponsorSettings.metricsPaused?.[kind]);
+    if (!loaded || (sponsorSettings.metricsEnabled && !metricsPaused)) return;
+    // Once disabled or paused, pending local impressions must not look valid
+    // in the admin preview and must not be sent in a later batch.
+    localStorage.removeItem(logQueueKey);
+  }, [kind, loaded, logQueueKey, sponsorSettings.metricsEnabled, sponsorSettings.metricsPaused]);
 
   const preloadImages = useCallback((items) => {
     items
@@ -182,8 +216,8 @@ export default function TelaoPlayer({
       } else {
         currentQueue.push(nextLog);
       }
-      // Metrics are eventually consistent. Batching protects the public player
-      // and the database when many displays rotate at the same time.
+      // The queue is also read by the admin views to show an immediate local
+      // preview while the confirmed total waits for the three-minute sync.
       localStorage.setItem(logQueueKey, JSON.stringify(currentQueue));
     },
     [logQueueKey],
@@ -257,14 +291,16 @@ export default function TelaoPlayer({
         ]);
       }
 
-      // Filter by type and active status, respecting the filterMaster setting
+      // Filter by type and active status. The global Master-only preference is
+      // part of the public settings payload, so every public display follows
+      // the same mode rather than depending on the browser URL.
+      const masterOnly = Boolean(filterMaster || publicSettings?.adsFilterMaster);
       const filteredAds = (data || [])
         .map(mapSponsorRow)
         .filter(Boolean)
         .filter((ad) => {
           const adKind = ad.kind || ad.type || "NORMAL";
-          // Se filterMaster estiver ativo, apenas MASTER são elegíveis
-          if (filterMaster && adKind !== "MASTER") return false;
+          if (masterOnly && adKind !== "MASTER") return false;
           if (kind !== "ALL" && adKind !== kind) return false;
           // Apenas patrocinadores ativos
           return ad.active !== false;
@@ -388,7 +424,10 @@ export default function TelaoPlayer({
       Math.round((Date.now() - startTimeRef.current) / 1000),
     );
 
-    const metricsPaused = Boolean(sponsorSettings.metricsPaused?.[kind]);
+    const currentAdKind = currentAd.type || currentAd.kind || "NORMAL";
+    const metricsPaused = Boolean(
+      sponsorSettings.metricsPaused?.[currentAdKind],
+    );
 
     try {
       if (sponsorSettings.metricsEnabled && !metricsPaused) {
@@ -529,11 +568,14 @@ export default function TelaoPlayer({
     : null;
   const canvasClassName = {
     MOBILE:
-      "absolute left-1/2 top-1/2 aspect-[9/16] w-[min(100vw,56.25dvh)] -translate-x-1/2 -translate-y-1/2",
+      // Each profile owns a fixed model canvas. It can only change when the
+      // viewport crosses a profile breakpoint; it never stretches to match a
+      // handset's arbitrary aspect ratio.
+      "absolute left-1/2 top-1/2 aspect-[9/16] w-[min(100dvw,56.25dvh)] -translate-x-1/2 -translate-y-1/2",
     TABLET:
-      "absolute left-1/2 top-1/2 aspect-[4/3] w-[min(100vw,133.333dvh)] -translate-x-1/2 -translate-y-1/2",
+      "absolute left-1/2 top-1/2 aspect-[4/3] w-[min(100dvw,133.333dvh)] -translate-x-1/2 -translate-y-1/2",
     DESKTOP:
-      "absolute left-1/2 top-1/2 aspect-video w-[min(100vw,177.777dvh)] -translate-x-1/2 -translate-y-1/2",
+      "absolute left-1/2 top-1/2 aspect-video w-[min(100dvw,177.777dvh)] -translate-x-1/2 -translate-y-1/2",
   }[telaoProfile];
   const currentAdDuration = getMediaDuration(
     currentAd,
@@ -545,13 +587,16 @@ export default function TelaoPlayer({
     };
   }, []);
 
-  // Only show background if design is enabled and has backgroundUrl
+  const masterOnlyMode = Boolean(filterMaster || sponsorSettings.adsFilterMaster);
+  // Master-only is a clean playback mode: it hides the background as well as
+  // excluding NORMAL ads. The setting stays authoritative across all screens.
   const showBackground = useMemo(() => {
+    if (masterOnlyMode) return false;
     if (!design?.enabled || !design?.backgroundUrl) return false;
     if (backgroundMode === "always") return true;
     if (backgroundMode === "never") return false;
     return true;
-  }, [backgroundMode, design?.backgroundUrl, design?.enabled]);
+  }, [backgroundMode, design?.backgroundUrl, design?.enabled, masterOnlyMode]);
 
   if (!loaded) {
     return (
@@ -564,7 +609,7 @@ export default function TelaoPlayer({
   if (!currentAd) {
     return (
       <main
-        className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black select-none"
+        className="ads-telao-screen fixed inset-0 flex items-center justify-center overflow-hidden bg-black select-none"
         style={{ userSelect: "none" }}
       >
         <div className="max-w-lg px-6 text-center">
@@ -581,7 +626,7 @@ export default function TelaoPlayer({
 
   return (
     <main
-      className="fixed inset-0 h-[100dvh] w-screen overflow-hidden bg-black select-none"
+      className="ads-telao-screen fixed inset-0 overflow-hidden bg-black select-none"
       style={{ userSelect: "none" }}
     >
       <div className={`${canvasClassName} overflow-hidden bg-black`}>

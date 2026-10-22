@@ -115,7 +115,8 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardContent() {
-  const { ads, churchSlug, publicViews, error, isLoaded, reload } = useStore();
+  const { metricAds: ads, churchSlug, publicViews, error, isLoaded, reload } =
+    useStore();
   const reduceMotion = useReducedMotion();
   const metrics = useMemo(() => {
     const activeAds = ads.filter((ad) => ad.active);

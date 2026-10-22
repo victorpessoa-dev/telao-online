@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useStore } from "@/lib/store/store";
 import {
   deleteUploadedMedia,
+  cropImageForUpload,
   prepareMediaForUpload,
   uploadMedia,
 } from "@/services/supabase/upload";
@@ -107,6 +108,7 @@ function createEmptyAd(defaultDurations) {
     mediaType: "image",
     sourceType: "link",
     websiteUrl: "",
+    imageCrop: { zoom: 1, x: 50, y: 50, aspect: "source", backgroundColor: "#050505" },
   };
 }
 
@@ -125,9 +127,11 @@ function formatDateTime(value) {
 export default function AdManager({
   defaultDurations = { IMAGE: 10, VIDEO: 15 },
   churchSlug = "",
+  masterFilterEnabled = false,
+  onMasterFilterToggle,
 }) {
   const {
-    ads,
+    metricAds: ads,
     createAd,
     updateAd,
     deleteAd,
@@ -145,6 +149,7 @@ export default function AdManager({
   const [currentPage, setCurrentPage] = useState(1);
   const [savingAd, setSavingAd] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [replacementPending, setReplacementPending] = useState(null);
   const orderedAds = useMemo(
     () =>
       [...ads].sort((a, b) => {
@@ -291,7 +296,11 @@ export default function AdManager({
 
   const uploadPendingMedia = useCallback(async (ad) => {
     if (!ad.pendingFile) return ad;
-    const uploadedUrl = await uploadMedia(ad.pendingFile, "sponsors", "", {
+    const file =
+      ad.mediaType === "image"
+        ? await cropImageForUpload(ad.pendingFile, ad.imageCrop)
+        : ad.pendingFile;
+    const uploadedUrl = await uploadMedia(file, "sponsors", "", {
       alreadyPrepared: true,
     });
     return {
@@ -300,6 +309,7 @@ export default function AdManager({
       pendingFile: undefined,
       pendingPreviewUrl: undefined,
       sourceType: "upload",
+      imageCrop: undefined,
     };
   }, []);
 
@@ -407,7 +417,7 @@ export default function AdManager({
     }
   };
 
-  const handleEditAd = async () => {
+  const saveEditAd = async () => {
     if (!editingAd) return;
     let ad = normalizeAd(editingAd);
 
@@ -459,6 +469,16 @@ export default function AdManager({
     } finally {
       setSavingAd(false);
     }
+  };
+
+  const handleEditAd = async () => {
+    if (!editingAd) return;
+    const previousMediaUrl = ads.find((item) => item.id === editingAd.id)?.src;
+    if (previousMediaUrl && editingAd.src !== previousMediaUrl) {
+      setReplacementPending({ previousMediaUrl });
+      return;
+    }
+    await saveEditAd();
   };
 
   const handleDeleteAd = async () => {
@@ -555,6 +575,8 @@ export default function AdManager({
             );
           }
         }}
+        masterFilterEnabled={masterFilterEnabled}
+        onMasterFilterToggle={onMasterFilterToggle}
         onOpenCreateDialog={() => {
           setNewAd(createEmptyAd(defaultDurations));
           setDialogOpen(true);
@@ -571,7 +593,7 @@ export default function AdManager({
         <DialogTrigger asChild>
           <span className="hidden" />
         </DialogTrigger>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Novo patrocnio</DialogTitle>
             <DialogDescription>
@@ -832,7 +854,7 @@ export default function AdManager({
 
       {/* Keep destructive actions and form state inside controlled dialogs. */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Editar patrocínio</DialogTitle>
             <DialogDescription>
@@ -865,6 +887,32 @@ export default function AdManager({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={Boolean(replacementPending)}
+        onOpenChange={(open) => !open && setReplacementPending(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Substituir a mídia do patrocínio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A nova mídia será enviada e passará a ser exibida no telão. Após
+              a atualização ser concluída, o arquivo anterior será removido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setReplacementPending(null);
+                saveEditAd();
+              }}
+            >
+              Substituir mídia
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={Boolean(adPendingDelete)}

@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   Clock3,
-  Download,
   ExternalLink,
   Eye,
   History,
@@ -21,7 +20,6 @@ import PageError from "@/components/shared/page-error";
 import PageContainer from "@/components/layout/page-container";
 import PublicNavbar from "@/components/shared/public-navbar";
 import { TimeSeriesLineChart } from "@/components/shared/simple-charts";
-import { downloadWorkbook } from "@/lib/export/simple-xlsx";
 import {
   useMediaBackgroundColor,
   YouTubeVideo,
@@ -275,111 +273,6 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     );
   }
 
-  const baixarRelatorio = () => {
-    const downloadedAt = new Date();
-    const firstLog = chronologicalLogs[0] || null;
-    const lastLog = chronologicalLogs[chronologicalLogs.length - 1] || null;
-    const safeName = advertiser.name
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase();
-    const stamp = downloadedAt
-      .toLocaleString("sv-SE")
-      .replace(" ", "_")
-      .replace(/:/g, "-");
-
-    downloadWorkbook({
-      filename: `relatorio-${safeName || "patrocinador"}-${stamp}.xlsx`,
-      sheets: [
-        {
-          name: "Patrocinador",
-          rows: [
-            ["Campo", "Valor"],
-            ["Nome", advertiser.name],
-            ["Site do anunciante", advertiser.websiteUrl || ""],
-            ["Tipo", advertiser.type],
-            ["Rota pública", rotaPublica],
-            ["Duração padrão (s)", advertiser.duration],
-            ["Exibições acumuladas", totalExibicoes],
-            ["Tempo acumulado (s)", totalDuracao],
-            ["Primeira exibição ISO", firstLog?.displayedAt || ""],
-            [
-              "Última exibição ISO",
-              advertiser.lastDisplayedAt || lastLog?.displayedAt || "",
-            ],
-            ["Relatório baixado em ISO", downloadedAt.toISOString()],
-          ],
-        },
-        {
-          name: "Resumo",
-          rows: [
-            ["Campo", "Valor"],
-            ["Patrocinador", advertiser.name],
-            ["Site do anunciante", advertiser.websiteUrl || ""],
-            ["Tipo", advertiser.type],
-            ["Rota pública", rotaPublica],
-            ["Total de exibições", totalExibicoes],
-            ["Tempo total exibido (s)", totalDuracao],
-            ["Duração padrão (s)", advertiser.duration],
-            ["Média por exibição (s)", mediaPorExibicao],
-            ["Primeira exibição ISO", firstLog?.displayedAt || ""],
-            [
-              "Última exibição ISO",
-              advertiser.lastDisplayedAt || lastLog?.displayedAt || "",
-            ],
-            [
-              "Próxima exibição estimada ISO",
-              proximaExibicao ? proximaExibicao.toISOString() : "",
-            ],
-          ],
-        },
-        {
-          name: "Horários no telão",
-          rows: [
-            [
-              "Exibição",
-              "Entrada ISO",
-              "Entrada formatada",
-              "Saída estimada ISO",
-              "Saída estimada formatada",
-              "Duração (s)",
-              "Duração formatada",
-              "Origem",
-            ],
-            ...chronologicalLogs.map((log, index) => {
-              const endedAt = calcularSaidaExibicao(log);
-
-              return [
-                `${index + 1}°`,
-                log.displayedAt || "",
-                formatarDataHora(log.displayedAt),
-                endedAt ? endedAt.toISOString() : "",
-                endedAt ? formatarDataHora(endedAt.toISOString()) : "",
-                log.durationSeconds || 0,
-                formatarTempo(log.durationSeconds),
-                log.source || "telao",
-              ];
-            }),
-          ],
-        },
-        {
-          name: "Graficos",
-          rows: [
-            ["Dia", "Exibições", "Tempo exibido (s)", "Tempo exibido"],
-            ...chartData.map((item) => [
-              item.date,
-              item.total,
-              item.seconds,
-              formatarTempo(item.seconds),
-            ]),
-          ],
-        },
-      ],
-    });
-  };
-
   return (
     <div className="public-page-shell min-h-screen bg-background">
       <PublicNavbar />
@@ -431,17 +324,11 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
                 A previsão é uma estimativa calculada a partir do intervalo
                 médio entre as exibições registradas.
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button asChild variant="outline">
-                  <Link href={rotaPublica} target="_blank">
-                    Abrir {rotaPublica}
-                  </Link>
-                </Button>
-                <Button variant="outline" onClick={baixarRelatorio}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar relatório público
-                </Button>
-              </div>
+              <Button asChild variant="outline">
+                <Link href={rotaPublica} target="_blank">
+                  Abrir {rotaPublica}
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 

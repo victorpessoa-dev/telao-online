@@ -61,7 +61,7 @@ erDiagram
 ## Agenda global do telão
 
 - `telao_schedules` mantém a semente determinística, versão e referência UTC compartilhadas pelo telão público.
-- `official_display_sessions` identifica, por token efêmero e dispositivo, o único telão autorizado a registrar métricas.
+- `official_display_sessions` identifica, por token efêmero e dispositivo, o único telão autorizado a registrar métricas. O primeiro telão que reivindica a sessão fixa o dispositivo até ela expirar ou ser revogada.
 - `sponsor_impressions.official_display_session_id` preserva a relação de cada registro com a sessão oficial.
 - As RPCs `get_active_telao_schedule` e `open_official_display_session` são usadas, respectivamente, para sincronizar a reprodução e iniciar o telão oficial pelo painel administrativo.
 

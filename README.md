@@ -35,7 +35,7 @@ As variáveis `NEXT_PUBLIC_*` podem ser expostas ao cliente. `SUPABASE_SERVICE_R
 
 Para iniciar um projeto Supabase do zero, execute apenas [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor de um projeto vazio. O arquivo é o schema consolidado: cria tabelas, RLS, Storage, RPCs, índices do telão público e a rotina de métricas em lote. Não execute migrations históricas depois dele.
 
-Para um banco existente, mantenha os dados e aplique primeiro `supabase/upgrade-all.sql` (se ainda não tiver sido aplicado) e depois [`supabase/upgrade-global-telao-scheduling.sql`](supabase/upgrade-global-telao-scheduling.sql). Esta última habilita a agenda sincronizada e a sessão do telão oficial. Use `reset-public-schema.sql` somente quando quiser descartar todos os dados do schema `public`.
+Para um banco existente, mantenha os dados e aplique primeiro `supabase/upgrade-all.sql` (se ainda não tiver sido aplicado), depois [`supabase/upgrade-global-telao-scheduling.sql`](supabase/upgrade-global-telao-scheduling.sql) e, por fim, [`supabase/upgrade-official-display-session-claim.sql`](supabase/upgrade-official-display-session-claim.sql). As duas últimas habilitam a agenda sincronizada e a sessão oficial vinculada ao token/dispositivo que iniciou o telão. Use `reset-public-schema.sql` somente quando quiser descartar todos os dados do schema `public`.
 
 ## Scripts
 

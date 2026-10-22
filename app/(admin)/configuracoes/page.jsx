@@ -5,6 +5,16 @@ import Link from "next/link";
 import { Database, Globe, Monitor, Palette, UserRound } from "lucide-react";
 import PageContainer from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -60,6 +70,7 @@ export default function ConfiguracoesPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [pendingStorageCleanup, setPendingStorageCleanup] = useState([]);
+  const [replacementRequest, setReplacementRequest] = useState(null);
   const [account, setAccount] = useState({
     userId: "",
     email: "",
@@ -441,75 +452,65 @@ export default function ConfiguracoesPage() {
   const uploadSponsorBackground = async (profile, file) => {
     if (!file) return;
     const previousUrl = sponsorSettings.designs[profile]?.backgroundUrl || "";
-    if (
-      previousUrl &&
-      !window.confirm(
-        "Substituir a imagem de fundo? O arquivo antigo será excluído após a confirmação.",
-      )
-    )
-      return;
-    try {
-      const url = await uploadMedia(file, "sponsors");
-      await updateSponsorDesign(profile, "backgroundUrl", url);
-      const storageErrors = await deleteUploadedMediaBatch([previousUrl]);
-      if (storageErrors.length) {
-        toast.warning(
-          "Nova imagem salva, mas o arquivo antigo não pôde ser removido",
-        );
-        return;
+    const replace = async () => {
+      try {
+        const url = await uploadMedia(file, "sponsors");
+        await updateSponsorDesign(profile, "backgroundUrl", url);
+        const storageErrors = await deleteUploadedMediaBatch([previousUrl]);
+        if (storageErrors.length) {
+          toast.warning("Nova imagem salva, mas o arquivo antigo não pôde ser removido");
+          return;
+        }
+        toast.success("Imagem de fundo enviada");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erro ao enviar a imagem de fundo");
       }
-      toast.success("Imagem de fundo enviada");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erro ao enviar a imagem de fundo",
-      );
+    };
+    if (previousUrl) {
+      setReplacementRequest({ label: "a imagem de fundo", replace });
+      return;
     }
+    await replace();
   };
 
   const uploadParishLogo = async (file) => {
     if (!file) return;
     const previousUrl = settings.appearance.parishLogoUrl;
-    if (
-      previousUrl &&
-      !window.confirm(
-        "Substituir a logo? O arquivo antigo será excluído quando as configurações forem salvas.",
-      )
-    )
+    const replace = async () => {
+      try {
+        const url = await uploadMedia(file, "branding", churchId);
+        updateSettings("appearance", "parishLogoUrl", url);
+        setPendingStorageCleanup((current) => [...current, previousUrl]);
+        toast.success("Logo enviada");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erro ao enviar logo");
+      }
+    };
+    if (previousUrl) {
+      setReplacementRequest({ label: "a logo", replace });
       return;
-    try {
-      const url = await uploadMedia(file, "branding", churchId);
-      updateSettings("appearance", "parishLogoUrl", url);
-      setPendingStorageCleanup((current) => [...current, previousUrl]);
-      toast.success("Logo enviada");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao enviar logo",
-      );
     }
+    await replace();
   };
 
   const uploadParishCover = async (file) => {
     if (!file) return;
     const previousUrl = settings.appearance.parishCoverUrl;
-    if (
-      previousUrl &&
-      !window.confirm(
-        "Substituir a capa? O arquivo antigo será excluído quando as configurações forem salvas.",
-      )
-    )
+    const replace = async () => {
+      try {
+        const url = await uploadMedia(file, "branding", churchId);
+        updateSettings("appearance", "parishCoverUrl", url);
+        setPendingStorageCleanup((current) => [...current, previousUrl]);
+        toast.success("Capa enviada");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erro ao enviar capa");
+      }
+    };
+    if (previousUrl) {
+      setReplacementRequest({ label: "a capa", replace });
       return;
-    try {
-      const url = await uploadMedia(file, "branding", churchId);
-      updateSettings("appearance", "parishCoverUrl", url);
-      setPendingStorageCleanup((current) => [...current, previousUrl]);
-      toast.success("Capa enviada");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao enviar capa",
-      );
     }
+    await replace();
   };
 
   return (
@@ -613,6 +614,32 @@ export default function ConfiguracoesPage() {
           </TabsContent>
         </SettingsTabs>
       </Tabs>
+      <AlertDialog
+        open={Boolean(replacementRequest)}
+        onOpenChange={(open) => !open && setReplacementRequest(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar substituição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A nova imagem substituirá {replacementRequest?.label}. O arquivo
+              anterior será removido depois que a atualização for salva.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const request = replacementRequest;
+                setReplacementRequest(null);
+                request?.replace();
+              }}
+            >
+              Substituir imagem
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

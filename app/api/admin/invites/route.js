@@ -2,10 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { inviteAdministrator } from "@/lib/services/provisioning";
 import { createSupabaseAdminClient } from "@/services/supabase/admin";
+import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
 
 const inviteSchema = z.object({ email: z.string().trim().email().max(320) });
 
 export async function POST(request) {
+  const rate = await checkRateLimit(`admin-invite:${getClientIp(request)}`, {
+    limit: 5,
+    windowMs: 60 * 60_000,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Muitas tentativas. Tente novamente mais tarde." },
+      { status: 429 },
+    );
+  }
   const configuredKey = process.env.PROVISIONING_API_KEY;
   const providedKey = request.headers.get("x-provisioning-key");
   if (!configuredKey || !providedKey || providedKey !== configuredKey) {
@@ -14,6 +25,16 @@ export async function POST(request) {
 
   try {
     const body = inviteSchema.parse(await request.json());
+    const emailRate = await checkRateLimit(`admin-invite-email:${body.email.toLowerCase()}`, {
+      limit: 3,
+      windowMs: 24 * 60 * 60_000,
+    });
+    if (!emailRate.allowed) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Tente novamente mais tarde." },
+        { status: 429 },
+      );
+    }
     const administrator = await inviteAdministrator({
       adminClient: createSupabaseAdminClient(),
       email: body.email,

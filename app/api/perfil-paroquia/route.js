@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { NO_STORE_HEADERS, PUBLIC_CACHE_HEADERS } from "@/lib/utils/http";
 import { createSupabaseServerClient } from "@/services/supabase/server";
+import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
 
 const emptyProfile = {
   parishName: "",
@@ -36,6 +37,16 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const rate = await checkRateLimit(`parish-profile:${getClientIp(request)}`, {
+      limit: 30,
+      windowMs: 60_000,
+    });
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Muitas alterações em pouco tempo. Tente novamente." },
+        { status: 429, headers: NO_STORE_HEADERS },
+      );
+    }
     const payload = profileUpdateSchema.parse(await request.json());
     const supabase = await createSupabaseServerClient();
     const {
