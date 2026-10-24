@@ -1,105 +1,48 @@
-# Componentes, Hooks, Services e Providers
+# Componentes, Hooks, Serviços e Providers
 
-## Atualização multi-igreja
+## Responsabilidades principais
 
-- `lib/services/churches.js` lista igrejas públicas e altera `is_active` para o administrador proprietário.
-- `lib/services/provisioning.js` envia o convite; ele não cria a igreja. A igreja é criada pelo administrador em `/configurar-igreja`.
-- `services/supabase/admin.js` é exclusivo do servidor e usa `SUPABASE_SERVICE_ROLE_KEY`.
-- `services/supabase/upload.js` grava mídia no prefixo da igreja e depende das políticas de Storage.
+- `AppShell` e `AppSidebar`: estrutura e navegação do painel administrativo.
+- `DashboardContent`: resumo operacional da igreja.
+- `AdManager`: cadastro, edição, busca, mídia e ativação de patrocinadores.
+- `TelaoPlayer`: agenda pública, reprodução, cache local, realtime e envio de métricas.
+- `PaginationControls`: paginação reutilizável das listas públicas.
+- `StaticMediaFrame`: prévia estática de vídeos e GIFs nas interfaces.
+- `SponsorInterestFloatingCta`: convite flutuante para o formulário de interesse de novos parceiros.
 
-## Objetivo
+## Estado e acesso a dados
 
-Mapear responsabilidades e oportunidades de separacao.
+`StoreProvider`, em `lib/store/store.js`, concentra o estado administrativo: patrocinadores, configurações e atualizações da interface. Rotas públicas consultam somente os dados necessários para a igreja ativa.
 
-## Componentes de Dominio
+Os serviços montam payloads e aplicam regras de negócio. Os repositórios concentram consultas ao Supabase e às RPCs; os clientes em `services/supabase/` fazem autenticação, leitura e upload de mídia.
 
-- `AppShell`: layout admin desktop e bloqueio mobile.
-- `AppSidebar`: navegacao, contadores e logout.
-- `DashboardContent`: cards administrativos.
-- `AdManager`: CRUD de patrocinadores, filtros, upload e configuracoes de metricas.
-- `TelaoPlayer`: playlist publica, cache, realtime, logs e rotacao.
-- `OverlayEditor`: canvas, elementos, drag, snap, dialogs, upload e propriedades.
-- `OverlayList`: tabela/lista de overlays e preview.
-- `CreateOverlayDialog`: criacao de overlay.
-- `PaginationControls`: paginacao simples.
-- `StaticMediaFrame`: captura frame estatico de video/GIF.
+## Serviços relevantes
 
-## Provider
-
-`StoreProvider` em `lib/store/store.js` e o provider central de estado. Ele contem:
-
-- defaults de settings;
-- mappers de rows Supabase;
-- payload builders;
-- CRUD de overlays;
-- CRUD de sponsors;
-- atualizacao de settings;
-- notificacao de overlay via `window.dispatchEvent`.
-
-## Services
-
-- `getPublicAdsPayload`
-- `getSponsorDirectoryPayload`
-- `getSponsorDetailPayload`
-- `createSupabaseBrowserClient`
-- `createSupabaseServerClient`
-- `uploadMedia`
-- `optimizeImageForUpload`
-- `validateMediaFile`
-- `checkRateLimit`
-- `getAdminSettings`, `saveAdminSettings`, `resetAdminSettings`, `resetAdministrativeData`
-- `getTelaoDefaultDurations`
-- `resolveSnapPosition`, `getElementBounds`
-- `shuffleArray`, `buildAdsSignature`, `getDesignValue`
-
-## Repositories
-
-- `fetchPublicSponsors`
-- `fetchSponsorSettings`
-- `fetchPublicSponsorDirectory`
-- `fetchPublicSponsorDetail`
-- `fetchPublicSponsorImpressions`
-- `listOverlays`, `insertOverlay`, `updateOverlayById`, `deleteOverlayById`, `deleteAllOverlays`
-- `listSponsors`, `insertSponsor`, `updateSponsorById`, `deleteSponsorById`, `deleteAllSponsors`
-- `getAppSetting`, `upsertAppSetting`
-
-## Hooks
-
-- `useIsMobile` em `hooks/ui/use-mobile.js`
+- dados públicos de patrocinadores, diretório, detalhe e relatório;
+- configurações administrativas e da igreja;
+- agenda e reprodução do telão;
+- upload, otimização e validação de mídia;
+- rate limit e registro de exibições.
 
 ## Diagrama
 
 ```mermaid
 flowchart TD
-  Layout[components/layout] --> AppShell
-  DashboardFolder[components/dashboard] --> DashboardContent
-  OverlayFolder[components/overlays] --> OverlayEditor
-  OverlayFolder --> OverlayList
-  SponsorsFolder[components/sponsors] --> AdManager
-  SponsorsFolder --> TelaoPlayer
-  SharedFolder[components/shared] --> PaginationControls
-  SharedFolder --> StaticMediaFrame
-  StoreProvider --> useStore
-  useStore --> AdManager
-  useStore --> OverlayEditor
-  useStore --> OverlayList
-  useStore --> DashboardContent
-  useStore --> AppSidebar
-  ApiRoutes[API routes] --> SponsorServices[lib/services/sponsors]
-  SponsorServices --> SponsorRepositories[lib/repositories/sponsors]
-  SponsorRepositories --> SupabaseRPC[Supabase RPCs]
-  ConfiguracoesPage --> SettingsServices[lib/services/settings]
-  SettingsServices --> SettingsRepositories[lib/repositories/settings]
-  OverlayEditor --> OverlayEditorServices[lib/services/overlay-editor]
-  TelaoPlayer --> TelaoServices[lib/services/telao-player]
-  AdManager --> uploadMedia
-  OverlayEditor --> uploadMedia
-  TelaoPlayer --> API
-  StaticMediaFrame --> Canvas
+  Admin[Rotas administrativas] --> Shell[AppShell]
+  Shell --> Manager[AdManager]
+  Manager --> Store[StoreProvider]
+  Store --> SponsorServices[Serviços de patrocinadores]
+  SponsorServices --> Repositories[Repositórios Supabase]
+  Public[Rotas públicas por slug] --> Player[TelaoPlayer]
+  Public --> Profile[Perfil da igreja]
+  Player --> TelaoServices[Serviços do telão]
+  TelaoServices --> Repositories
+  Repositories --> RPC[RPCs e RLS]
+  Manager --> Upload[Upload de mídia]
 ```
 
-## Melhorias
+## Próximas melhorias
 
-- Extrair hooks: `useSponsors`, `useOverlays`, `useTelaoPlaylist`, `useOverlayEditor`.
-- Criar schemas de dominio para payloads e rows.
-- Dividir `OverlayEditor` por toolbar, canvas, properties panel e dialogs.
+- Extrair hooks para patrocinadores e playlist do telão.
+- Manter schemas de domínio para payloads e linhas do banco.
+- Dividir componentes administrativos grandes em partes menores e testáveis.

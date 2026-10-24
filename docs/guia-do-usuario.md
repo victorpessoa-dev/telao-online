@@ -29,12 +29,6 @@ O contador de exibicoes fica no painel do telao.
 - Se nao houver patrocinador ativo em um tipo, esse tipo fica indisponivel.
 - Se nenhum tipo puder contar, o contador desliga.
 
-## Overlays
-
-Em `/overlay`, crie overlays para transmissao. Em `/editor/:id`, adicione imagens e textos, ajuste posicao, tamanho, camada e visibilidade.
-
-Use `/{slug}/shared/:id` no OBS ou ferramenta equivalente.
-
 ## Pagina Publica
 
 `/` exibe:

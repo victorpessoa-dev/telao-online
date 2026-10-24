@@ -1,67 +1,39 @@
-# Visao Geral e Arquitetura
+# Visão Geral e Arquitetura
 
-> Atualizado em 2026-10: o sistema é multi-igreja. Cada igreja possui um único administrador (`churches.admin_id`), e a rota pública é controlada por `churches.is_active`.
+> Atualizado em 2026-10: Telão Online é uma plataforma multi-igreja para patrocinadores e telões.
 
 ## Objetivo
 
-Explicar a arquitetura atual do Telão Online e como os domínios principais se conectam.
+Cada igreja administra seus patrocinadores, suas mídias e a programação exibida no telão. O público encontra a igreja pelo slug e pode consultar parceiros e relatórios de exibição.
 
-## Descricao
-
-O Telão Online é uma aplicação Next.js App Router com Supabase para operar patrocinadores, telões e overlays de transmissão. A raiz abre a única igreja ativa ou direciona para `/igrejas`; o painel administrativo é protegido por login e permissão de admin.
+Ao acessar `/`, a aplicação abre a única igreja ativa. Havendo nenhuma ou mais de uma, direciona para `/igrejas`.
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
-  Browser[Browser] --> Next[Next.js App Router]
-  Next --> Public[Paginas publicas]
-  Next --> Admin[Paginas admin]
-  Next --> API[Route Handlers /api]
-  Admin --> Store[StoreProvider]
-  Store --> SupabaseBrowser[Supabase Browser Client]
-  API --> SupabaseServer[Supabase Server Client]
-  SupabaseBrowser --> DB[(Supabase Postgres)]
-  SupabaseServer --> DB
-  DB --> RPC[RPCs e RLS]
-  SupabaseBrowser --> Storage[Supabase Storage v-playcast-midia]
+  Visitor[Visitante] --> Public[Rotas públicas por slug]
+  Team[Equipe da igreja] --> Admin[Painel administrativo]
+  Public --> Next[Next.js]
+  Admin --> Next
+  Next --> API[APIs]
+  Next --> Supabase[Supabase]
+  API --> Supabase
+  Supabase --> Database[(Postgres, RLS e RPCs)]
+  Supabase --> Media[Storage de mídias]
 ```
 
-## Dominios
+## Domínios
 
-- Patrocinadores: cadastro, upload de midia, ativacao, playlist e metricas.
-- Telao: exibicao NORMAL e MASTER, realtime, cache local e fila offline de logs.
-- Overlays: biblioteca, editor visual e links publicos para transmissao.
-- Perfil publico: identidade da paroquia, capa, logo e redes sociais.
-- Relatorios: historico publico por patrocinador e exportacao XLSX.
+- **Igrejas:** perfil público, slug, estado ativo e administrador responsável.
+- **Patrocinadores:** cadastro, mídia, período de exibição e página pública de cada parceiro.
+- **Telões:** programação NORMAL e MASTER, reprodução pública e sessão oficial para métricas.
+- **Relatórios:** registros de exibição e resumo público por patrocinador.
 
-## Camadas
+## Regras principais
 
-- `app`: rotas, paginas e route handlers.
-- `components`: UI e componentes por dominio.
-- `lib/repositories`: acesso Supabase/RPC.
-- `lib/services/churches`: diretório público e ativação da rota da igreja.
-- `lib/services/provisioning`: convite administrativo no servidor.
-- `lib/services`: regras de aplicacao e montagem de payload.
-- `lib/mappers`: conversao entre linhas do banco e formato de tela.
-- `lib/store`: provider global usado pelo admin.
-- `services/supabase`: clients browser/server e upload.
-- `supabase`: schema, migrations, RLS, RPCs e storage.
-
-## Regras Importantes
-
-- Admin nao funciona em mobile.
-- Admin exige usuário autenticado que seja proprietário de uma igreja (`churches.admin_id = auth.uid()`).
-- Escritas dependem de RLS no Supabase.
-- APIs publicas retornam `no-store`.
-- Links publicos externos sao filtrados para `http/https`.
-- Contador de exibicoes pode pausar NORMAL e MASTER separadamente.
-
-## Direcao de Refatoracao
-
-Manter refatoracoes incrementais e verificaveis. Prioridades futuras:
-
-- extrair dominios para `features/sponsors`, `features/overlays` e `features/settings`;
-- migrar regras de dominio para TypeScript gradualmente;
-- reduzir o tamanho de componentes grandes como editor de overlay e pagina publica;
-- adicionar testes de integracao para RPC/RLS em ambiente Supabase isolado.
+- Cada igreja tem um único administrador em `churches.admin_id`.
+- `churches.is_active` controla a disponibilidade da igreja e de suas rotas públicas.
+- O acesso administrativo exige autenticação e autorização no banco.
+- Consultas públicas usam apenas dados liberados para a igreja ativa.
+- O bucket atual é `v-playcast-midia`; a migração para Cloudflare R2 continua planejada para uma etapa futura.
