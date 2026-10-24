@@ -1,76 +1,42 @@
 # Telão Online
 
-Aplicação web para equipes paroquiais organizarem patrocinadores, mídias e a programação exibida no telão. Cada igreja administra seus próprios dados e disponibiliza uma página pública com patrocinadores e registros de exibição.
+O Telão Online ajuda igrejas e comunidades a organizarem os patrocinadores de suas festas e exibi-los no telão de forma simples, bonita e transparente.
 
-## Acesso público
+## Para que serve
 
-- `/` abre a página pública da única igreja ativa.
-- Quando há zero ou mais de uma igreja ativa, `/` direciona para `/igrejas`.
-- `/igrejas` lista e permite buscar igrejas com perfil público ativo.
-- `/comunidade` é mantida somente como redirecionamento permanente para `/igrejas`.
-- `/{slug}` exibe o perfil público de uma igreja; `/{slug}/parceiros/{id}` exibe o detalhe público de um patrocinador.
+Com o Telão Online, a equipe da igreja pode cadastrar patrocinadores, preparar suas imagens ou vídeos e acompanhar o que foi exibido durante a festa. Quem visita a página pública também pode conhecer os apoiadores e demonstrar interesse em participar.
 
-## Recursos
+## Como acessar
 
-- Painel administrativo protegido por Supabase Auth.
-- Cadastro de patrocinadores com imagens, GIFs e vídeos.
-- Programação determinística para os modos NORMAL e MASTER.
-- Sessão oficial de exibição, métricas e relatórios públicos.
-- Perfil público, links sociais e captação de interesse em patrocínio por igreja.
-- Grade TV administrativa e overlays compartilháveis.
+- Ao entrar no endereço principal, você será levado diretamente à igreja ativa quando houver apenas uma disponível.
+- Quando houver mais de uma igreja, a página **Igrejas** permite escolher a comunidade desejada.
+- Cada igreja possui uma página pública com seus patrocinadores.
+- A equipe administrativa acessa o painel pelo botão **Entrar**.
 
-## Tecnologias
+## Para a equipe da igreja
 
-Next.js App Router, React, Tailwind CSS, Supabase (Auth, Postgres e Storage), RLS, RPCs públicas controladas, Radix UI, Recharts e Vitest.
+No painel, é possível:
 
-## Configuração
+- Cadastrar, editar e organizar patrocinadores.
+- Enviar imagens, vídeos e GIFs para exibição.
+- Controlar a programação do telão.
+- Abrir o telão público durante a festa.
+- Acompanhar registros e relatórios de exibição.
+- Divulgar uma página de interesse para novos patrocinadores.
 
-Crie um arquivo `.env` a partir de `.env.example` e informe:
+## Para patrocinadores e visitantes
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-SUPABASE_SERVICE_ROLE_KEY=
-PROVISIONING_API_KEY=
-```
+Na página pública da igreja, você pode:
 
-As variáveis `NEXT_PUBLIC_*` podem ser expostas ao navegador. `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` são exclusivas do servidor e nunca devem ser versionadas.
+- Ver os patrocinadores participantes.
+- Abrir a página de cada parceiro.
+- Consultar os registros públicos de exibição.
+- Manifestar interesse em apoiar uma festa.
 
-## Banco de dados
+## Próximos passos
 
-Para uma instalação nova, execute somente [supabase/schema.sql](supabase/schema.sql) no SQL Editor de um projeto Supabase vazio. Para instalações existentes, siga os scripts de upgrade indicados em [docs/banco-de-dados.md](docs/banco-de-dados.md).
+O Telão Online está preparado para evoluir. A próxima melhoria planejada é a integração futura com Cloudflare R2, para ampliar o armazenamento e a entrega de mídias.
 
-## Desenvolvimento
+## Ajuda
 
-```bash
-npm install
-npm run dev
-```
-
-Para validar antes de publicar:
-
-```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-```
-
-## Docker
-
-Com as variáveis do Supabase definidas em `.env`:
-
-```bash
-docker compose up --build
-```
-
-A aplicação fica disponível em `http://localhost:3000`.
-
-## Documentação
-
-- [Índice da documentação](docs/README.md)
-- [Como o projeto funciona](docs/projeto-como-funciona.md)
-- [Configuração de ambiente](docs/configuracao-de-ambiente.md)
-- [Plano futuro de Cloudflare R2](docs/plano-cloudflare-r2.md)
-- [Execução futura da integração R2](docs/plano-execucao-cloudflare-r2.md)
+Para acessar uma igreja, use a página **Igrejas**. Para administrar patrocinadores e telões, entre com a conta da equipe responsável pela igreja.

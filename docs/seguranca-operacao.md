@@ -24,7 +24,6 @@ O admin tambem e bloqueado em modo mobile por UX e operacao.
 A escrita nas tabelas sensíveis depende de RLS e `public.owns_church(church_id)`:
 
 - `sponsors`
-- `overlays`
 - `app_settings`
 - `telao_sessions`
 - `sponsor_impressions`
@@ -90,4 +89,4 @@ Upload valida:
 - Configurar CAPTCHA no Supabase Auth para login e recuperação de senha (Turnstile ou hCaptcha) e revisar os limites de Authentication > Rate Limits. O app não deve tentar substituir os limites próprios do provedor de autenticação.
 - Garantir que cada igreja tenha exatamente um `admin_id` e que a conta seja criada por convite.
 - Revisar RPCs `security definer` sempre que tabelas publicas mudarem.
-- Fazer smoke test em `/`, `/login`, `/{slug}`, `/{slug}/ads-telao`, `/painel-telao` e `/overlay`.
+- Fazer smoke test em `/`, `/login`, `/{slug}`, `/{slug}/ads-telao` e `/painel-telao`.

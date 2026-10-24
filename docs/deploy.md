@@ -79,5 +79,3 @@ Restore:
 - `/admin` exige admin.
 - `/painel-telao` lista patrocinadores.
 - `/{slug}/ads-telao` exibe mídia ativa de uma igreja pública.
-- `/overlay` lista overlays.
-- `/{slug}/shared/:id` abre overlay público.

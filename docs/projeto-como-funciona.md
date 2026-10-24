@@ -1,17 +1,16 @@
 # O Que E o Projeto e Como Funciona
 
-> Atualizado em 2026-10: as rotas públicas são sempre precedidas pelo slug da igreja, como `/{slug}/ads-telao` e `/{slug}/shared/{id}`.
+> Atualizado em 2026-10: as rotas públicas da igreja usam seu slug, como `/{slug}/ads-telao` e `/{slug}/parceiros/:id`.
 
 ## Ideia do Projeto
 
 Telão Online é uma ferramenta operacional para organizar patrocinadores e elementos visuais usados em transmissão. A ideia é ter um painel simples para a equipe cadastrar mídias, controlar o que aparece no telão, acompanhar exibições e disponibilizar transparência pública para patrocinadores e parceiros.
 
-O sistema nao e uma landing page. Ele e uma aplicacao de operacao: painel administrativo, telao publico, telao master, editor de overlays e relatorios.
+O sistema não é uma landing page. Ele é uma aplicação de operação: painel administrativo, telão público, telão master e relatórios.
 
 ## Publicos
 
 - Operador: cadastra patrocinadores, ativa/desativa mídias, abre o telão e acompanha métricas.
-- Equipe de transmissao: usa overlays em OBS ou ferramenta equivalente por meio de links publicos.
 - Patrocinador: consulta pagina publica com historico e relatorio de exibicoes.
 - Igrejas: vê o diretório público em `/igrejas` e acessa a página da igreja.
 
@@ -25,8 +24,6 @@ flowchart TD
   D --> E[/{slug}/ads-telao exibe a playlist]
   E --> F[Player registra exibicoes quando contador esta ativo]
   F --> G[Relatorios publicos por patrocinador]
-  B --> H[Cria overlays]
-  H --> I[/{slug}/shared/:id usado na transmissao]
 ```
 
 ## Modulos Visiveis
@@ -37,9 +34,6 @@ flowchart TD
 - `/painel-telao`: cadastro, edicao, upload, ativacao e contador de patrocinadores.
 - `/{slug}/ads-telao`: telao público da igreja.
 - `/{slug}/parceiros/:id`: detalhe público de um patrocinador.
-- `/overlay`: lista de overlays.
-- `/editor/:id`: editor visual de overlay.
-- `/{slug}/shared/:id`: overlay público para uso em transmissão.
 
 ## Contador de Exibicoes
 

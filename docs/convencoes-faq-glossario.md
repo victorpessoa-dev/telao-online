@@ -14,7 +14,6 @@ Padronizar linguagem e apoiar manutencao.
 ## Convencoes Propostas
 
 - `Sponsor`: entidade tecnica de patrocinador/anunciante.
-- `Overlay`: composicao visual com elementos.
 - `Telao`: player publico de exibicao.
 - `Settings`: configuracoes persistidas em `app_settings`.
 - `Repository`: camada de acesso a dados.
@@ -32,7 +31,6 @@ Em `sponsors.views`, `sponsors.total_seconds` e `sponsor_impressions`.
 No bucket Supabase Storage `v-playcast-midia`.
 
 **O que e `public_id`?**  
-Identificador público de overlay usado em `/{slug}/shared/:publicId`.
 
 ## Diagrama de Dependencias
 

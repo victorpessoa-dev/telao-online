@@ -33,7 +33,6 @@
 flowchart TD
   A[Operação Telão Online] --> B[Painel admin]
   B --> C[Patrocinadores]
-  B --> D[Overlays]
   C --> E[Telao NORMAL e MASTER]
   E --> F[Metricas e relatorios publicos]
   D --> G[Links /{slug}/shared para transmissao]
