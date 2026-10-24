@@ -1,8 +1,9 @@
 import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 
-const BUCKET = "v-playcast-midia";
-// Kept only so media uploaded before the brand migration can still be removed.
-const LEGACY_BUCKET = "pascom-media";
+const BUCKET = "telao-online-midia";
+// Kept only so media uploaded before the Telão Online migration can still be
+// read and removed without breaking existing sponsor and branding URLs.
+const LEGACY_BUCKETS = ["v-playcast-midia", "pascom-media"];
 const MAX_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 const ALLOWED_MEDIA_TYPES = new Set([
   "image/gif",
@@ -14,6 +15,8 @@ const ALLOWED_MEDIA_TYPES = new Set([
 ]);
 const WEBP_QUALITY = 0.86;
 const MAX_IMAGE_SIDE = 2560;
+const TELAO_BACKGROUND_MAX_SIDE = 1920;
+const TELAO_BACKGROUND_WEBP_QUALITY = 0.82;
 export const MAX_VIDEO_DURATION_SECONDS = 20;
 let ffmpegPromise;
 
@@ -92,12 +95,15 @@ async function loadImageBitmap(file) {
   }
 }
 
-export async function optimizeImageForUpload(file) {
+async function optimizeImageToWebp(
+  file,
+  { maxSide = MAX_IMAGE_SIDE, quality = WEBP_QUALITY } = {},
+) {
   const bitmap = await loadImageBitmap(file);
   try {
     const scale = Math.min(
       1,
-      MAX_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height),
+      maxSide / Math.max(bitmap.width, bitmap.height),
     );
     const width = Math.max(1, Math.round(bitmap.width * scale));
     const height = Math.max(1, Math.round(bitmap.height * scale));
@@ -110,7 +116,7 @@ export async function optimizeImageForUpload(file) {
     canvas.height = height;
     context.drawImage(bitmap, 0, 0, width, height);
 
-    const blob = await canvasToBlob(canvas, "image/webp", WEBP_QUALITY);
+    const blob = await canvasToBlob(canvas, "image/webp", quality);
     const originalName = file.name.replace(/\.[^.]+$/, "");
     const optimizedName = `${originalName || "image"}.webp`;
     const optimizedFile = new File([blob], optimizedName, {
@@ -122,6 +128,23 @@ export async function optimizeImageForUpload(file) {
   } finally {
     bitmap.close?.();
   }
+}
+
+export async function optimizeImageForUpload(file) {
+  return optimizeImageToWebp(file);
+}
+
+// Backgrounds are downloaded by every open display. Keep their dimension and
+// quality lower than sponsor artwork while preserving the selected aspect ratio.
+export async function optimizeTelaoBackgroundForUpload(file) {
+  validateMediaFile(file);
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Envie uma imagem para o fundo do telão");
+  }
+  return optimizeImageToWebp(file, {
+    maxSide: TELAO_BACKGROUND_MAX_SIDE,
+    quality: TELAO_BACKGROUND_WEBP_QUALITY,
+  });
 }
 
 export async function cropImageForUpload(file, crop = {}) {
@@ -303,7 +326,7 @@ export async function uploadMedia(
 function getUploadedMediaLocation(source = "") {
   try {
     const url = new URL(String(source).trim());
-    const buckets = [BUCKET, LEGACY_BUCKET];
+    const buckets = [BUCKET, ...LEGACY_BUCKETS];
     const bucket = buckets.find((candidate) =>
       url.pathname.includes(`/storage/v1/object/public/${candidate}/`),
     );

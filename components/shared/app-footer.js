@@ -28,7 +28,7 @@ export default function AppFooter({ className }) {
       <div className="mx-auto flex w-[min(80%,1600px)] flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left max-md:w-full max-md:items-center max-md:px-4">
         <div className="max-md:flex max-md:flex-col max-md:items-center">
           <img
-            src="/brand/emblema-telao-online.png"
+            src="/brand/emblema-telao-online.webp"
             alt="Telão Online"
             className="h-14 w-auto max-w-[12rem] object-contain"
           />

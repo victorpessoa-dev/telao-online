@@ -26,7 +26,7 @@ function ChurchCard({ church, index, reduceMotion }) {
         <div className="relative flex flex-1 flex-col p-6">
           <div className="absolute -top-10 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border-4 border-card bg-card shadow-sm">
             <img
-              src={church.logo_url || "/brand/logo-telao-online.png"}
+              src={church.logo_url || "/brand/logo-telao-online.webp"}
               alt=""
               className="h-full w-full object-cover"
             />

@@ -125,7 +125,7 @@ export default function SponsorInterestPage() {
           <div className="flex min-w-0 items-center gap-2 text-right text-sm font-medium text-muted-foreground">
             <span className="truncate">{church.name}</span>
             <img
-              src={church.logo_url || "/brand/logo-telao-online.png"}
+              src={church.logo_url || "/brand/logo-telao-online.webp"}
               alt=""
               className="h-9 w-9 shrink-0 rounded-full border border-border bg-card object-cover"
             />

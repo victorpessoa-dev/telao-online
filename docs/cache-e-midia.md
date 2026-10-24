@@ -1,6 +1,6 @@
 # Cache e Midia
 
-> As mídias do bucket `v-playcast-midia` usam o ID da igreja como primeiro segmento do caminho. As políticas de Storage validam esse segmento antes de gravar, alterar ou excluir.
+> As mídias do bucket `telao-online-midia` usam o ID da igreja como primeiro segmento do caminho. As políticas de Storage validam esse segmento antes de gravar, alterar ou excluir. URLs já existentes no bucket `v-playcast-midia` continuam compatíveis.
 
 ## Objetivo
 
@@ -46,7 +46,7 @@ vplaycast:telao:log-queue
 
 ## Upload e Midia
 
-- Bucket: `v-playcast-midia`.
+- Bucket: `telao-online-midia`.
 - Limite: 100 MB.
 - Imagens permitidas: GIF, JPEG, PNG, WebP.
 - Videos permitidos: MP4 e WebM.

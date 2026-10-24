@@ -28,7 +28,7 @@ Padronizar linguagem e apoiar manutencao.
 Em `sponsors.views`, `sponsors.total_seconds` e `sponsor_impressions`.
 
 **Onde ficam as imagens?**  
-No bucket Supabase Storage `v-playcast-midia`.
+No bucket Supabase Storage `telao-online-midia`.
 
 **O que e `public_id`?**  
 

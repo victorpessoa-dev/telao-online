@@ -7,7 +7,7 @@ import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
 const emptyProfile = {
   parishName: "",
   parishCity: "",
-  parishLogoUrl: "/brand/logo-telao-online.png",
+  parishLogoUrl: "/brand/logo-telao-online.webp",
   parishCoverUrl: "",
   parishSocialLinks: [],
   parishSponsorshipGuidelines: "",

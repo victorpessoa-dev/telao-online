@@ -12,9 +12,9 @@ export default function manifest() {
     categories: ["religion", "video"],
     icons: [
       {
-        src: "/brand/logo-telao-online.png",
-        sizes: "555x390",
-        type: "image/png",
+        src: "/brand/logo-telao-online.webp",
+        sizes: "1110x780",
+        type: "image/webp",
         purpose: "any maskable",
       },
     ],

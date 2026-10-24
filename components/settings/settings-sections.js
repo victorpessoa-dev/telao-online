@@ -360,7 +360,8 @@ export function SponsorDesignSection({
         <CardTitle>Design dos patrocínios</CardTitle>
         <CardDescription>
           Defina um único fundo, zoom e posição da área de mídia para todo o
-          telão.
+          telão. Os fundos enviados são otimizados em WebP para economizar
+          carregamento e armazenamento.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -704,7 +705,7 @@ export function DataSettingsSection({ onExport, onImport, onClearData }) {
                   accept="application/json,.json"
                   onFileSelect={setPendingImportFile}
                   title="Arraste o backup ou clique para importar"
-                  description="Arquivo JSON exportado pelo vPlayCast"
+                  description="Arquivo JSON exportado pelo Telão Online"
                 />
               </div>
             </div>

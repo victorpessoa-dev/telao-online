@@ -42,9 +42,14 @@ describe("media upload validation", () => {
   it("extracts only files from the application storage bucket", () => {
     expect(
       getUploadedMediaPath(
-        "https://project.supabase.co/storage/v1/object/public/v-playcast-midia/sponsors/video%20teste.mp4",
+        "https://project.supabase.co/storage/v1/object/public/telao-online-midia/sponsors/video%20teste.mp4",
       ),
     ).toBe("sponsors/video teste.mp4");
+    expect(
+      getUploadedMediaPath(
+        "https://project.supabase.co/storage/v1/object/public/v-playcast-midia/sponsors/video%20antigo.mp4",
+      ),
+    ).toBe("sponsors/video antigo.mp4");
     expect(getUploadedMediaPath("https://youtube.com/watch?v=abc")).toBe("");
   });
 });
