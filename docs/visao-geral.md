@@ -36,4 +36,4 @@ flowchart LR
 - `churches.is_active` controla a disponibilidade da igreja e de suas rotas públicas.
 - O acesso administrativo exige autenticação e autorização no banco.
 - Consultas públicas usam apenas dados liberados para a igreja ativa.
-- O bucket atual é `v-playcast-midia`; a migração para Cloudflare R2 continua planejada para uma etapa futura.
+- O bucket atual é `telao-online-midia`; a migração para Cloudflare R2 continua planejada para uma etapa futura.

@@ -40,7 +40,6 @@ tsc --noEmit -p jsconfig.json
 - rate limit;
 - upload e sanitizacao de midia;
 - helpers do telao;
-- export XLSX simples;
 - fluxos de auth e logs.
 
 ## Docker

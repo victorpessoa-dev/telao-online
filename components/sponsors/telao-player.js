@@ -21,13 +21,14 @@ import {
   millisecondsUntilScheduleChange,
 } from "@/lib/services/telao-schedule";
 import { SPONSOR_LOG_QUEUE_PREFIX } from "@/lib/services/sponsor-local-metrics";
+import { BRAND } from "@/lib/constants/brand";
 
-const ADS_CACHE_KEY = "vplaycast:telao:ads-cache";
+const ADS_CACHE_KEY = "telao-online:telao:ads-cache";
 const LOG_QUEUE_KEY = SPONSOR_LOG_QUEUE_PREFIX.slice(0, -1);
 const ADS_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const LOG_FLUSH_INTERVAL_MS = 90 * 1000;
 const LOG_BATCH_SIZE = 100;
-const DISPLAY_CLIENT_KEY = "vplaycast:official-display-client";
+const DISPLAY_CLIENT_KEY = "telao-online:official-display-client";
 
 function getTelaoProfile(width) {
   if (width < 768) return "MOBILE";
@@ -791,7 +792,7 @@ export default function TelaoPlayer({
       {};
     const inactiveBackground =
       inactiveDesign.backgroundUrl ||
-      "/brand/background-virtus-playcast.webp";
+      BRAND.fallbackBackgroundAsset;
     const inactiveMessageStyle = {
       width: `${getDesignValue(
         inactiveDesign,

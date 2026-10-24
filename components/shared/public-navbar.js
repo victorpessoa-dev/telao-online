@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BRAND } from "@/lib/constants/brand";
 
 const fallbackProfile = {
-  parishName: "Telão Online",
-  parishLogoUrl: "/brand/logo-telao-online.webp",
+  parishName: BRAND.name,
+  parishLogoUrl: BRAND.markAsset,
 };
 
+/** Public navigation that resolves a church profile or the product fallback brand. */
 export default function PublicNavbar({
   church = null,
   showLogin = true,
@@ -70,10 +72,10 @@ export default function PublicNavbar({
           }
           className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {profile.parishName === "Telão Online" ? (
+          {profile.parishName === BRAND.name ? (
             <img
-              src="/brand/logotipo-telao-online.webp"
-              alt="Telão Online"
+              src={BRAND.wordmarkAsset}
+              alt={BRAND.name}
               className="h-7 w-auto max-w-44 object-contain sm:h-8"
             />
           ) : (
@@ -81,7 +83,7 @@ export default function PublicNavbar({
               {profile.parishName}
             </span>
           )}
-          {profile.parishName !== "Telão Online" && profile.parishLogoUrl ? (
+          {profile.parishName !== BRAND.name && profile.parishLogoUrl ? (
             <img
               src={profile.parishLogoUrl}
               alt=""

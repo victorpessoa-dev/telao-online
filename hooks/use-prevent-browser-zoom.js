@@ -2,6 +2,10 @@
 
 import { useEffect } from "react";
 
+/**
+ * Disables browser zoom gestures for the public display, where scaling would
+ * break the calibrated sponsor layout. All event listeners are cleaned up.
+ */
 export function usePreventBrowserZoom() {
   useEffect(() => {
     const preventKeyboardZoom = (event) => {

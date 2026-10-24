@@ -356,7 +356,7 @@ export default function ConfiguracoesPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `vplaycast-backup-${new Date().toISOString().split("T")[0]}.json`;
+    link.download = `telao-online-backup-${new Date().toISOString().split("T")[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
     toast.success("Dados exportados com sucesso");

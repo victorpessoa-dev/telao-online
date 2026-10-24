@@ -11,7 +11,6 @@ components/sponsors/    Patrocinadores, formulários e telão.
 components/ui/          Componentes base da interface.
 hooks/ui/               Hooks visuais.
 lib/cache/              Rate limit em memória.
-lib/export/             Exportação XLSX.
 lib/mappers/            Conversão entre banco e domínio.
 lib/repositories/       Acesso ao Supabase e às RPCs.
 lib/services/           Regras e payloads da aplicação.

@@ -3,6 +3,7 @@ import { ArrowLeft, LogIn, SearchX } from "lucide-react";
 import ErrorPageLayout from "@/components/shared/error-page-layout";
 import { Button } from "@/components/ui/button";
 
+/** Public fallback rendered for routes that are not available. */
 export default function NotFound() {
   return (
     <ErrorPageLayout

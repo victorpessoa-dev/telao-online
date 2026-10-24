@@ -47,7 +47,7 @@
   display: none;
 }
 
-@keyframes virtus-logo-float {
+@keyframes telao-logo-float {
   0%,
   100% {
     transform: translateY(0) scale(1);
@@ -57,7 +57,7 @@
   }
 }
 
-@keyframes virtus-logo-pulse {
+@keyframes telao-logo-pulse {
   0%,
   100% {
     opacity: 0.65;
@@ -70,7 +70,7 @@
 }
 
 .brand-logo-motion {
-  animation: virtus-logo-float 4s ease-in-out infinite;
+  animation: telao-logo-float 4s ease-in-out infinite;
 }
 .brand-loading-mark {
   position: relative;
@@ -85,7 +85,7 @@
   inset: -0.35rem;
   border-radius: 9999px;
   background: oklch(0.65 0.2 235 / 0.16);
-  animation: virtus-logo-pulse 1.3s ease-in-out infinite;
+  animation: telao-logo-pulse 1.3s ease-in-out infinite;
 }
 .brand-loading-mark img {
   position: relative;
@@ -93,7 +93,7 @@
   height: 2.75rem;
   width: 2.75rem;
   object-fit: contain;
-  animation: virtus-logo-float 1.7s ease-in-out infinite;
+  animation: telao-logo-float 1.7s ease-in-out infinite;
 }
 
 .morph-container { display: flex; justify-content: flex-end; width: 100%; max-width: 208px; }

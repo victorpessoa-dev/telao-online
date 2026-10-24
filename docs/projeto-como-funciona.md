@@ -56,7 +56,7 @@ O banco e Supabase Postgres. O app usa:
 - `churches.admin_id` e RLS por igreja para autorizar o painel e cada dado.
 - RLS para proteger escrita.
 - RPCs `security definer` para consultas publicas controladas.
-- Supabase Storage no bucket `v-playcast-midia`.
+- Supabase Storage no bucket `telao-online-midia`.
 - Headers de seguranca no Next.
 - Validacao de URLs publicas para aceitar apenas `http` e `https`.
 

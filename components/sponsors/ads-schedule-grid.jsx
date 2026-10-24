@@ -26,7 +26,7 @@ const CYCLES_BEFORE_AND_AFTER = 5;
 
 function sponsorColor(id) {
   let hash = 0;
-  for (const character of String(id || "vplaycast")) {
+  for (const character of String(id || "telao-online")) {
     hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   }
   return `hsl(${hash % 360} 62% 42%)`;

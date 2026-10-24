@@ -8,19 +8,19 @@ describe("sponsor local metrics", () => {
   it("aggregates only the pending queues of the current church", () => {
     const storage = new Map([
       [
-        "vplaycast:telao:log-queue:church-a:NORMAL",
+        "telao-online:telao:log-queue:church-a:NORMAL",
         JSON.stringify([
           { sponsorId: "ad-1", viewsCount: 2, durationSeconds: 20 },
         ]),
       ],
       [
-        "vplaycast:telao:log-queue:church-a:MASTER",
+        "telao-online:telao:log-queue:church-a:MASTER",
         JSON.stringify([
           { sponsorId: "ad-1", viewsCount: 1, durationSeconds: 10 },
         ]),
       ],
       [
-        "vplaycast:telao:log-queue:church-b:NORMAL",
+        "telao-online:telao:log-queue:church-b:NORMAL",
         JSON.stringify([
           { sponsorId: "ad-1", viewsCount: 99, durationSeconds: 99 },
         ]),

@@ -6,6 +6,7 @@ import { RefreshCw, TriangleAlert } from "lucide-react";
 import ErrorPageLayout from "@/components/shared/error-page-layout";
 import { Button } from "@/components/ui/button";
 
+/** Route-level recovery screen that records the rendering error and offers retry. */
 export default function ErrorPage({ error, reset }) {
   useEffect(() => {
     console.error("Route rendering failed:", error);

@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { NO_STORE_HEADERS } from "@/lib/utils/http";
 import { createSupabaseServerClient } from "@/services/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
+import { isValidChurchSlug, normalizeChurchSlug } from "@/lib/utils/church-slug";
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
+/**
+ * Checks public availability of a church slug while rate limiting anonymous use.
+ */
 export async function GET(request) {
   const rate = await checkRateLimit(`church-slug-check:${getClientIp(request)}`, {
     limit: 30,
@@ -16,10 +18,11 @@ export async function GET(request) {
       { status: 429, headers: NO_STORE_HEADERS },
     );
   }
-  const slug =
-    new URL(request.url).searchParams.get("slug")?.trim().toLowerCase() || "";
+  const slug = normalizeChurchSlug(
+    new URL(request.url).searchParams.get("slug"),
+  );
 
-  if (!SLUG_PATTERN.test(slug)) {
+  if (!isValidChurchSlug(slug)) {
     return NextResponse.json(
       { available: false, error: "Slug inválido" },
       { status: 400, headers: NO_STORE_HEADERS },

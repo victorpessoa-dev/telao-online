@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+/** Registers offline support in production and clears stale workers during development. */
 export default function PwaServiceWorker() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return undefined;
@@ -21,7 +22,11 @@ export default function PwaServiceWorker() {
         .then((keys) =>
           Promise.all(
             keys
-              .filter((key) => key.startsWith("vplaycast-"))
+              .filter(
+                (key) =>
+                  key.startsWith("telao-online-") ||
+                  key.startsWith("vplaycast-"),
+              )
               .map((key) => caches.delete(key)),
           ),
         )

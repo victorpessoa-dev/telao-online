@@ -1,6 +1,9 @@
+import { BRAND } from "@/lib/constants/brand";
+
+/** Renders the reusable Telão Online mark or complete wordmark. */
 export default function BrandLogo({
   className = "",
-  alt = "Telão Online",
+  alt = BRAND.name,
   markOnly = false,
   animated = false,
 }) {
@@ -11,14 +14,14 @@ export default function BrandLogo({
       <span className="relative flex h-full items-center gap-2.5">
         {!markOnly ? (
           <span className="font-brand text-[0.72em] font-extrabold tracking-tight text-foreground">
-            Telão Online
+            {BRAND.name}
           </span>
         ) : null}
         <img
           src={
             markOnly
-              ? "/brand/logo-telao-online.webp"
-              : "/brand/logotipo-telao-online.webp"
+              ? BRAND.markAsset
+              : BRAND.wordmarkAsset
           }
           alt={markOnly ? alt : ""}
           className={

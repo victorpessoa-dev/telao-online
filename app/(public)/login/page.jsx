@@ -183,6 +183,7 @@ function LoginForm() {
   );
 }
 
+/** Public entry point for the administrative authentication flow. */
 export default function LoginPage() {
   return (
     <React.Suspense>
