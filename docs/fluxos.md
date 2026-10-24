@@ -51,7 +51,7 @@ flowchart TD
   E --> F[Preload e cache local]
   F --> G[Timer de exibicao]
   G --> H{metricas ligadas e tipo nao pausado?}
-  H -- Sim --> I[POST /api/anunciantes/logs]
+  H -- Sim --> I[POST /api/parceiros/logs]
   I --> J[RPC log_sponsor_impression]
   I -- Falha --> K[Fila localStorage]
   G --> L[Proximo patrocinador]

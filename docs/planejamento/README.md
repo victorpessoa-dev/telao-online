@@ -1,4 +1,4 @@
-# Planejamento do vPlayCast
+# Planejamento do Telão Online
 
 Esta pasta reúne os planos que precisam acompanhar o repositório no GitHub. Ela é a versão publicável e estável do direcionamento que antes existia somente em `.planning/`.
 
@@ -7,8 +7,6 @@ Esta pasta reúne os planos que precisam acompanhar o repositório no GitHub. El
 | Documento | Origem consolidada | Finalidade |
 | --- | --- | --- |
 | [Visão e requisitos](./visao-e-requisitos.md) | `PROJECT.md` e `REQUIREMENTS.md` | Define o produto web, seus limites e os requisitos vigentes. |
-| [Roadmap de segurança e operação](./roadmap-seguranca-e-operacao.md) | `ROADMAP.md` e planos das fases 1 a 5 | Registra os trabalhos pendentes para segurança, confiabilidade e documentação. |
-| [Grade TV administrativa](../atualizacao-futura-grade-tv.md) | plano funcional da Grade TV | Registra a entrega já implementada e suas regras de operação. |
 | [Plano de integração Cloudflare R2](../plano-cloudflare-r2.md) | plano de infraestrutura | Descreve a migração futura de mídia, ainda não implementada. |
 | [Plano de execução Cloudflare R2](../plano-execucao-cloudflare-r2.md) | plano técnico | Detalha a ordem de implementação do R2. |
 

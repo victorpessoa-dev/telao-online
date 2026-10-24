@@ -1,4 +1,4 @@
--- vPlayCast - consolidated schema for a new Supabase project.
+-- Telão Online - consolidated schema for a new Supabase project.
 -- Model: one administrator per church; all application content belongs to a
 -- church and DELETE is permanent (no soft-delete/audit actor columns).
 create extension if not exists pgcrypto;
@@ -34,7 +34,7 @@ create table public.churches (
   settings jsonb not null default '{}'::jsonb,
   public_views integer not null default 0 check (public_views >= 0),
   content_version bigint not null default 1,
-  -- Controls visibility on the landing page and every /{slug}/... public URL.
+  -- Controls visibility in /parceiros and every /{slug}/... public URL.
   is_active boolean not null default true,
   setup_completed_at timestamptz,
   created_at timestamptz not null default now(),

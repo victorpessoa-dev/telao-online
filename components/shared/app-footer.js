@@ -23,19 +23,21 @@ export default function AppFooter({ className }) {
   return (
     <footer
       aria-label="Rodapé"
-      className={cn("border-t border-slate-200 bg-white px-6 py-8", className)}
+      className={cn("border-t border-slate-200 bg-white py-8", className)}
     >
-      <div className="mx-auto flex w-[min(80%,1600px)] flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left max-md:w-full max-md:px-4">
-        <div>
-          <p className="font-brand text-lg font-extrabold text-slate-950">
-            vPlayCast
-          </p>
+      <div className="mx-auto flex w-[min(80%,1600px)] flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left max-md:w-full max-md:items-center max-md:px-4">
+        <div className="max-md:flex max-md:flex-col max-md:items-center">
+          <img
+            src="/brand/emblema-telao-online.png"
+            alt="Telão Online"
+            className="h-14 w-auto max-w-[12rem] object-contain"
+          />
           <p className="mt-1 max-w-md text-sm leading-6 text-slate-500">
             Transparência para as parcerias que apoiam novenários e festas
             paroquiais.
           </p>
           <p className="mt-2 text-xs text-slate-400">
-            © {new Date().getFullYear()} vPlayCast · Desenvolvido por Victor
+            © {new Date().getFullYear()} Telão Online · Desenvolvido por Victor
             Pessoa.
           </p>
         </div>

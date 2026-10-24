@@ -19,7 +19,7 @@ export function LoadingIndicator({ className = "" }) {
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       />
       <motion.img
-        src="/brand/virtus-playcast-mark.png"
+        src="/brand/logo-telao-online.png"
         alt=""
         className="h-8 w-8 object-contain"
         animate={{ scale: [0.92, 1.05, 0.92] }}

@@ -14,8 +14,8 @@ export default function ErrorPageLayout({
         <div className="flex items-start justify-between gap-5">
           <div className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl border border-sky-100 bg-sky-50 shadow-sm">
             <img
-              src="/brand/virtus-playcast-mark.png"
-              alt="vPlayCast"
+              src="/brand/logo-telao-online.png"
+              alt="Telão Online"
               className="h-14 w-14 object-contain"
             />
           </div>

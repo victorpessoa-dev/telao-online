@@ -54,10 +54,10 @@ export default function AppShell({ children }) {
             </Button>
           </HoverTip>
           <span className="font-brand truncate text-sm font-extrabold">
-            vPlayCast
+            Telão Online
           </span>
           <img
-            src="/brand/virtus-playcast-mark.png"
+            src="/brand/logo-telao-online.png"
             alt=""
             className="h-8 w-8 shrink-0 object-contain"
           />

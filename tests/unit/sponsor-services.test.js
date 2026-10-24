@@ -6,6 +6,7 @@ import {
   getSponsorDirectoryPayload,
   updateSponsorForAdmin,
 } from "@/lib/services/sponsors";
+import { syncSponsorDurationsForChurch } from "@/lib/repositories/sponsors";
 
 function createSupabaseRpcMock(responses) {
   return {
@@ -145,8 +146,22 @@ describe("sponsor services", () => {
     const payload = await getSponsorDirectoryPayload(
       createSupabaseRpcMock({
         get_public_sponsor_directory: [
-          { id: "a", name: "A", views: 2, total_seconds: 20, active: true },
-          { id: "b", name: "B", views: 3, total_seconds: 45, active: true },
+          {
+            id: "a",
+            name: "A",
+            views: 2,
+            duration_seconds: 10,
+            total_seconds: 20,
+            active: true,
+          },
+          {
+            id: "b",
+            name: "B",
+            views: 3,
+            duration_seconds: 15,
+            total_seconds: 45,
+            active: true,
+          },
         ],
       }),
     );
@@ -165,8 +180,22 @@ describe("sponsor services", () => {
     const payload = await getSponsorDirectoryPayload(
       createSupabaseRpcMock({
         get_public_sponsor_directory: [
-          { id: "a", name: "A", views: 2, total_seconds: 20, active: true },
-          { id: "b", name: "B", views: 30, total_seconds: 450, active: false },
+          {
+            id: "a",
+            name: "A",
+            views: 2,
+            duration_seconds: 10,
+            total_seconds: 20,
+            active: true,
+          },
+          {
+            id: "b",
+            name: "B",
+            views: 30,
+            duration_seconds: 15,
+            total_seconds: 450,
+            active: false,
+          },
         ],
       }),
     );
@@ -309,5 +338,20 @@ describe("sponsor services", () => {
       }),
     ]);
     expect(calls.some(([call]) => call === "update")).toBe(false);
+  });
+
+  it("synchronizes existing sponsors with the current image and video durations", async () => {
+    const { client, calls } = createSupabaseTableMock();
+
+    await syncSponsorDurationsForChurch(client, "church-1", {
+      image: 5,
+      video: 15,
+    });
+
+    expect(calls).toContainEqual(["update", { duration_seconds: 5 }]);
+    expect(calls).toContainEqual(["update", { duration_seconds: 15 }]);
+    expect(calls).toContainEqual(["eq", "church_id", "church-1"]);
+    expect(calls).toContainEqual(["eq", "media_type", "image"]);
+    expect(calls).toContainEqual(["eq", "media_type", "video"]);
   });
 });

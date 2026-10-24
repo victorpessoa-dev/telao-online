@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as getSponsorDetail } from "@/app/api/anunciantes/[id]/route";
-import { POST as postSponsorLogs } from "@/app/api/anunciantes/logs/route";
+import { GET as getSponsorDetail } from "@/app/api/parceiros/[id]/route";
+import { POST as postSponsorLogs } from "@/app/api/parceiros/logs/route";
 import { POST as postLogout } from "@/app/logout/route";
 import { GET as getSlugAvailability } from "@/app/api/igrejas/slug-disponivel/route";
 import { createSupabaseServerClient } from "@/services/supabase/server";
@@ -36,7 +36,7 @@ describe("API routes", () => {
     getSponsorDetailPayload.mockResolvedValue(null);
     const response = await getSponsorDetail(
       new Request(
-        `https://example.test/api/anunciantes/${sponsorId}?churchId=${churchId}`,
+        `https://example.test/api/parceiros/${sponsorId}?churchId=${churchId}`,
       ),
       { params: Promise.resolve({ id: sponsorId }) },
     );
@@ -52,7 +52,7 @@ describe("API routes", () => {
   it("does not query a sponsor report without its church id", async () => {
     createSupabaseServerClient.mockResolvedValue({});
     const response = await getSponsorDetail(
-      new Request("https://example.test/api/anunciantes/missing"),
+      new Request("https://example.test/api/parceiros/missing"),
       { params: Promise.resolve({ id: "missing" }) },
     );
     expect(response.status).toBe(400);
@@ -62,7 +62,7 @@ describe("API routes", () => {
   it("records sponsor logs with one bulk RPC call", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: 1, error: null });
     createSupabaseServerClient.mockResolvedValue({ rpc });
-    const request = new Request("https://example.test/api/anunciantes/logs", {
+    const request = new Request("https://example.test/api/parceiros/logs", {
       method: "POST",
       headers: {
         "content-type": "application/json",

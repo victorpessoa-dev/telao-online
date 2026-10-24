@@ -1,12 +1,23 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Image as ImageIcon, Trash2, Video, Zap } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Image as ImageIcon,
+  Maximize2,
+  Minus,
+  Move,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Video,
+  Zap,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -207,10 +218,11 @@ function ImageCropCanvas({ ad, setAd }) {
 
   return (
     <div className="space-y-3">
-      <div>
-        <Label>Posicione a imagem</Label>
+      <div className="flex items-start gap-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
+        <Move className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-sm text-muted-foreground">
-          Arraste a imagem para enquadrar. Use a roda do mouse para aproximar ou afastar.
+          Arraste a imagem para definir o enquadramento. Você também pode usar a
+          roda do mouse ou os controles abaixo para aproximar.
         </p>
       </div>
       <div
@@ -263,6 +275,13 @@ export function SponsorForm({
   const [uploadError, setUploadError] = useState("");
   const [removeMediaOpen, setRemoveMediaOpen] = useState(false);
   const hasPendingMedia = ad.sourceType === "pending-upload" && Boolean(ad.src);
+  const hasPendingImage = hasPendingMedia && ad.mediaType === "image";
+  const [activeTab, setActiveTab] = useState("data");
+
+  useEffect(() => {
+    if (hasPendingImage) setActiveTab("adjustment");
+    else if (activeTab === "adjustment") setActiveTab("media");
+  }, [activeTab, hasPendingImage]);
 
   const handleUpload = async (file) => {
     if (!file) return;
@@ -285,13 +304,13 @@ export function SponsorForm({
   };
 
   return (
-    <Tabs defaultValue="data" className="py-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="py-4">
       <TabsList
-        className={`grid w-full ${ad.mediaType === "image" && hasPendingMedia ? "grid-cols-3" : "grid-cols-2"}`}
+        className={`grid w-full ${hasPendingImage ? "grid-cols-3" : "grid-cols-2"}`}
       >
         <TabsTrigger value="data">Dados</TabsTrigger>
         <TabsTrigger value="media">Mídia e prévia</TabsTrigger>
-        {ad.mediaType === "image" && hasPendingMedia ? (
+        {hasPendingImage ? (
           <TabsTrigger value="adjustment">Ajustar imagem</TabsTrigger>
         ) : null}
       </TabsList>
@@ -361,7 +380,7 @@ export function SponsorForm({
         </div>
 
         <div className="space-y-2">
-          <Label>Link da mídia</Label>
+          <Label>URL da mídia</Label>
           <Input
             placeholder={
               ad.mediaType === "video"
@@ -380,8 +399,8 @@ export function SponsorForm({
           />
           {hasPendingMedia ? (
             <p className="text-xs text-muted-foreground">
-              Upload anexado. Clique em Salvar para gravar esta mídia no
-              patrocínio.
+              Arquivo anexado. Clique em Salvar para enviar esta mídia e
+              vinculá-la ao patrocínio.
             </p>
           ) : null}
         </div>
@@ -398,8 +417,8 @@ export function SponsorForm({
             description={"Imagens são convertidas para WebP; vídeos aceitam MP4 ou WebM"}
           />
           <p className="text-xs text-muted-foreground">
-            A duração é definida em Configurações &gt; Telão, conforme a mídia
-            for imagem ou vídeo.
+            A duração é definida em Configurações &gt; Telão, de acordo com o
+            tipo de mídia.
           </p>
           {uploadError ? (
             <p className="text-xs font-medium text-destructive">
@@ -415,7 +434,7 @@ export function SponsorForm({
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Preparando arquivo… {Math.round(progress)}%
+                Preparando mídia… {Math.round(progress)}%
               </p>
             </div>
           ) : null}
@@ -464,11 +483,10 @@ export function SponsorForm({
         ) : null}
       </TabsContent>
 
-      {ad.mediaType === "image" && hasPendingMedia ? (
+      {hasPendingImage ? (
         <TabsContent value="adjustment" className="mt-5 space-y-5">
-          <ImageCropCanvas ad={ad} setAd={setAd} />
           <div className="space-y-2">
-            <Label>Formato do corte</Label>
+            <Label>Formato de exibição</Label>
             <Select
               value={ad.imageCrop?.aspect || "source"}
               onValueChange={(aspect) =>
@@ -488,6 +506,92 @@ export function SponsorForm({
                 <SelectItem value="portrait">Retrato 9:16</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Escolha o formato antes de posicionar os elementos importantes.
+            </p>
+          </div>
+          <ImageCropCanvas ad={ad} setAd={setAd} />
+          <div className="rounded-lg border border-border bg-muted/20 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <Label htmlFor="image-zoom">Zoom</Label>
+              <span className="rounded-md bg-background px-2 py-1 text-xs font-semibold tabular-nums text-muted-foreground">
+                {(Number(ad.imageCrop?.zoom) || 1).toFixed(2)}×
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Diminuir zoom"
+                onClick={() =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: {
+                      ...prev.imageCrop,
+                      zoom: Number(
+                        clamp((Number(prev.imageCrop?.zoom) || 1) - 0.1, 1, 3).toFixed(2),
+                      ),
+                    },
+                  }))
+                }
+              >
+                <Minus />
+              </Button>
+              <Slider
+                id="image-zoom"
+                min={1}
+                max={3}
+                step={0.01}
+                value={[clamp(Number(ad.imageCrop?.zoom) || 1, 1, 3)]}
+                onValueChange={([zoom]) =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: { ...prev.imageCrop, zoom: Number(zoom.toFixed(2)) },
+                  }))
+                }
+                aria-label="Zoom da imagem"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Aumentar zoom"
+                onClick={() =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: {
+                      ...prev.imageCrop,
+                      zoom: Number(
+                        clamp((Number(prev.imageCrop?.zoom) || 1) + 0.1, 1, 3).toFixed(2),
+                      ),
+                    },
+                  }))
+                }
+              >
+                <Plus />
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-3 w-full text-muted-foreground"
+              onClick={() =>
+                setAd((prev) => ({
+                  ...prev,
+                  imageCrop: {
+                    ...prev.imageCrop,
+                    zoom: 1,
+                    x: 50,
+                    y: 50,
+                  },
+                }))
+              }
+            >
+              <RotateCcw />
+              Centralizar e restaurar zoom
+            </Button>
           </div>
           <div className="space-y-2">
             <Label>Cor de fundo para transparência</Label>
@@ -522,8 +626,10 @@ export function SponsorForm({
                 maxLength={7}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              O arquivo final será recortado e salvo em WebP ao confirmar.
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Maximize2 className="h-3.5 w-3.5" />
+              A prévia mostra exatamente o enquadramento. O arquivo final será
+              recortado e salvo em WebP ao confirmar.
             </p>
           </div>
         </TabsContent>

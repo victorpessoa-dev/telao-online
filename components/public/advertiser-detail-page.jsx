@@ -19,6 +19,7 @@ import LoadingState from "@/components/shared/loading-state";
 import PageError from "@/components/shared/page-error";
 import PageContainer from "@/components/layout/page-container";
 import PublicNavbar from "@/components/shared/public-navbar";
+import SponsorInterestFloatingCta from "@/components/public/sponsor-interest-floating-cta";
 import { TimeSeriesLineChart } from "@/components/shared/simple-charts";
 import {
   useMediaBackgroundColor,
@@ -161,7 +162,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
         const query = churchId
           ? `?churchId=${encodeURIComponent(churchId)}&page=${currentPage}&pageSize=${REPORT_PAGE_SIZE}`
           : "";
-        const response = await fetch(`/api/anunciantes/${id}${query}`);
+        const response = await fetch(`/api/parceiros/${id}${query}`);
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.advertiser)
           throw new Error(payload.error || "Falha ao carregar anunciante");
@@ -436,8 +437,9 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
           </CardContent>
         </Card>
 
-        <AppFooter className="px-0" />
       </PageContainer>
+      <AppFooter />
+      <SponsorInterestFloatingCta slug={slug} />
     </div>
   );
 }

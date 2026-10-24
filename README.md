@@ -1,27 +1,31 @@
-# vPlayCast
+# Telão Online
 
-vPlayCast é uma aplicação web para equipes de comunicação paroquial gerenciarem patrocinadores, telões públicos e relatórios de exibição.
+Aplicação web para equipes paroquiais organizarem patrocinadores, mídias e a programação exibida no telão. Cada igreja administra seus próprios dados e disponibiliza uma página pública com patrocinadores e registros de exibição.
 
-O projeto usa Next.js App Router, Supabase Auth/Postgres/Storage, RLS, RPCs publicas controladas, Recharts, Radix UI e Tailwind CSS.
+## Acesso público
 
-## Como Funciona
+- `/` abre a página pública da única igreja ativa.
+- Quando há zero ou mais de uma igreja ativa, `/` direciona para `/igrejas`.
+- `/igrejas` lista e permite buscar igrejas com perfil público ativo.
+- `/comunidade` é mantida somente como redirecionamento permanente para `/igrejas`.
+- `/{slug}` exibe o perfil público de uma igreja; `/{slug}/parceiros/{id}` exibe o detalhe público de um patrocinador.
 
-- O administrador entra no painel web com email e senha do Supabase.
-- Patrocinadores sao cadastrados em `/painel-telao` com imagem, GIF ou video.
-- O conteudo ativo aparece em `/ads-telao` ou `/{slug}/ads-telao`.
-- O contador de exibicoes pode ser ativado por tipo de telao: NORMAL e MASTER.
-- A pagina publica `/` lista patrocinadores, mostra estatisticas e direciona para relatorios.
-- Cada patrocinador tem relatorio publico em `/{slug}/anunciantes/:id`.
+## Recursos
 
-## Documentacao
+- Painel administrativo protegido por Supabase Auth.
+- Cadastro de patrocinadores com imagens, GIFs e vídeos.
+- Programação determinística para os modos NORMAL e MASTER.
+- Sessão oficial de exibição, métricas e relatórios públicos.
+- Perfil público, links sociais e captação de interesse em patrocínio por igreja.
+- Grade TV administrativa e overlays compartilháveis.
 
-Comece por [docs/projeto-como-funciona.md](docs/projeto-como-funciona.md).
+## Tecnologias
 
-Indice completo: [docs/README.md](docs/README.md).
+Next.js App Router, React, Tailwind CSS, Supabase (Auth, Postgres e Storage), RLS, RPCs públicas controladas, Radix UI, Recharts e Vitest.
 
-Planos e requisitos versionados: [docs/planejamento/README.md](docs/planejamento/README.md).
+## Configuração
 
-## Variaveis Principais
+Crie um arquivo `.env` a partir de `.env.example` e informe:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
@@ -31,58 +35,42 @@ SUPABASE_SERVICE_ROLE_KEY=
 PROVISIONING_API_KEY=
 ```
 
-As variáveis `NEXT_PUBLIC_*` podem ser expostas ao cliente. `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` são exclusivas do servidor e não podem ser versionadas ou usadas em componentes de cliente. `NEXT_PUBLIC_SITE_URL` define o destino do convite por email.
+As variáveis `NEXT_PUBLIC_*` podem ser expostas ao navegador. `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` são exclusivas do servidor e nunca devem ser versionadas.
 
-## Banco de dados novo
+## Banco de dados
 
-Para iniciar um projeto Supabase do zero, execute apenas [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor de um projeto vazio. O arquivo é o schema consolidado: cria tabelas, RLS, Storage, RPCs, índices do telão público e a rotina de métricas em lote. Não execute migrations históricas depois dele.
+Para uma instalação nova, execute somente [supabase/schema.sql](supabase/schema.sql) no SQL Editor de um projeto Supabase vazio. Para instalações existentes, siga os scripts de upgrade indicados em [docs/banco-de-dados.md](docs/banco-de-dados.md).
 
-Para um banco existente, mantenha os dados e aplique primeiro `supabase/upgrade-all.sql` (se ainda não tiver sido aplicado), depois [`supabase/upgrade-global-telao-scheduling.sql`](supabase/upgrade-global-telao-scheduling.sql) e, por fim, [`supabase/upgrade-official-display-session-claim.sql`](supabase/upgrade-official-display-session-claim.sql). As duas últimas habilitam a agenda sincronizada e a sessão oficial vinculada ao token/dispositivo que iniciou o telão. Use `reset-public-schema.sql` somente quando quiser descartar todos os dados do schema `public`.
-
-## Scripts
+## Desenvolvimento
 
 ```bash
+npm install
 npm run dev
-npm run build
+```
+
+Para validar antes de publicar:
+
+```bash
 npm run lint
 npm run typecheck
 npm run test
+npm run build
 ```
 
 ## Docker
 
-Defina `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` em um arquivo `.env` e inicie a aplicação com:
+Com as variáveis do Supabase definidas em `.env`:
 
 ```bash
 docker compose up --build
 ```
 
-A aplicação ficará disponível em `http://localhost:3000`. O Compose verifica periodicamente se a rota inicial responde antes de marcar o container como saudável.
+A aplicação fica disponível em `http://localhost:3000`.
 
-## Validacao Recomendada
+## Documentação
 
-Antes de publicar:
-
-```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-```
-
-No Windows, em alguns ambientes sandbox, Vitest/Next podem falhar com `spawn EPERM` ao iniciar workers. Rode fora do sandbox quando isso acontecer.
-
-## Midia
-
-- Imagens JPEG/PNG/WebP sao otimizadas para WebP antes do upload.
-- GIF e preservado.
-- Videos aceitos: MP4 e WebM.
-- Limite atual de upload: 100 MB.
-
-## Seguranca
-
-- Admin bloqueado em mobile.
-- Rotas administrativas protegidas por Supabase Auth e pela propriedade da igreja (`churches.admin_id`).
-- Escritas protegidas por RLS com `public.is_admin()`.
-- APIs publicas usam RPCs e respostas `no-store`.
-- Links publicos sao filtrados para `http/https`.
+- [Índice da documentação](docs/README.md)
+- [Como o projeto funciona](docs/projeto-como-funciona.md)
+- [Configuração de ambiente](docs/configuracao-de-ambiente.md)
+- [Plano futuro de Cloudflare R2](docs/plano-cloudflare-r2.md)
+- [Execução futura da integração R2](docs/plano-execucao-cloudflare-r2.md)

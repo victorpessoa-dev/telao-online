@@ -67,7 +67,7 @@ export function PasswordResetRequestForm() {
       });
       setSent(true);
     } catch (cause) {
-      setError(getAuthErrorMessage(cause, "Não foi possível enviar o email."));
+      setError(getAuthErrorMessage(cause, "Não foi possível enviar o e-mail."));
     } finally {
       setLoading(false);
     }
@@ -80,13 +80,13 @@ export function PasswordResetRequestForm() {
         <CardHeader>
           <CardTitle>Redefinir senha</CardTitle>
           <CardDescription>
-            Enviaremos um link para o email cadastrado.
+            Enviaremos um link para o e-mail cadastrado.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={submit}>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
                 type="email"
@@ -99,7 +99,7 @@ export function PasswordResetRequestForm() {
             <Message>{error}</Message>
             {sent ? (
               <p className="text-sm text-emerald-700">
-                Se o email estiver cadastrado, enviamos as instruções para{" "}
+                Se o e-mail estiver cadastrado, enviaremos as instruções para{" "}
                 <strong>{email}</strong>. Verifique também a caixa de spam.
               </p>
             ) : null}

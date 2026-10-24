@@ -296,7 +296,7 @@ export function BrandPreview({
         <div className="relative p-5 sm:p-6">
           <div className="absolute -top-12 flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border-4 border-card bg-card sm:-top-14 sm:h-28 sm:w-28">
             <img
-              src={parishLogoUrl || "/brand/virtus-playcast-mark.png"}
+              src={parishLogoUrl || "/brand/logo-telao-online.png"}
               alt=""
               className="h-full w-full object-cover"
             />

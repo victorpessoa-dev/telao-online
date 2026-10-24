@@ -9,7 +9,7 @@ import { HoverTipProvider } from "@/components/shared/hover-tip";
 const poppins = localFont({
   src: "../public/fonts/Poppins-ExtraBold.ttf",
   weight: "800",
-  variable: "--font-vplaycast",
+  variable: "--font-telao-online",
   display: "swap",
 });
 
@@ -18,39 +18,39 @@ export const metadata = {
     process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   ),
   title: {
-    default: "vPlayCast",
-    template: "%s | vPlayCast",
+    default: "Telão Online",
+    template: "%s | Telão Online",
   },
   description:
     "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
-  applicationName: "vPlayCast",
+  applicationName: "Telão Online",
   keywords: [
     "novenário",
     "festa paroquial",
     "telão",
     "parcerias",
     "patrocinadores",
-    "vPlayCast",
+    "Telão Online",
   ],
   icons: {
-    icon: "/brand/virtus-playcast-mark.png",
-    apple: "/brand/virtus-playcast-mark.png",
+    icon: "/brand/logo-telao-online.png",
+    apple: "/brand/logo-telao-online.png",
   },
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    siteName: "vPlayCast",
-    title: "vPlayCast",
+    siteName: "Telão Online",
+    title: "Telão Online",
     description:
       "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
-    images: [{ url: "/brand/virtus-playcast-mark.png", alt: "vPlayCast" }],
+    images: [{ url: "/brand/emblema-telao-online.png", alt: "Telão Online" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "vPlayCast",
+    title: "Telão Online",
     description:
       "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
-    images: ["/brand/virtus-playcast-mark.png"],
+    images: ["/brand/emblema-telao-online.png"],
   },
 };
 

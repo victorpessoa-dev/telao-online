@@ -61,7 +61,7 @@ armazena IP, token ou email em texto puro.
 
 ## Logs e Contador
 
-Logs de exibicao usam `/api/anunciantes/logs` e RPCs no banco. O payload é
+Logs de exibicao usam `/api/parceiros/logs` e RPCs no banco. O payload é
 validado com Zod e recebe rate limit distribuído por origem. A sessão oficial é
 autorizada pelo token efêmero e pelo dispositivo que a reivindicou; IP não é
 usado como requisito de acesso.

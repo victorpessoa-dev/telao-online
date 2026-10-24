@@ -48,8 +48,8 @@ export default function GlobalError({ error, reset }) {
             }}
           >
             <img
-              src="/brand/virtus-playcast-mark.png"
-              alt="vPlayCast"
+              src="/brand/logo-telao-online.png"
+              alt="Telão Online"
               style={{ height: 56, objectFit: "contain", width: 56 }}
             />
           </div>

@@ -25,7 +25,7 @@ Com a estimativa atual de até 200 mídias, cerca de 356 MB armazenados e 500 vi
 ## Fase 1 — configuração da conta (manual)
 
 1. Criar ou acessar a conta Cloudflare e ativar R2 em **Storage & databases > R2**.
-2. Criar o bucket `vplaycast-media` na classe **Standard**.
+2. Criar o bucket `telao-online-media` na classe **Standard**.
 3. Criar o subdomínio de produção, por exemplo `media.seudominio.com.br`, na mesma zona Cloudflare da aplicação, e conectá-lo ao bucket.
 4. Manter `r2.dev` desativado em produção; ele é destinado a desenvolvimento. O domínio personalizado permite cache e regras de segurança.
 5. Criar um token de API R2 limitado a esse bucket, com permissão de leitura e escrita de objetos. Guardar `Account ID`, `Access Key ID` e `Secret Access Key` apenas no cofre do deploy.
@@ -63,7 +63,7 @@ Uma alteração sempre gera uma nova chave. Assim o CDN pode manter cache longo 
 R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
-R2_BUCKET=vplaycast-media
+R2_BUCKET=telao-online-media
 NEXT_PUBLIC_MEDIA_BASE_URL=https://media.seudominio.com.br
 ```
 

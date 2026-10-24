@@ -2,7 +2,7 @@
 
 ## Atualização de outubro de 2026
 
-O projeto passou ao modelo multi-igreja com um único administrador por igreja, RLS orientada por `church_id`, mídia segregada por prefixo no Storage e exclusão física sem restauração. Foi incluído onboarding por convite do Supabase: convite por email, confirmação de senha e criação da própria igreja. A landing lista apenas igrejas com `is_active = true`; ao desativar uma igreja, suas rotas públicas `/{slug}/...` deixam de responder.
+O Telão Online usa o modelo multi-igreja com um único administrador por igreja, RLS orientada por `church_id`, mídia segregada por prefixo no Storage e exclusão física sem restauração. A raiz abre o único slug ativo ou direciona para `/igrejas`, que lista apenas igrejas com `is_active = true`; ao desativar uma igreja, suas rotas públicas `/{slug}/...` deixam de responder.
 
 ## Resumo Executivo
 

@@ -1,4 +1,4 @@
--- Apply this upgrade to an existing vPlayCast public schema before deploying
+-- Apply this upgrade to an existing Telão Online public schema before deploying
 -- the profile-visit metric. New projects receive the same definitions from
 -- schema.sql.
 alter table public.churches

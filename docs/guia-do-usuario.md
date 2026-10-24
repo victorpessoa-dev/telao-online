@@ -48,7 +48,7 @@ Use `/{slug}/shared/:id` no OBS ou ferramenta equivalente.
 
 ## Relatorios
 
-Cada patrocinador tem página pública em `/{slug}/anunciantes/:id`, com:
+Cada patrocinador tem página pública em `/{slug}/parceiros/:id`, com:
 
 - midia;
 - total de exibicoes;

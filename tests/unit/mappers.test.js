@@ -40,6 +40,17 @@ describe("sponsor mappers", () => {
     expect(mapPublicAdRow(null)).toBeNull();
   });
 
+  it("preserves historical displayed time when the configured duration changes", () => {
+    expect(
+      mapSponsorRow({
+        id: "sponsor-1",
+        duration_seconds: 5,
+        views: 11,
+        total_seconds: 101,
+      }),
+    ).toMatchObject({ duration: 5, views: 11, totalSeconds: 101 });
+  });
+
   it("keeps public sponsor rows eligible when the RPC omits active", () => {
     expect(
       mapSponsorRow({
@@ -65,6 +76,7 @@ describe("sponsor mappers", () => {
       source: "telao",
     });
   });
+
 
   it("identifies safe public URLs", () => {
     expect(isSafePublicUrl("https://paroquia.example")).toBe(true);

@@ -96,6 +96,24 @@
   animation: virtus-logo-float 1.7s ease-in-out infinite;
 }
 
+.morph-container { display: flex; justify-content: flex-end; width: 100%; max-width: 208px; }
+.morph-card { width: 158px; overflow: hidden; border: 1px solid rgb(103 232 249 / 50%); border-radius: 26px; background: #020617; box-shadow: 0 18px 45px rgb(2 6 23 / 30%); transition: width 760ms cubic-bezier(.16,1,.3,1), border-radius 760ms cubic-bezier(.16,1,.3,1), box-shadow 760ms ease-out; }
+.morph-card.open { width: 208px; border-radius: 18px; box-shadow: 0 18px 45px rgb(2 6 23 / 35%); }
+.morph-toggle { display: flex; align-items: center; justify-content: center; gap: 9px; box-sizing: border-box; width: 100%; height: 48px; padding-inline: 18px; border: 0; background: transparent; color: #cffafe; cursor: pointer; font-size: 14px; font-weight: 600; }
+.morph-header { position: relative; display: flex; align-items: center; justify-content: center; height: 48px; color: #cffafe; font-size: 14px; font-weight: 600; }
+.morph-header > span { display: inline-flex; align-items: center; gap: 9px; }
+.morph-minimize { position: absolute; right: 3px; display: grid; width: 42px; height: 42px; place-items: center; border: 0; background: transparent; color: #cffafe; cursor: pointer; }
+.morph-content { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; will-change: grid-template-rows, opacity; transition: grid-template-rows 760ms cubic-bezier(.16,1,.3,1), opacity 480ms ease-out 120ms, visibility 0s; }
+.morph-card.open .morph-content { grid-template-rows: 1fr; opacity: 1; visibility: visible; }
+.morph-content-inner { min-height: 0; overflow: hidden; padding: 0 12px; }
+.morph-card.open .morph-content-inner { padding-bottom: 12px; }
+.morph-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; font-size: 14px; }
+.morph-row span, .morph-info p { color: #cbd5e1; }
+.morph-status { color: #a7f3d0; font-size: 13px; }
+.morph-info { padding: 4px 0 0; font-size: 13px; }
+.morph-info p { margin: 10px 0 0; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .morph-card, .morph-content { transition: none; } }
+
 .landing-slice {
   isolation: isolate;
   overflow: hidden;
@@ -146,7 +164,7 @@
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
-  --font-brand: var(--font-vplaycast), "Poppins", sans-serif;
+  --font-brand: var(--font-telao-online), "Poppins", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);

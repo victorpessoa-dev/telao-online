@@ -1,8 +1,8 @@
-# Visão e requisitos do vPlayCast
+# Visão e requisitos do Telão Online
 
 ## Produto
 
-O vPlayCast é uma aplicação web para equipes paroquiais administrarem patrocinadores, telões, overlays compartilhados e relatórios de exibição. A arquitetura usa Next.js App Router e Supabase para autenticação, banco PostgreSQL, Storage, RLS e RPCs.
+O Telão Online é uma aplicação web para equipes paroquiais administrarem patrocinadores, telões, overlays compartilhados e relatórios de exibição. A arquitetura usa Next.js App Router e Supabase para autenticação, banco PostgreSQL, Storage, RLS e RPCs.
 
 O valor central é permitir a operação web de conteúdo de transmissão por igreja, sem misturar dados administrativos entre igrejas e mantendo URLs públicas seguras para telões, overlays e relatórios.
 
@@ -14,7 +14,7 @@ O valor central é permitir a operação web de conteúdo de transmissão por ig
 - Contagem oficial aberta pelo administrador em uma nova aba; as impressões concluídas são enviadas em lote, em intervalo de 90 segundos, e também são descarregadas antes de desativar a contagem.
 - Grade TV administrativa em `/grade-ads`, alimentada pela mesma agenda do telão público.
 - Biblioteca, editor e links públicos de overlays compartilháveis.
-- Perfil público da igreja, comunidade, convite administrativo, recuperação de senha e mídia protegida por policies de Storage.
+- Perfil público da igreja, diretório `/igrejas`, convite administrativo, recuperação de senha e mídia protegida por policies de Storage.
 
 ## Decisões mantidas
 
@@ -34,7 +34,7 @@ O valor central é permitir a operação web de conteúdo de transmissão por ig
 - **ADM-01:** o painel gerencia patrocinadores, mídia, configurações, perfil da igreja e telões.
 - **DISP-01:** telões NORMAL e MASTER são públicos por slug, usam agenda/sessão oficial e podem registrar métricas.
 - **OVR-01:** overlays são criados e editados na web, persistidos no Supabase e publicados em links compartilháveis por igreja.
-- **PUB-01:** landing, comunidade, perfil público, patrocinadores e relatórios não exigem acesso ao painel.
+- **PUB-01:** a raiz, `/igrejas`, perfil público, patrocinadores e relatórios não exigem acesso ao painel.
 - **DATA-01:** RLS, policies de Storage e RPCs controlam o acesso aos dados por igreja.
 - **OPS-01:** o repositório contém testes, build, documentação de deploy, backup e smoke test.
 - **TVG-01:** a Grade TV administrativa reutiliza `lib/services/telao-schedule.js`, mostra 11 ciclos (cinco anteriores, o atual e cinco próximos) e não gera métricas.

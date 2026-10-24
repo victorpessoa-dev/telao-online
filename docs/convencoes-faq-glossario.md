@@ -4,7 +4,7 @@
 
 - Todo conteúdo público usa `/{slug}/...`; não crie novas rotas globais de conteúdo de igreja.
 - O único administrador de uma igreja é definido por `churches.admin_id`.
-- `is_active` controla a publicação da igreja na landing e suas rotas públicas.
+- `is_active` controla a publicação da igreja em `/igrejas` e em suas rotas públicas.
 - Não adicione `created_by`, `deleted_by`, soft delete ou restauração sem revisão explícita do modelo de dados.
 
 ## Objetivo

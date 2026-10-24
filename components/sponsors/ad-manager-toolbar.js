@@ -71,7 +71,7 @@ export function AdManagerToolbar({
                 htmlFor="metrics-enabled"
                 className="cursor-pointer text-xs font-medium text-foreground/90"
               >
-                Contador de exibição
+                Contador de exibições
               </label>
               <div className="mt-0.5 text-[11px] text-muted-foreground">
                 Registro público de exibições por tipo
@@ -167,7 +167,7 @@ export function AdManagerToolbar({
 export function AdManagerEmptyState({
   orderedAdsLength,
   filteredAdsLength,
-  onClearSearch,
+  onClearFilters,
 }) {
   const noResults = orderedAdsLength > 0 && filteredAdsLength === 0;
 
@@ -181,13 +181,13 @@ export function AdManagerEmptyState({
       }
       description={
         orderedAdsLength === 0
-          ? "Adicione anúncios para montar a playlist pública do telão."
+          ? "Adicione patrocínios para compor a programação pública do telão."
           : "Tente outro termo para localizar o patrocinador no painel do telão."
       }
       action={
-        noResults && onClearSearch ? (
-          <Button className="mt-4" variant="outline" onClick={onClearSearch}>
-            Limpar busca
+        noResults && onClearFilters ? (
+          <Button className="mt-4" variant="outline" onClick={onClearFilters}>
+            Limpar filtros
           </Button>
         ) : null
       }

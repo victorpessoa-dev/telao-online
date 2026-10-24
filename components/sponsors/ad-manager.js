@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Edit2, ExternalLink, Search, Trash2 } from "lucide-react";
+import {
+  ArrowDownUp,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  ExternalLink,
+  RotateCcw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store/store";
 import {
@@ -25,6 +34,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -125,6 +141,47 @@ function formatDateTime(value) {
   return new Date(value).toLocaleString("pt-BR");
 }
 
+function formatDisplayCount(value) {
+  const count = Math.max(0, Number(value) || 0);
+  return `${count} ${count === 1 ? "exibição" : "exibições"}`;
+}
+
+function SortableTableHead({
+  column,
+  children,
+  sort,
+  onSort,
+  className = "",
+}) {
+  const isActive = sort.column === column;
+  const Icon = isActive
+    ? sort.direction === "asc"
+      ? ChevronUp
+      : ChevronDown
+    : ArrowDownUp;
+
+  return (
+    <TableHead
+      className={className}
+      aria-sort={
+        isActive ? (sort.direction === "asc" ? "ascending" : "descending") : "none"
+      }
+    >
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className="-mx-2 inline-flex items-center gap-1.5 rounded px-2 py-1 text-left transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={`Ordenar por ${String(children).toLocaleLowerCase("pt-BR")}`}
+      >
+        {children}
+        <Icon
+          className={`h-3.5 w-3.5 ${isActive ? "text-primary" : "text-muted-foreground/70"}`}
+        />
+      </button>
+    </TableHead>
+  );
+}
+
 export default function AdManager({
   defaultDurations = { IMAGE: 10, VIDEO: 15 },
   churchSlug = "",
@@ -147,33 +204,62 @@ export default function AdManager({
   const [editingAd, setEditingAd] = useState(null);
   const [newAd, setNewAd] = useState(() => createEmptyAd(defaultDurations));
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [mediaFilter, setMediaFilter] = useState("all");
   const [adPendingDelete, setAdPendingDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [savingAd, setSavingAd] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [replacementPending, setReplacementPending] = useState(null);
+  const [tableSort, setTableSort] = useState({
+    column: "createdAt",
+    direction: "desc",
+  });
   const officialDisplayWindowRef = useRef(null);
   const orderedAds = useMemo(
-    () =>
-      [...ads].sort((a, b) => {
-        if (a.active !== b.active) return a.active ? -1 : 1;
-        if (a.type === "MASTER" && b.type !== "MASTER") return -1;
-        if (a.type !== "MASTER" && b.type === "MASTER") return 1;
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-      }),
-    [ads],
+    () => {
+      const factor = tableSort.direction === "asc" ? 1 : -1;
+      return [...ads].sort((left, right) => {
+        if (tableSort.column === "name") {
+          return (
+            String(left.name || "").localeCompare(String(right.name || ""), "pt-BR") *
+            factor
+          );
+        }
+        if (tableSort.column === "totalSeconds") {
+          return (
+            ((Number(left.totalSeconds) || 0) -
+              (Number(right.totalSeconds) || 0)) *
+            factor
+          );
+        }
+        if (tableSort.column === "active") {
+          return (Number(Boolean(left.active)) - Number(Boolean(right.active))) * factor;
+        }
+        return new Date(right.createdAt || 0) - new Date(left.createdAt || 0);
+      });
+    },
+    [ads, tableSort],
   );
 
   const filteredAds = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return orderedAds;
-
-    return orderedAds.filter((ad) =>
-      [ad.name, ad.type, ad.websiteUrl]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(term)),
-    );
-  }, [orderedAds, searchTerm]);
+    return orderedAds.filter((ad) => {
+      const matchesTerm =
+        !term ||
+        [ad.name, ad.type, ad.websiteUrl]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(term));
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" ? ad.active : !ad.active);
+      const matchesType = typeFilter === "all" || ad.type === typeFilter;
+      const matchesMedia =
+        mediaFilter === "all" || ad.mediaType === mediaFilter;
+      return matchesTerm && matchesStatus && matchesType && matchesMedia;
+    });
+  }, [mediaFilter, orderedAds, searchTerm, statusFilter, typeFilter]);
 
   const totalPages = Math.max(
     1,
@@ -190,19 +276,47 @@ export default function AdManager({
     }),
     [ads],
   );
+  const hasActiveFilters =
+    Boolean(searchTerm.trim()) ||
+    statusFilter !== "all" ||
+    typeFilter !== "all" ||
+    mediaFilter !== "all";
 
   // The store is already scoped by the authenticated church; build public links
   // from its slug instead of retaining the legacy global public routes.
   const publicTelaoPath = churchSlug ? `/${churchSlug}/ads-telao` : "";
   const getReportPath = useCallback(
     (sponsorId) =>
-      churchSlug ? `/${churchSlug}/anunciantes/${sponsorId}` : "",
+      churchSlug ? `/${churchSlug}/parceiros/${sponsorId}` : "",
     [churchSlug],
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [mediaFilter, searchTerm, statusFilter, tableSort, typeFilter]);
+
+  const handleTableSort = useCallback((column) => {
+    setTableSort((current) => {
+      if (current.column === column) {
+        return {
+          column,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
+
+      return {
+        column,
+        direction: column === "name" ? "asc" : "desc",
+      };
+    });
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setMediaFilter("all");
+  }, []);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -412,7 +526,7 @@ export default function AdManager({
   const updateMetricsPause = useCallback(
     async (kind, paused) => {
       if (!paused && activeSponsorCounts[kind] === 0) {
-        throw new Error(`Nao ha patrocinador ${kind} ativo para contar`);
+        throw new Error(`Não há patrocinador ${kind} ativo para contabilizar`);
       }
 
       const nextPaused = {
@@ -503,25 +617,25 @@ export default function AdManager({
         ads.find((item) => item.id === editingAd.id)?.src || "";
       const updatedAd = await updateAd(editingAd.id, ad);
       if (!updatedAd)
-        throw new Error("O banco nao retornou o patrocinio atualizado");
+        throw new Error("O banco não retornou o patrocínio atualizado");
       if (previousMediaUrl && previousMediaUrl !== updatedAd.src) {
         try {
           await deleteUploadedMedia(previousMediaUrl);
         } catch {
           toast.warning(
-            "Patrocinio atualizado, mas o arquivo antigo nao pode ser excluido do armazenamento",
+            "Patrocínio atualizado, mas o arquivo anterior não pôde ser removido do armazenamento.",
           );
         }
       }
       if (editingAd.pendingPreviewUrl)
         URL.revokeObjectURL(editingAd.pendingPreviewUrl);
-      toast.success("Patrocinio atualizado");
+      toast.success("Patrocínio atualizado.");
       setEditDialogOpen(false);
       setEditingAd(null);
     } catch (error) {
       if (uploadedUrl) await deleteUploadedMedia(uploadedUrl).catch(() => {});
       toast.error(
-        error instanceof Error ? error.message : "Erro ao atualizar patrocinio",
+        error instanceof Error ? error.message : "Erro ao atualizar o patrocínio.",
       );
     } finally {
       setSavingAd(false);
@@ -545,15 +659,15 @@ export default function AdManager({
       const result = await deleteAd(adPendingDelete.id);
       if (result?.storageErrors?.length) {
         toast.warning(
-          `Patrocinio "${adPendingDelete.name}" excluido, mas um arquivo nao pode ser removido`,
+          `Patrocínio "${adPendingDelete.name}" excluído, mas um arquivo não pôde ser removido.`,
         );
       } else {
-        toast.success(`Patrocinio "${adPendingDelete.name}" excluido`);
+        toast.success(`Patrocínio "${adPendingDelete.name}" excluído.`);
       }
       setAdPendingDelete(null);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao excluir patrocio",
+        error instanceof Error ? error.message : "Erro ao excluir o patrocínio.",
       );
     }
   };
@@ -589,14 +703,14 @@ export default function AdManager({
             await updateMetricsEnabled(checked);
             toast.success(
               checked
-                ? "Contador do telao ativado"
-                : "Contador do telao desativado",
+                ? "Contador de exibições do telão ativado."
+                : "Contador de exibições do telão desativado.",
             );
           } catch (error) {
             toast.error(
               error instanceof Error
                 ? error.message
-                : "Erro ao salvar configuracao",
+                : "Erro ao salvar a configuração.",
             );
           }
         }}
@@ -610,7 +724,7 @@ export default function AdManager({
             toast.error(
               error instanceof Error
                 ? error.message
-                : "Erro ao salvar configuracao",
+                : "Erro ao salvar a configuração.",
             );
           }
         }}
@@ -634,9 +748,9 @@ export default function AdManager({
         </DialogTrigger>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Novo patrocnio</DialogTitle>
+            <DialogTitle>Novo patrocínio</DialogTitle>
             <DialogDescription>
-              O patrocínio aparecerá em{" "}
+              O patrocínio será exibido em{" "}
               <code>{publicTelaoPath || "/{slug}/ads-telao"}</code> quando
               estiver ativo.
             </DialogDescription>
@@ -659,7 +773,7 @@ export default function AdManager({
               onClick={handleCreateAd}
               disabled={savingAd || uploadingMedia}
             >
-              {savingAd ? "Salvando..." : "Criar"}
+              {savingAd ? "Salvando..." : "Cadastrar patrocínio"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -671,18 +785,62 @@ export default function AdManager({
             Lista de patrocinadores
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {filteredAds.length} de {orderedAds.length} patrocinio(s)
+            Exibindo {filteredAds.length} de {orderedAds.length}{" "}
+            {orderedAds.length === 1 ? "patrocinador" : "patrocinadores"}
           </p>
         </div>
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Buscar na lista"
-            className="pl-9"
-            aria-label="Buscar patrocinador na lista"
-          />
+        <div className="flex w-full flex-col gap-2 sm:max-w-4xl sm:flex-row sm:flex-wrap">
+          <div className="relative min-w-0 flex-1 sm:min-w-72 sm:flex-[2]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Buscar na lista"
+              className="pl-9"
+              aria-label="Buscar patrocinador na lista"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-32" aria-label="Filtrar por status">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
+              <SelectItem value="inactive">Inativos</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-32" aria-label="Filtrar por tipo">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tipos</SelectItem>
+              <SelectItem value="NORMAL">Normal</SelectItem>
+              <SelectItem value="MASTER">Master</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={mediaFilter} onValueChange={setMediaFilter}>
+            <SelectTrigger className="w-full sm:w-32" aria-label="Filtrar por mídia">
+              <SelectValue placeholder="Mídia" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as mídias</SelectItem>
+              <SelectItem value="image">Imagem</SelectItem>
+              <SelectItem value="video">Vídeo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={resetFilters}
+            disabled={!hasActiveFilters}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Limpar filtros
+          </Button>
         </div>
       </div>
 
@@ -690,7 +848,7 @@ export default function AdManager({
         <AdManagerEmptyState
           orderedAdsLength={orderedAds.length}
           filteredAdsLength={filteredAds.length}
-          onClearSearch={() => setSearchTerm("")}
+          onClearFilters={resetFilters}
         />
       ) : (
         <>
@@ -698,12 +856,32 @@ export default function AdManager({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[110px]">Prvvia</TableHead>
-                  <TableHead>Patrocinador</TableHead>
-                  <TableHead className="w-[130px]">ltima exibio</TableHead>
-                  <TableHead className="w-[110px]">Tempo no ar</TableHead>
-                  <TableHead className="w-[92px] text-center">Ativo</TableHead>
-                  <TableHead className="w-[220px] text-right">Thises</TableHead>
+                  <TableHead className="w-[110px]">Prévia</TableHead>
+                  <SortableTableHead
+                    column="name"
+                    sort={tableSort}
+                    onSort={handleTableSort}
+                  >
+                    Patrocinador
+                  </SortableTableHead>
+                  <TableHead className="w-[130px]">Última exibição</TableHead>
+                  <SortableTableHead
+                    column="totalSeconds"
+                    sort={tableSort}
+                    onSort={handleTableSort}
+                    className="w-[110px]"
+                  >
+                    Tempo exibido
+                  </SortableTableHead>
+                  <SortableTableHead
+                    column="active"
+                    sort={tableSort}
+                    onSort={handleTableSort}
+                    className="w-[92px] text-center"
+                  >
+                    Ativo
+                  </SortableTableHead>
+                  <TableHead className="w-[220px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -723,7 +901,7 @@ export default function AdManager({
                         <TypeBadge ad={ad} />
                         <div className="text-xs text-muted-foreground">
                           {formatDuration(getMediaDuration(ad.mediaType))} por
-                          rodada · {ad.views || 0} exibiies
+                          exibição · {formatDisplayCount(ad.views)}
                         </div>
                         {ad.websiteUrl ? (
                           <div className="truncate text-xs text-muted-foreground">
@@ -747,8 +925,8 @@ export default function AdManager({
                               await updateAd(ad.id, { active: !ad.active });
                               toast.success(
                                 !ad.active
-                                  ? "Patrocinador ativado no telao"
-                                  : "Patrocinador removido do telao",
+                                  ? "Patrocinador ativado no telão."
+                                  : "Patrocinador removido do telão.",
                               );
                             } catch (error) {
                               toast.error(
@@ -785,7 +963,7 @@ export default function AdManager({
                             aria-disabled={!churchSlug}
                           >
                             <ExternalLink className="mr-2 h-4 w-4" />
-                            Relatrio
+                            Relatório
                           </Link>
                         </Button>
                         <HoverTip label={`Excluir patrocínio ${ad.name}`}>
@@ -822,7 +1000,7 @@ export default function AdManager({
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                           {formatDuration(getMediaDuration(ad.mediaType))} por
-                          rodada · {ad.views || 0} exibiies
+                          exibição · {formatDisplayCount(ad.views)}
                         </div>
                       </div>
                       <div className="shrink-0">
@@ -832,7 +1010,7 @@ export default function AdManager({
 
                     <dl className="grid gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-2">
                       <div className="min-w-0">
-                        <dt className="font-medium text-foreground/80">Rota</dt>
+                          <dt className="font-medium text-foreground/80">Link do telão</dt>
                         <dd className="truncate">
                           {publicTelaoPath || "/{slug}/ads-telao"}
                         </dd>
@@ -842,7 +1020,7 @@ export default function AdManager({
                         <dd className="truncate">{formatDateTime(ad.lastDisplayedAt)}</dd>
                       </div>
                       <div>
-                        <dt className="font-medium text-foreground/80">Tempo no ar</dt>
+                        <dt className="font-medium text-foreground/80">Tempo exibido</dt>
                         <dd>{formatDuration(ad.totalSeconds)}</dd>
                       </div>
                       {ad.websiteUrl ? (
@@ -864,8 +1042,8 @@ export default function AdManager({
                           await updateAd(ad.id, { active: !ad.active });
                           toast.success(
                             !ad.active
-                              ? "Patrocinador ativado no telao"
-                              : "Patrocinador removido do telao",
+                              ? "Patrocinador ativado no telão."
+                              : "Patrocinador removido do telão.",
                           );
                         } catch (error) {
                           toast.error(
@@ -901,7 +1079,7 @@ export default function AdManager({
                         aria-disabled={!churchSlug}
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        Relatrio
+                        Relatório
                       </Link>
                     </Button>
                     <HoverTip label={`Excluir patrocínio ${ad.name}`}>
@@ -923,7 +1101,7 @@ export default function AdManager({
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={filteredAds.length}
-            itemLabel="patrcios"
+            itemLabel="patrocinadores"
             onPageChange={setCurrentPage}
           />
         </>
@@ -935,7 +1113,7 @@ export default function AdManager({
           <DialogHeader>
             <DialogTitle>Editar patrocínio</DialogTitle>
             <DialogDescription>
-              Atualize mídia, link, tipo e tempo de exibição.
+              Atualize a mídia, o link, o tipo e a duração de exibição.
             </DialogDescription>
           </DialogHeader>
           {editingAd ? (

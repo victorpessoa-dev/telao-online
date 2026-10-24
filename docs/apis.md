@@ -1,14 +1,13 @@
 # APIs
 
-> Rotas públicas dependem de uma igreja ativa. Uma igreja desativada não aparece na landing e não expõe conteúdo pelo slug.
+> Rotas públicas dependem de uma igreja ativa. Uma igreja desativada não aparece em `/igrejas` nem expõe conteúdo pelo slug.
 
 ## Endpoints
 
 | Metodo | Rota                    | Responsabilidade                                         |
 | ------ | ----------------------- | -------------------------------------------------------- |
-| GET    | `/api/anunciantes`      | Diretorio publico de patrocinadores                      |
-| GET    | `/api/anunciantes/:id`  | Detalhe publico e logs de patrocinador                   |
-| POST   | `/api/anunciantes/logs` | Registro de exibicoes do telao                           |
+| GET    | `/api/parceiros/:id`  | Detalhe público e logs de patrocinador                   |
+| POST   | `/api/parceiros/logs` | Registro de exibições do telão                           |
 | GET    | `/api/igrejas`          | Lista igrejas com rota pública ativa                     |
 | GET    | `/api/igreja/:slug`     | Dados públicos de uma igreja ativa                       |
 | POST   | `/api/admin/invites`    | Envia convite administrativo; exige `x-provisioning-key` |

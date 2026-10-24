@@ -4,11 +4,11 @@
 
 ## Objetivo
 
-Explicar a arquitetura atual do vPlayCast e como os domínios principais se conectam.
+Explicar a arquitetura atual do Telão Online e como os domínios principais se conectam.
 
 ## Descricao
 
-O vPlayCast é uma aplicação Next.js App Router com Supabase para operar patrocinadores, telões e overlays de transmissão. O painel administrativo é protegido por login e permissão de admin; as rotas públicas exibem patrocinadores, relatórios, telão e overlays compartilháveis.
+O Telão Online é uma aplicação Next.js App Router com Supabase para operar patrocinadores, telões e overlays de transmissão. A raiz abre a única igreja ativa ou direciona para `/igrejas`; o painel administrativo é protegido por login e permissão de admin.
 
 ## Arquitetura
 

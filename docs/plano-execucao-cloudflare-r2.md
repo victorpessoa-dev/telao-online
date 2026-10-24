@@ -1,4 +1,4 @@
-# Plano de execucao: adaptar o vPlayCast ao Cloudflare R2
+# Plano de execução futura: adaptar o Telão Online ao Cloudflare R2
 
 Este documento converte o plano de infraestrutura em trabalho executavel no codigo atual. Nao inicia a migracao: define a ordem segura para que o projeto passe a receber e servir midias pelo Cloudflare R2.
 
@@ -38,7 +38,7 @@ O fluxo atual nao pode ser interrompido: uma URL antiga do Supabase Storage cont
 
 Responsabilidade manual, antes do codigo:
 
-1. Criar bucket Standard `vplaycast-media`.
+1. Criar bucket Standard `telao-online-media`.
 2. Conectar `media.<dominio>` ao bucket na mesma conta/zone Cloudflare.
 3. Desativar acesso publico `r2.dev` em producao.
 4. Criar token R2 restrito ao bucket, sem permissao administrativa de conta.
@@ -56,7 +56,7 @@ Adicionar, sem prefixo `NEXT_PUBLIC_`, as chaves abaixo:
 R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
-R2_BUCKET=vplaycast-media
+R2_BUCKET=telao-online-media
 NEXT_PUBLIC_MEDIA_BASE_URL=https://media.seudominio.com.br
 ```
 

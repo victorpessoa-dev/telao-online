@@ -48,7 +48,7 @@ export async function POST(request) {
     return NextResponse.json({ administrator }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Email inválido" }, { status: 400 });
+      return NextResponse.json({ error: "E-mail inválido" }, { status: 400 });
     }
     return NextResponse.json(
       {

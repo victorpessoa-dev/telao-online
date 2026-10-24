@@ -1,4 +1,4 @@
-# Documentação - vPlayCast
+# Documentação - Telão Online
 
 ## Comece Aqui
 
@@ -16,7 +16,6 @@
 - [APIs](./apis.md)
 - [Componentes, hooks, services e providers](./componentes-hooks-services.md)
 - [Cache e midia](./cache-e-midia.md)
-- [Grade TV administrativa](./atualizacao-futura-grade-tv.md)
 - [Plano de integracao Cloudflare R2](./plano-cloudflare-r2.md)
 - [Plano de execucao da integracao Cloudflare R2](./plano-execucao-cloudflare-r2.md)
 - [Planejamento versionado do projeto](./planejamento/README.md)
@@ -32,7 +31,7 @@
 
 ```mermaid
 flowchart TD
-  A[Operação vPlayCast] --> B[Painel admin]
+  A[Operação Telão Online] --> B[Painel admin]
   B --> C[Patrocinadores]
   B --> D[Overlays]
   C --> E[Telao NORMAL e MASTER]

@@ -34,6 +34,7 @@ import {
   deleteUploadedMediaBatch,
   uploadMedia,
 } from "@/services/supabase/upload";
+import { syncSponsorDurationsForChurch } from "@/lib/repositories/sponsors";
 import {
   getChurchAppearance,
   mapChurchAppearance,
@@ -213,7 +214,7 @@ export default function ConfiguracoesPage() {
     const nextPassword = account.newPassword;
 
     if (!nextEmail) {
-      toast.error("Informe um email de acesso");
+      toast.error("Informe um e-mail de acesso.");
       return;
     }
 
@@ -269,7 +270,7 @@ export default function ConfiguracoesPage() {
 
       toast.success(
         nextEmail !== account.originalEmail
-          ? "Dados atualizados. Confirme o novo email se o Supabase solicitar."
+          ? "Dados atualizados. Confirme o novo e-mail, se o Supabase solicitar."
           : "Dados de login atualizados",
       );
     } catch (error) {
@@ -292,9 +293,13 @@ export default function ConfiguracoesPage() {
     setIsSaving(true);
     try {
       const supabase = createSupabaseBrowserClient();
-      const [savedSettings, appearance] = await Promise.all([
-        saveAdminSettings(supabase, settings, churchId),
+      const savedSettings = await saveAdminSettings(supabase, settings, churchId);
+      const [appearance] = await Promise.all([
         saveChurchAppearance(supabase, churchId, settings.appearance),
+        syncSponsorDurationsForChurch(supabase, churchId, {
+          image: savedSettings.telao.defaultDurationImage,
+          video: savedSettings.telao.defaultDurationVideo,
+        }),
       ]);
       const storageErrors = await deleteUploadedMediaBatch(
         pendingStorageCleanup,

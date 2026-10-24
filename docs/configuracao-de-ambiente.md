@@ -100,4 +100,4 @@ docker compose up --build
 - [ ] Os redirects `/confirmar-convite` e `/redefinir-senha` foram autorizados no Supabase.
 - [ ] Cadastros públicos estão desativados.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` não aparecem em cliente, Git ou logs.
-- [ ] A migration foi aplicada e uma igreja ativa aparece na landing page.
+- [ ] A migration foi aplicada e uma igreja ativa aparece em `/igrejas` (ou abre pelo slug quando for a única ativa).

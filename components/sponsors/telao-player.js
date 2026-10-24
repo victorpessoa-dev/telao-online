@@ -287,7 +287,7 @@ export default function TelaoPlayer({
         try {
           while (groupPending.length) {
             const batch = groupPending.slice(0, LOG_BATCH_SIZE);
-            const response = await fetch("/api/anunciantes/logs", {
+            const response = await fetch("/api/parceiros/logs", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ logs: batch }),
@@ -379,23 +379,30 @@ export default function TelaoPlayer({
       const mergedSettings = mergeSponsorSettings(
         publicSettings || emptyTelaoSettings,
       );
+      // Existing sponsors may carry the duration that was configured when
+      // they were created. Normalize them before deriving the shared schedule
+      // so a later settings change applies immediately everywhere.
+      const normalizedAds = filteredAds.map((ad) => ({
+        ...ad,
+        duration: getMediaDuration(ad, mergedSettings.mediaDurations),
+      }));
 
       // The public payload carries one UTC schedule for every display. Keep a
       // stable base list; each device derives the same cycle order locally.
       const nextSignature = JSON.stringify({
-        playlist: buildAdsSignature(filteredAds, mergedSettings),
+        playlist: buildAdsSignature(normalizedAds, mergedSettings),
         schedule: payloadSchedule?.version || payloadSchedule?.startsAt || null,
       });
       const shouldUpdate = lastSignatureRef.current !== nextSignature;
       const nextSchedule = churchSlug ? payloadSchedule : null;
       const position = nextSchedule
         ? getSchedulePosition(
-            filteredAds,
+            normalizedAds,
             nextSchedule,
             Date.now() + serverClockOffsetRef.current,
           )
         : null;
-      const scheduledAds = position?.order || filteredAds;
+      const scheduledAds = position?.order || normalizedAds;
 
       const currentAds = adsRef.current;
       const currentAd =
@@ -488,9 +495,14 @@ export default function TelaoPlayer({
     if (rotationTimerRef.current) window.clearTimeout(rotationTimerRef.current);
 
     const currentAd = ads[currentIndex] || ads[0];
-    const durationSeconds = Math.max(
-      0,
-      Math.round((Date.now() - startTimeRef.current) / 1000),
+    // An impression represents one scheduled slot, not a browser timer
+    // measurement. Timers can fire late (or begin partway through a shared
+    // schedule), which previously made totals such as 11 × 5 s become 51 s.
+    // Record the configured slot duration so views and accumulated time always
+    // describe the same thing.
+    const durationSeconds = getMediaDuration(
+      currentAd,
+      sponsorSettings.mediaDurations,
     );
 
     const currentAdKind = currentAd.type || currentAd.kind || "NORMAL";
@@ -536,6 +548,7 @@ export default function TelaoPlayer({
     kind,
     registrarExibicao,
     sponsorSettings.metricsEnabled,
+    sponsorSettings.mediaDurations,
     sponsorSettings.metricsPaused,
   ]);
 

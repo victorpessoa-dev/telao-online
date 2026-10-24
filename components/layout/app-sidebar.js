@@ -105,7 +105,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
             )}
           >
             <span className="font-brand text-sm font-extrabold tracking-tight text-sidebar-foreground">
-              vPlayCast
+              Telão Online
             </span>
             <span className="mt-1 truncate text-[11px] font-medium text-sidebar-foreground/70">
               Painel administrativo
@@ -113,7 +113,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
           </div>
           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg p-1">
             <img
-              src="/brand/virtus-playcast-mark.png"
+              src="/brand/logo-telao-online.png"
               alt=""
               className="h-full w-full object-contain"
             />

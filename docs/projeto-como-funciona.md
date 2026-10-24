@@ -4,7 +4,7 @@
 
 ## Ideia do Projeto
 
-vPlayCast é uma ferramenta operacional para organizar patrocinadores e elementos visuais usados em transmissão. A ideia é ter um painel simples para a equipe cadastrar mídias, controlar o que aparece no telão, acompanhar exibições e disponibilizar transparência pública para patrocinadores e comunidade.
+Telão Online é uma ferramenta operacional para organizar patrocinadores e elementos visuais usados em transmissão. A ideia é ter um painel simples para a equipe cadastrar mídias, controlar o que aparece no telão, acompanhar exibições e disponibilizar transparência pública para patrocinadores e parceiros.
 
 O sistema nao e uma landing page. Ele e uma aplicacao de operacao: painel administrativo, telao publico, telao master, editor de overlays e relatorios.
 
@@ -13,7 +13,7 @@ O sistema nao e uma landing page. Ele e uma aplicacao de operacao: painel admini
 - Operador: cadastra patrocinadores, ativa/desativa mídias, abre o telão e acompanha métricas.
 - Equipe de transmissao: usa overlays em OBS ou ferramenta equivalente por meio de links publicos.
 - Patrocinador: consulta pagina publica com historico e relatorio de exibicoes.
-- Comunidade: ve a pagina publica com patrocinadores e dados principais.
+- Igrejas: vê o diretório público em `/igrejas` e acessa a página da igreja.
 
 ## Fluxo Principal
 
@@ -36,7 +36,7 @@ flowchart TD
 - `/admin`: dashboard operacional.
 - `/painel-telao`: cadastro, edicao, upload, ativacao e contador de patrocinadores.
 - `/{slug}/ads-telao`: telao público da igreja.
-- `/{slug}/anunciantes/:id`: detalhe público de um patrocinador.
+- `/{slug}/parceiros/:id`: detalhe público de um patrocinador.
 - `/overlay`: lista de overlays.
 - `/editor/:id`: editor visual de overlay.
 - `/{slug}/shared/:id`: overlay público para uso em transmissão.

@@ -129,14 +129,14 @@ export function AccountSettingsSection({
       <CardHeader>
         <CardTitle>Dados de login</CardTitle>
         <CardDescription>
-          Atualize o email de acesso, o nome do perfil e a senha do usuário
+          Atualize o e-mail de acesso, o nome do perfil e a senha do usuário.
           autenticado.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="account-email">Email de acesso</Label>
+            <Label htmlFor="account-email">E-mail de acesso</Label>
             <Input
               id="account-email"
               type="email"

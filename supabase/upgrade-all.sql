@@ -1,4 +1,4 @@
--- vPlayCast: consolidated, idempotent migration for existing projects.
+-- Telão Online: consolidated, idempotent migration for existing projects.
 -- Execute this file once in Supabase SQL Editor. It supersedes the separate
 -- public-profile, sponsor-reporting, sponsorship-guidelines and performance upgrades.
 

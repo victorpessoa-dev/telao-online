@@ -20,7 +20,7 @@ flowchart LR
   Supabase --> RPCs[RPCs com filtros de igreja ativa]
   RPCs --> DB[(Postgres)]
 
-  Telao[Telão] -->|fila local + lote| LogsAPI[/api/anunciantes/logs]
+  Telao[Telão] -->|fila local + lote| LogsAPI[/api/parceiros/logs]
   LogsAPI --> LogRPC[log_sponsor_impressions]
   LogRPC --> DB
 ```
@@ -29,17 +29,17 @@ flowchart LR
 
 | Página/ação pública | Requisição do navegador | Consulta no banco | Cache / limite |
 |---|---|---|---|
-| `/comunidade` | `GET /api/igrejas` | `get_public_churches()` | cache do navegador 60 s; CDN até 5 min, com conteúdo antigo por até 10 min durante revalidação |
+| `/igrejas` | `GET /api/igrejas` | `get_public_churches()` | cache do navegador 60 s; CDN até 5 min, com conteúdo antigo por até 10 min durante revalidação |
 | `/{slug}` | `GET /api/igreja/{slug}` | `get_public_church_by_slug(slug)` | mesma política pública de cache |
 | `/{slug}` — patrocinadores | RPC do navegador | `get_public_sponsor_directory(church_id)` | retorna somente patrocinadores ativos da igreja |
 | `/{slug}` — visita | `POST /api/igreja/{slug}/visita` | `record_public_church_visit(slug)` | no máximo uma contagem por IP/slug a cada 30 min |
 | `/{slug}/ads-telao` | primeiro obtém a igreja; depois `GET /api/telao/{slug}` | `get_public_church_by_slug` e `get_public_telao_payload(slug)` | resposta do telão: browser 60 s, CDN 5 min, stale-while-revalidate de 1 h |
-| `/{slug}/anunciantes/{id}` | primeiro obtém a igreja; depois `GET /api/anunciantes/{id}?churchId=…&page=…&pageSize=20` | validação de vínculo, `get_public_sponsor_detail` e `get_public_sponsor_report` | detalhe: browser 30 s, CDN 2 min, stale-while-revalidate 5 min |
-| exibição no telão | `POST /api/anunciantes/logs` | `log_sponsor_impressions(logs_arg)` | fila local; lotes de até 100 eventos, a cada 2 min |
+| `/{slug}/parceiros/{id}` | primeiro obtém a igreja; depois `GET /api/parceiros/{id}?churchId=…&page=…&pageSize=20` | validação de vínculo, `get_public_sponsor_detail` e `get_public_sponsor_report` | detalhe: browser 30 s, CDN 2 min, stale-while-revalidate 5 min |
+| exibição no telão | `POST /api/parceiros/logs` | `log_sponsor_impressions(logs_arg)` | fila local; lotes de até 100 eventos, a cada 2 min |
 
-## Comunidade: `/comunidade`
+## Igrejas: `/igrejas`
 
-`app/(public)/comunidade/page.jsx` chama `fetchPublicChurches()`. O serviço faz uma única chamada a `/api/igrejas`, que chama a RPC `get_public_churches()`.
+`app/(public)/igrejas/page.jsx` chama `fetchPublicChurches()`. A raiz (`/`) abre o único slug ativo ou redireciona para esta lista quando há zero ou mais de uma igreja ativa. O serviço faz uma chamada a `/api/igrejas`, que chama a RPC `get_public_churches()`.
 
 Essa RPC seleciona somente `id`, nome, slug, cidade, logo e capa de igrejas ativas. A busca digitada pelo visitante ocorre em memória, sobre a lista já recebida; não cria novas consultas ao banco.
 
@@ -102,12 +102,12 @@ Para cada evento novo, a mesma transação atualiza:
 - o evento bruto em `sponsor_impressions`, para auditoria;
 - o resumo de dia em `sponsor_impression_daily_rollups`, usado em gráficos e totais.
 
-## Detalhe e planilha do patrocinador: `/{slug}/anunciantes/{id}`
+## Detalhe e planilha do patrocinador: `/{slug}/parceiros/{id}`
 
 A página solicita explicitamente a página atual:
 
 ```text
-/api/anunciantes/{id}?churchId={uuid}&page=1&pageSize=20
+/api/parceiros/{id}?churchId={uuid}&page=1&pageSize=20
 ```
 
 A API valida `id`, `churchId`, página e tamanho (máximo 100), verifica se o patrocinador pertence à igreja e carrega em paralelo:

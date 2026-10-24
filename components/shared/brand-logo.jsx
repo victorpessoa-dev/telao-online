@@ -1,12 +1,9 @@
 export default function BrandLogo({
   className = "",
-  alt = "vPlayCast",
+  alt = "Telão Online",
   markOnly = false,
   animated = false,
 }) {
-  const lightAsset = "/brand/virtus-playcast-mark.png";
-  const darkAsset = "/brand/virtus-playcast-white-mark.png";
-
   return (
     <span
       className={`relative inline-flex items-center ${animated ? "brand-logo-motion" : ""} ${className}`}
@@ -14,27 +11,22 @@ export default function BrandLogo({
       <span className="relative flex h-full items-center gap-2.5">
         {!markOnly ? (
           <span className="font-brand text-[0.72em] font-extrabold tracking-tight text-foreground">
-            vPlayCast
+            Telão Online
           </span>
         ) : null}
-        <span
+        <img
+          src={
+            markOnly
+              ? "/brand/logo-telao-online.png"
+              : "/brand/logotipo-telao-online.png"
+          }
+          alt={markOnly ? alt : ""}
           className={
             markOnly
-              ? "relative h-full aspect-square"
-              : "relative h-full aspect-square shrink-0"
+              ? "h-full aspect-square object-contain"
+              : "h-full w-auto max-w-full object-contain"
           }
-        >
-          <img
-            src={lightAsset}
-            alt={markOnly ? alt : ""}
-            className="brand-logo-light h-full w-full object-contain"
-          />
-          <img
-            src={darkAsset}
-            alt=""
-            className="brand-logo-dark absolute inset-0 h-full w-full object-contain"
-          />
-        </span>
+        />
       </span>
     </span>
   );

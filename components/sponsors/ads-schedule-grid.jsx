@@ -19,6 +19,7 @@ import {
   getScheduledCycle,
   getSchedulePosition,
 } from "@/lib/services/telao-schedule";
+import { getMediaDuration } from "@/lib/services/telao-player";
 import { useStore } from "@/lib/store/store";
 
 const CYCLES_BEFORE_AND_AFTER = 5;
@@ -91,7 +92,7 @@ function CurrentSponsorCard({ entry, cycle, progress, now, serverOffset, frozen 
   return (
     <section className="rounded-2xl border border-border/80 bg-card p-4 shadow-sm sm:p-5">
       <p className="text-sm font-semibold text-foreground">
-        {frozen ? "Última exibição no telão" : "Agora no telão"}
+        {frozen ? "Programação do telão pausada" : "Agora no telão"}
       </p>
       <div className="mt-4 flex items-center gap-4">
         <span
@@ -118,8 +119,8 @@ function CurrentSponsorCard({ entry, cycle, progress, now, serverOffset, frozen 
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {frozen
-              ? "Programação congelada com a contagem desativada"
-              : `${formatDuration(Math.max(0, entry.endsAt - (now + serverOffset)) / 1000)} restantes`}
+              ? "Programação congelada porque a contagem está desativada."
+              : `Tempo restante: ${formatDuration(Math.max(0, entry.endsAt - (now + serverOffset)) / 1000)}`}
           </p>
         </div>
       </div>
@@ -153,7 +154,11 @@ export default function AdsScheduleGrid() {
         (payload.sponsors || [])
           .map(mapSponsorRow)
           .filter(Boolean)
-          .filter((ad) => ad.active && (!masterOnly || ad.type === "MASTER")),
+          .filter((ad) => ad.active && (!masterOnly || ad.type === "MASTER"))
+          .map((ad) => ({
+            ...ad,
+            duration: getMediaDuration(ad, settings.mediaDurations),
+          })),
       );
       const scheduleStartsAt =
         payload.schedule?.startsAt || payload.schedule?.starts_at || null;
@@ -227,7 +232,7 @@ export default function AdsScheduleGrid() {
     : 0;
 
   if (loading) {
-    return <LoadingState label="Carregando Grade TV" className="min-h-[70svh]" />;
+    return <LoadingState label="Carregando a grade do telão..." className="min-h-[70svh]" />;
   }
 
   return (
@@ -238,7 +243,7 @@ export default function AdsScheduleGrid() {
             Telão
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
-            Grade de TV
+            Programação do telão
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Visualize a programação dos patrocinadores em tempo real.
@@ -253,7 +258,7 @@ export default function AdsScheduleGrid() {
             />
             <span>
               <span className="block text-sm font-semibold text-foreground">
-                {isMetricsEnabled ? "Evento ativo" : "Evento inativo"}
+                {isMetricsEnabled ? "Contagem ativa" : "Contagem desativada"}
               </span>
               <span className="text-xs text-muted-foreground">
                 {isMetricsEnabled ? "Contagem em andamento" : "Contagem desativada"}
@@ -268,7 +273,7 @@ export default function AdsScheduleGrid() {
               </strong>
             </span>
             <span className="px-3 text-xs text-muted-foreground">
-              Ciclos exibidos
+              Ciclos na visualização
               <strong className="mt-1 block text-lg text-foreground">
                 {currentPosition
                   ? `${currentPosition.cycle - 4}–${currentPosition.cycle + 6}`
@@ -300,7 +305,8 @@ export default function AdsScheduleGrid() {
             <div className="pointer-events-none absolute inset-0 z-10 cursor-not-allowed rounded-2xl" aria-hidden="true" />
           ) : null}
           <div className="mb-4 rounded-xl border border-dashed border-muted-foreground/35 bg-muted/30 px-4 py-3 text-sm text-muted-foreground" hidden={isMetricsEnabled}>
-            Contagem de exibição desativada. A programação abaixo está congelada na última posição e não aceita ações.
+            A contagem de exibições está desativada. A programação abaixo foi
+            congelada na última posição e não permite interação.
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard
@@ -313,7 +319,7 @@ export default function AdsScheduleGrid() {
               icon={Layers3}
               label="Patrocínios ativos"
               value={String(ads.length)}
-              detail={`${ads.length} cadastrados para o evento`}
+              detail={`${ads.length} patrocinador${ads.length === 1 ? "" : "es"} cadastrado${ads.length === 1 ? "" : "s"} para o evento`}
             />
             <MetricCard
               icon={Clock3}
@@ -331,13 +337,14 @@ export default function AdsScheduleGrid() {
               icon={Eye}
               label="Exibições no evento"
               value={String(totalViews)}
-              detail="Registro disponível após o fim"
+              detail="Total registrado até o momento"
             />
           </div>
 
           {ads.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              Ative patrocinadores no Painel do Telão para gerar a grade.
+              Ative pelo menos um patrocinador no Painel do Telão para gerar a
+              programação.
             </div>
           ) : null}
 
@@ -356,7 +363,8 @@ export default function AdsScheduleGrid() {
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">Programação por ciclos</h2>
                   <p className="text-sm text-muted-foreground">
-                    Exibindo 11 ciclos: cinco anteriores, o atual e cinco próximos.
+                    Exibindo 11 ciclos: cinco anteriores, o atual e cinco
+                    próximos.
                   </p>
                 </div>
                 <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
@@ -367,7 +375,7 @@ export default function AdsScheduleGrid() {
               <div className="mt-5 overflow-x-auto pb-1">
                 <div className="min-w-[760px]">
                   <div className="mb-2 grid grid-cols-[10rem_1fr] items-end gap-2 text-[11px] font-medium text-muted-foreground">
-                    <span>Ciclo / início</span>
+                    <span>Ciclo e horário de início</span>
                     <div className="flex justify-between px-1">
                       {Array.from({ length: 6 }, (_, index) => (
                         <span key={index}>{formatDuration((cycleDuration / 5) * index)}</span>
@@ -430,13 +438,15 @@ export default function AdsScheduleGrid() {
               <div className="mt-4 rounded-xl border border-border/70 bg-background p-4">
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    {isMetricsEnabled ? "Detalhes do ciclo atual" : "Detalhes do ciclo congelado"}
+                    {isMetricsEnabled
+                      ? "Detalhes do ciclo atual"
+                      : "Detalhes do ciclo pausado"}
                   </p>
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <div><p className="text-[11px] text-muted-foreground">Início</p><p className="mt-1 text-sm font-semibold text-foreground">{activeCycle ? formatTime(activeCycle.startsAt) : "—"}</p></div>
                     <div><p className="text-[11px] text-muted-foreground">Término</p><p className="mt-1 text-sm font-semibold text-foreground">{activeCycle ? formatTime(activeCycle.endsAt) : "—"}</p></div>
                     <div><p className="text-[11px] text-muted-foreground">Duração</p><p className="mt-1 text-sm font-semibold text-foreground">{formatDuration(cycleDuration)}</p></div>
-                    <div><p className="text-[11px] text-muted-foreground">Patrocinadores</p><p className="mt-1 text-sm font-semibold text-foreground">{activeCycle?.entries.length || 0} anúncios</p></div>
+                    <div><p className="text-[11px] text-muted-foreground">Patrocinadores</p><p className="mt-1 text-sm font-semibold text-foreground">{activeCycle?.entries.length || 0} patrocinador{(activeCycle?.entries.length || 0) === 1 ? "" : "es"}</p></div>
                   </div>
                 </div>
               </div>

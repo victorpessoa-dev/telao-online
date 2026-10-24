@@ -1,7 +1,7 @@
 export default function manifest() {
   return {
-    name: "vPlayCast",
-    short_name: "vPlayCast",
+    name: "Telão Online",
+    short_name: "Telão Online",
     description: "Transmissão de missas e celebrações religiosas da paróquia",
     start_url: "/",
     scope: "/",
@@ -12,8 +12,8 @@ export default function manifest() {
     categories: ["religion", "video"],
     icons: [
       {
-        src: "/brand/virtus-playcast-mark.png",
-        sizes: "1024x1024",
+        src: "/brand/logo-telao-online.png",
+        sizes: "555x390",
         type: "image/png",
         purpose: "any maskable",
       },

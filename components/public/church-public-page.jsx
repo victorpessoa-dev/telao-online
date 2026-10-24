@@ -22,6 +22,7 @@ import AppFooter from "@/components/shared/app-footer";
 import EmptyState from "@/components/shared/empty-state";
 import LoadingState from "@/components/shared/loading-state";
 import PageError from "@/components/shared/page-error";
+import PaginationControls from "@/components/shared/pagination-controls";
 import PublicNavbar from "@/components/shared/public-navbar";
 import { normalizeSocialLinks } from "@/components/shared/social-links";
 import StaticMediaFrame from "@/components/shared/static-media-frame";
@@ -91,6 +92,8 @@ export default function ChurchPublicPage() {
   const [church, setChurch] = useState(null);
   const [sponsors, setSponsors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sponsorPage, setSponsorPage] = useState(1);
+  const [sponsorsPerPage, setSponsorsPerPage] = useState(25);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const reduceMotion = useReducedMotion();
@@ -148,6 +151,16 @@ export default function ChurchPublicPage() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const updatePageSize = () =>
+      setSponsorsPerPage(mediaQuery.matches ? 50 : 25);
+
+    updatePageSize();
+    mediaQuery.addEventListener("change", updatePageSize);
+    return () => mediaQuery.removeEventListener("change", updatePageSize);
+  }, []);
+
   const filteredSponsors = useMemo(() => {
     const term = searchTerm.trim().toLocaleLowerCase("pt-BR");
     if (!term) return sponsors;
@@ -155,6 +168,22 @@ export default function ChurchPublicPage() {
       sponsor.name.toLocaleLowerCase("pt-BR").includes(term),
     );
   }, [searchTerm, sponsors]);
+  const sponsorTotalPages = Math.max(
+    1,
+    Math.ceil(filteredSponsors.length / sponsorsPerPage),
+  );
+  const paginatedSponsors = useMemo(() => {
+    const start = (sponsorPage - 1) * sponsorsPerPage;
+    return filteredSponsors.slice(start, start + sponsorsPerPage);
+  }, [filteredSponsors, sponsorPage, sponsorsPerPage]);
+
+  useEffect(() => {
+    setSponsorPage(1);
+  }, [searchTerm, sponsorsPerPage]);
+
+  useEffect(() => {
+    if (sponsorPage > sponsorTotalPages) setSponsorPage(sponsorTotalPages);
+  }, [sponsorPage, sponsorTotalPages]);
   const socialLinks = normalizeSocialLinks({
     parishSocialLinks: church?.social_links,
   });
@@ -187,8 +216,8 @@ export default function ChurchPublicPage() {
       <PageError
         title="Igreja não encontrada."
         description={error || "Confira o endereço acessado."}
-        homeHref="/comunidade"
-        homeLabel="Ver comunidades"
+        homeHref="/igrejas"
+        homeLabel="Ver igrejas"
         eyebrow="Igreja não encontrada"
       />
     );
@@ -196,9 +225,9 @@ export default function ChurchPublicPage() {
       <div className="flex min-h-screen flex-col bg-background">
         <PublicNavbar />
         <main className="mx-auto grid w-full max-w-2xl flex-1 place-items-center px-6 py-16 text-center">
-          <Link href="/comunidade" className="back-link absolute left-6 top-24">
+          <Link href="/igrejas" className="back-link absolute left-6 top-24">
             <ArrowLeft className="h-4 w-4" />
-            Voltar às comunidades
+            Ver igrejas
           </Link>
           <EmptyState
             icon={Building2}
@@ -215,9 +244,9 @@ export default function ChurchPublicPage() {
     <div className="public-page-shell flex min-h-screen flex-col bg-background">
       <PublicNavbar />
       <main className="mx-auto w-[min(80%,1600px)] flex-1 space-y-8 py-8 max-md:w-full max-md:px-4">
-        <Link href="/comunidade" className="back-link">
+        <Link href="/igrejas" className="back-link">
           <ArrowLeft className="h-4 w-4" />
-          Voltar às comunidades
+          Ver igrejas
         </Link>
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 14 }}
@@ -240,7 +269,7 @@ export default function ChurchPublicPage() {
           <div className="relative p-5 sm:p-6">
             <div className="absolute -top-12 flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border-4 border-card bg-card sm:-top-14 sm:h-28 sm:w-28">
               <img
-                src={church.logo_url || "/brand/virtus-playcast-mark.png"}
+                src={church.logo_url || "/brand/logo-telao-online.png"}
                 alt=""
                 className="h-full w-full object-cover"
               />
@@ -356,7 +385,7 @@ export default function ChurchPublicPage() {
           />
         ) : (
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {filteredSponsors.map((sponsor, index) => (
+            {paginatedSponsors.map((sponsor, index) => (
               <motion.div
                 key={sponsor.id}
                 initial={reduceMotion ? false : { opacity: 0, y: 10 }}
@@ -367,7 +396,7 @@ export default function ChurchPublicPage() {
                 }}
               >
                 <Link
-                  href={`/${slug}/anunciantes/${sponsor.id}`}
+                  href={`/${slug}/parceiros/${sponsor.id}`}
                   className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Card className="h-full overflow-hidden transition group-hover:border-primary/60 group-hover:shadow-md">
@@ -394,6 +423,15 @@ export default function ChurchPublicPage() {
             ))}
           </section>
         )}
+        {filteredSponsors.length ? (
+          <PaginationControls
+            currentPage={sponsorPage}
+            totalPages={sponsorTotalPages}
+            totalItems={filteredSponsors.length}
+            itemLabel="patrocinadores"
+            onPageChange={setSponsorPage}
+          />
+        ) : null}
       </main>
       <AppFooter />
     </div>

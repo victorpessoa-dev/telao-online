@@ -6,8 +6,8 @@ import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const fallbackProfile = {
-  parishName: "vPlayCast",
-  parishLogoUrl: "/brand/virtus-playcast-mark.png",
+  parishName: "Telão Online",
+  parishLogoUrl: "/brand/logo-telao-online.png",
 };
 
 export default function PublicNavbar({
@@ -61,19 +61,33 @@ export default function PublicNavbar({
     <header className="sticky top-0 z-40 border-b border-border bg-background/92 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/78">
       <div className="mx-auto flex min-h-16 w-[min(80%,1600px)] items-center justify-between gap-3 py-2 xs:gap-4 sm:py-3 max-md:w-full max-md:px-4 fhd:max-w-[1600px]">
         <Link
-          href={projectBrand ? "/" : church?.slug ? `/${church.slug}` : "/"}
+          href={
+            projectBrand
+              ? "/igrejas"
+              : church?.slug
+                ? `/${church.slug}`
+                : "/igrejas"
+          }
           className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <span
-            className={`min-w-0 truncate text-base leading-tight sm:text-lg ${profile.parishName === "vPlayCast" ? "font-brand font-extrabold" : "font-semibold"}`}
-          >
-            {profile.parishName}
-          </span>
-          <img
-            src={profile.parishLogoUrl}
-            alt=""
-            className="h-10 w-12 shrink-0 object-contain sm:h-11 sm:w-14"
-          />
+          {profile.parishName === "Telão Online" ? (
+            <img
+              src="/brand/logotipo-telao-online.png"
+              alt="Telão Online"
+              className="h-7 w-auto max-w-44 object-contain sm:h-8"
+            />
+          ) : (
+            <span className="min-w-0 truncate text-base font-semibold leading-tight sm:text-lg">
+              {profile.parishName}
+            </span>
+          )}
+          {profile.parishName !== "Telão Online" && profile.parishLogoUrl ? (
+            <img
+              src={profile.parishLogoUrl}
+              alt=""
+              className="h-10 w-12 shrink-0 object-contain sm:h-11 sm:w-14"
+            />
+          ) : null}
         </Link>
         <div className="flex shrink-0 items-center gap-1">
           {showLogin && (
