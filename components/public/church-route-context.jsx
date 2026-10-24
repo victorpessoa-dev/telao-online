@@ -57,17 +57,15 @@ function ChurchGate({ children }) {
 }
 
 export function ChurchTelaoPage() {
+  const params = useParams();
+  const slug = typeof params?.slug === "string" ? params.slug : "";
+
   return (
-    <ChurchGate>
-      {({ church, slug }) => (
-        <TelaoPlayer
-          kind="ALL"
-          backgroundMode="always"
-          churchId={church.id}
-          churchSlug={slug}
-        />
-      )}
-    </ChurchGate>
+    <TelaoPlayer
+      kind="ALL"
+      backgroundMode="always"
+      churchSlug={slug}
+    />
   );
 }
 

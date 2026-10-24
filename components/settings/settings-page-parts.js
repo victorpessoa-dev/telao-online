@@ -44,6 +44,8 @@ export function SponsorDesignPreview({
           <img
             src={settings.backgroundUrl}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
@@ -284,6 +286,8 @@ export function BrandPreview({
             <img
               src={parishCoverUrl}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover"
             />
           ) : (
@@ -298,6 +302,8 @@ export function BrandPreview({
             <img
               src={parishLogoUrl || "/brand/logo-telao-online.png"}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover"
             />
           </div>

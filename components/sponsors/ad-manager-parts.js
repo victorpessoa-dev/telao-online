@@ -84,6 +84,8 @@ export function MediaPreview({ ad, compact = false }) {
           <img
             src={youtubeThumbnail}
             alt={`Prévia de ${ad.name || "vídeo"}`}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
             style={mediaStyle}
           />
@@ -122,6 +124,8 @@ export function MediaPreview({ ad, compact = false }) {
       <img
         src={ad.src}
         alt={ad.name || "Patrocínio"}
+        loading="lazy"
+        decoding="async"
         className="h-full w-full object-cover"
         style={mediaStyle}
       />

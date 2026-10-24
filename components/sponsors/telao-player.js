@@ -13,6 +13,7 @@ import {
 import {
   buildAdsSignature,
   emptyTelaoSettings,
+  getDesignValue,
   getMediaDuration,
 } from "@/lib/services/telao-player";
 import {
@@ -108,6 +109,7 @@ export default function TelaoPlayer({
   const [sponsorSettings, setSponsorSettings] = useState(emptyTelaoSettings);
   const [loaded, setLoaded] = useState(false);
   const [isOfflineCache, setIsOfflineCache] = useState(false);
+  const [eventActive, setEventActive] = useState(null);
   const [globalSchedule, setGlobalSchedule] = useState(null);
   const adsRef = useRef([]);
   const currentIndexRef = useRef(0);
@@ -124,10 +126,12 @@ export default function TelaoPlayer({
   const rotationTimerRef = useRef(null);
   const advancingRef = useRef(false);
   const flushingLogsRef = useRef(false);
-  const cacheKey = `${ADS_CACHE_KEY}:${churchId || "default"}:${kind}`;
+  const imagePreloadsRef = useRef(new Map());
+  const displayScope = churchId || churchSlug || "default";
+  const cacheKey = `${ADS_CACHE_KEY}:${displayScope}:${kind}`;
   // A screen must never flush another church's offline events after an
   // operator changes routes in the same browser.
-  const logQueueKey = `${LOG_QUEUE_KEY}:${churchId || "default"}:${kind}`;
+  const logQueueKey = `${LOG_QUEUE_KEY}:${displayScope}:${kind}`;
 
   useEffect(() => {
     adsRef.current = ads;
@@ -205,21 +209,60 @@ export default function TelaoPlayer({
   useEffect(() => {
     const metricsPaused =
       kind !== "ALL" && Boolean(sponsorSettings.metricsPaused?.[kind]);
-    if (!loaded || (sponsorSettings.metricsEnabled && !metricsPaused)) return;
+    if (
+      !loaded ||
+      (eventActive !== false && sponsorSettings.metricsEnabled && !metricsPaused)
+    )
+      return;
     // Once disabled or paused, pending local impressions must not look valid
     // in the admin preview and must not be sent in a later batch.
     officialDisplayRef.current = null;
     officialDisplayCandidateRef.current = null;
     localStorage.removeItem(logQueueKey);
-  }, [kind, loaded, logQueueKey, sponsorSettings.metricsEnabled, sponsorSettings.metricsPaused]);
+  }, [
+    eventActive,
+    kind,
+    loaded,
+    logQueueKey,
+    sponsorSettings.metricsEnabled,
+    sponsorSettings.metricsPaused,
+  ]);
 
   const preloadImages = useCallback((items) => {
-    items
-      .filter((item) => item.mediaType === "image" && item.src)
-      .forEach((item) => {
+    const preload = (src) => {
+      if (imagePreloadsRef.current.has(src)) {
+        return imagePreloadsRef.current.get(src);
+      }
+
+      const request = new Promise((resolve) => {
         const image = new Image();
-        image.src = item.src;
+        image.decoding = "async";
+        image.onload = () => {
+          if (typeof image.decode !== "function") {
+            resolve(true);
+            return;
+          }
+          image.decode().then(
+            () => resolve(true),
+            // A decoded image can reject in browsers that have already
+            // painted it, so the successful load remains sufficient here.
+            () => resolve(true),
+          );
+        };
+        // Do not keep the display on its loading screen forever for a broken
+        // asset. The browser will still render its normal broken-image state.
+        image.onerror = () => resolve(false);
+        image.src = src;
       });
+      imagePreloadsRef.current.set(src, request);
+      return request;
+    };
+
+    return Promise.all(
+      items
+        .filter((item) => item.mediaType === "image" && item.src)
+        .map((item) => preload(item.src)),
+    );
   }, []);
 
   const enqueueLog = useCallback(
@@ -340,6 +383,22 @@ export default function TelaoPlayer({
         const payload = await response.json().catch(() => ({}));
         if (!response.ok)
           throw new Error(payload.error || "Falha ao carregar telão");
+        if (payload.active !== true) {
+          // The route intentionally stays lightweight outside an event. Do
+          // not revive a cached playlist or leave queued logs behind.
+          setEventActive(false);
+          setAds([]);
+          setSponsorSettings(
+            mergeSponsorSettings(payload.settings || emptyTelaoSettings),
+          );
+          setGlobalSchedule(null);
+          globalScheduleRef.current = null;
+          officialDisplayRef.current = null;
+          localStorage.removeItem(cacheKey);
+          localStorage.removeItem(logQueueKey);
+          return false;
+        }
+        setEventActive(true);
         data = payload.sponsors || [];
         publicSettings = payload.settings || {};
         lastContentVersionRef.current = payload.version ?? null;
@@ -412,6 +471,11 @@ export default function TelaoPlayer({
         : -1;
 
       if (shouldUpdate || isOfflineCache) {
+        // Start the schedule only after every image in its playlist is in the
+        // browser cache. This means the next sponsor is ready before its
+        // configured slot begins, so rotation never needs to extend a slot
+        // while waiting for an image download.
+        await preloadImages(scheduledAds);
         setAds(scheduledAds);
         setSponsorSettings(mergedSettings);
         setCurrentIndex(
@@ -431,13 +495,15 @@ export default function TelaoPlayer({
           fetchedAt: new Date().toISOString(),
         }),
       );
+      return true;
     } catch {
       const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
       if (cached?.ads?.length) {
-        setAds(cached.ads);
         const cachedSettings = mergeSponsorSettings(
           cached.sponsorSettings || emptyTelaoSettings,
         );
+        await preloadImages(cached.ads);
+        setAds(cached.ads);
         setSponsorSettings(cachedSettings);
         setCurrentIndex((prev) =>
           Math.min(prev, Math.max(cached.ads.length - 1, 0)),
@@ -449,8 +515,9 @@ export default function TelaoPlayer({
         );
         lastContentVersionRef.current = cached.version ?? null;
         setGlobalSchedule(cached.schedule ?? null);
-        preloadImages(cached.ads);
+        return true;
       }
+      return false;
     } finally {
       setLoaded(true);
     }
@@ -472,6 +539,16 @@ export default function TelaoPlayer({
       );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) return;
+      if (payload.active !== true) {
+        setEventActive(false);
+        setAds([]);
+        setGlobalSchedule(null);
+        globalScheduleRef.current = null;
+        officialDisplayRef.current = null;
+        localStorage.removeItem(cacheKey);
+        localStorage.removeItem(logQueueKey);
+        return;
+      }
       const hasContentChange =
         lastContentVersionRef.current !== null &&
         String(payload.version) !== String(lastContentVersionRef.current);
@@ -487,7 +564,7 @@ export default function TelaoPlayer({
     } catch {
       // The cached playlist keeps running until connectivity returns.
     }
-  }, [carregarAnuncios, churchSlug]);
+  }, [cacheKey, carregarAnuncios, churchSlug, logQueueKey]);
 
   const avancarAd = useCallback(async () => {
     if (ads.length === 0 || advancingRef.current) return;
@@ -553,12 +630,14 @@ export default function TelaoPlayer({
   ]);
 
   useEffect(() => {
-    carregarAnuncios();
-    flushLogQueue();
+    carregarAnuncios().then((isActive) => {
+      if (isActive) flushLogQueue();
+    });
 
     const handleOnline = () => {
-      carregarAnuncios();
-      flushLogQueue();
+      carregarAnuncios().then((isActive) => {
+        if (isActive) flushLogQueue();
+      });
     };
 
     const handleVisibility = () => {
@@ -571,7 +650,7 @@ export default function TelaoPlayer({
     const handlePageHide = () => {
       // The queue remains persisted even when the browser cancels this
       // request. The next start/online event will retry it safely.
-      flushLogQueue();
+      if (eventActive === true) flushLogQueue();
     };
 
     window.addEventListener("online", handleOnline);
@@ -582,7 +661,7 @@ export default function TelaoPlayer({
       window.removeEventListener("pagehide", handlePageHide);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [carregarAnuncios, checkContentVersion, flushLogQueue]);
+  }, [carregarAnuncios, checkContentVersion, eventActive, flushLogQueue]);
 
   useEffect(() => {
     if (!loaded || ads.length === 0) return undefined;
@@ -619,10 +698,9 @@ export default function TelaoPlayer({
   ]);
 
   useEffect(() => {
-    const adsRefreshTimer = window.setInterval(
-      checkContentVersion,
-      Math.min(ADS_REFRESH_INTERVAL_MS, 30_000),
-    );
+    if (eventActive !== true) return undefined;
+
+    const adsRefreshTimer = window.setInterval(checkContentVersion, ADS_REFRESH_INTERVAL_MS);
     const scheduleNextFlush = () => {
       const jitterMs = Math.round((Math.random() - 0.5) * 10_000);
       flushTimerRef.current = window.setTimeout(async () => {
@@ -636,13 +714,13 @@ export default function TelaoPlayer({
       window.clearInterval(adsRefreshTimer);
       if (flushTimerRef.current) window.clearTimeout(flushTimerRef.current);
     };
-  }, [checkContentVersion, flushLogQueue]);
+  }, [checkContentVersion, eventActive, flushLogQueue]);
 
+  const telaoProfile = useTelaoProfile();
   const currentAd = useMemo(
     () => ads[currentIndex] || ads[0],
     [ads, currentIndex],
   );
-  const telaoProfile = useTelaoProfile();
   const design = currentAd
     ? sponsorSettings?.designs?.[telaoProfile] ||
       sponsorSettings?.designs?.DESKTOP ||
@@ -702,6 +780,60 @@ export default function TelaoPlayer({
       <div className={`fixed inset-0 flex items-center justify-center overflow-hidden ${masterOnlyMode ? "bg-transparent" : "bg-black"}`}>
         <LoadingIndicator className="[&_img]:brightness-0 [&_img]:invert" />
       </div>
+    );
+  }
+
+  if (eventActive === false) {
+    const inactiveDesign =
+      sponsorSettings?.designs?.[telaoProfile] ||
+      sponsorSettings?.designs?.DESKTOP ||
+      sponsorSettings?.designs?.SHARED ||
+      {};
+    const inactiveBackground =
+      inactiveDesign.backgroundUrl ||
+      "/brand/background-virtus-playcast.webp";
+    const inactiveMessageStyle = {
+      width: `${getDesignValue(
+        inactiveDesign,
+        "contentWidth",
+        "imageWidth",
+        58,
+      )}%`,
+      height: `${getDesignValue(
+        inactiveDesign,
+        "contentHeight",
+        "imageHeight",
+        58,
+      )}%`,
+      left: `${getDesignValue(inactiveDesign, "x", null, 50)}%`,
+      top: `${getDesignValue(inactiveDesign, "y", null, 50)}%`,
+    };
+
+    return (
+      <main className="ads-telao-screen fixed inset-0 overflow-hidden bg-black select-none">
+        <div className={`${canvasClassName} overflow-hidden bg-[#071423]`}>
+          <img
+            src={inactiveBackground}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover opacity-35"
+            draggable={false}
+          />
+          <div
+            className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-3xl border border-sky-300/45 bg-slate-950/65 px-5 py-6 text-center shadow-2xl backdrop-blur-sm sm:px-10 sm:py-12"
+            style={inactiveMessageStyle}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-sky-300 sm:text-xs sm:tracking-[0.32em]">
+              Espaço para patrocinadores
+            </p>
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-blue-400 sm:text-6xl">
+              Sua marca aqui
+            </h1>
+            <p className="mt-4 max-w-xl text-xs leading-5 text-blue-200 sm:mt-5 sm:text-base sm:leading-6">
+              O telão oficial, com os parceiros, é ativado durante o evento.
+            </p>
+          </div>
+        </div>
+      </main>
     );
   }
 

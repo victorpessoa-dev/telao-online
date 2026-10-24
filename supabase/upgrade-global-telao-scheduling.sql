@@ -106,21 +106,31 @@ $$;
 
 create or replace function public.get_public_telao_payload(slug_arg text) returns jsonb
 language sql stable security definer set search_path = public as $$
-  select jsonb_build_object(
-    'churchId', c.id, 'slug', c.slug, 'version', c.content_version,
-    'sponsors', coalesce((select jsonb_agg(to_jsonb(s)) from public.get_public_sponsors(c.id) s), '[]'::jsonb),
-    'settings', public.get_sponsor_settings(c.id),
-    'schedule', public.get_active_telao_schedule(c.id)
-  ) from public.churches c
+  select case
+    when coalesce((public.get_sponsor_settings(c.id)->>'metricsEnabled')::boolean, false)
+      then jsonb_build_object(
+        'active', true, 'churchId', c.id, 'slug', c.slug, 'version', c.content_version,
+        'sponsors', coalesce((select jsonb_agg(to_jsonb(s)) from public.get_public_sponsors(c.id) s), '[]'::jsonb),
+        'settings', public.get_sponsor_settings(c.id),
+        'schedule', public.get_active_telao_schedule(c.id)
+      )
+    else jsonb_build_object(
+      'active', false, 'settings', public.get_sponsor_settings(c.id)
+    )
+  end from public.churches c
   where c.slug = lower(trim(slug_arg)) and c.is_active limit 1
 $$;
 
 create or replace function public.get_public_telao_version(slug_arg text) returns jsonb
 language sql stable security definer set search_path = public as $$
-  select jsonb_build_object(
-    'churchId', c.id, 'version', c.content_version,
-    'scheduleVersion', public.get_active_telao_schedule(c.id)->>'version'
-  ) from public.churches c where c.slug = lower(trim(slug_arg)) and c.is_active limit 1
+  select case
+    when coalesce((public.get_sponsor_settings(c.id)->>'metricsEnabled')::boolean, false)
+      then jsonb_build_object(
+        'active', true, 'churchId', c.id, 'version', c.content_version,
+        'scheduleVersion', public.get_active_telao_schedule(c.id)->>'version'
+      )
+    else jsonb_build_object('active', false)
+  end from public.churches c where c.slug = lower(trim(slug_arg)) and c.is_active limit 1
 $$;
 
 create or replace function public.open_official_display_session(slug_arg text)

@@ -71,10 +71,10 @@ export function AdManagerToolbar({
                 htmlFor="metrics-enabled"
                 className="cursor-pointer text-xs font-medium text-foreground/90"
               >
-                Contador de exibições
+                Telão do evento
               </label>
               <div className="mt-0.5 text-[11px] text-muted-foreground">
-                Registro público de exibições por tipo
+                Libera o telão público e registra as exibições durante o evento
               </div>
             </div>
             <Switch
@@ -128,10 +128,10 @@ export function AdManagerToolbar({
         <div className="min-w-0 space-y-3 rounded-lg border border-border/50 px-3 py-2.5">
           <div className="min-w-0">
             <div className="text-xs font-medium text-foreground/90">
-              Link público do telão
+              Telão público do evento
             </div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Use esta rota para compartilhar ou abrir o telão oficial.
+              Disponível apenas enquanto o telão do evento estiver ligado.
             </div>
           </div>
           <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">

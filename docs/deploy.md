@@ -52,7 +52,7 @@ Setup esperado:
 - Migrations aplicadas.
 - RLS ativo.
 - RPCs criadas.
-- Bucket `v-playcast-midia`.
+- Bucket `telao-online-midia`.
 - Policies de storage aplicadas.
 
 ## Backup e Restore
@@ -60,7 +60,7 @@ Setup esperado:
 Backup:
 
 - exportar banco Supabase;
-- guardar arquivos do bucket `v-playcast-midia`;
+- guardar arquivos do bucket `telao-online-midia`;
 - guardar variaveis de ambiente fora do repositorio;
 - documentar versao/commit em producao.
 

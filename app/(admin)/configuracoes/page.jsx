@@ -32,6 +32,7 @@ import {
 import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 import {
   deleteUploadedMediaBatch,
+  optimizeTelaoBackgroundForUpload,
   uploadMedia,
 } from "@/services/supabase/upload";
 import { syncSponsorDurationsForChurch } from "@/lib/repositories/sponsors";
@@ -459,14 +460,17 @@ export default function ConfiguracoesPage() {
     const previousUrl = sponsorSettings.designs[profile]?.backgroundUrl || "";
     const replace = async () => {
       try {
-        const url = await uploadMedia(file, "sponsors");
+        const optimizedBackground = await optimizeTelaoBackgroundForUpload(file);
+        const url = await uploadMedia(optimizedBackground, "sponsors", "", {
+          alreadyPrepared: true,
+        });
         await updateSponsorDesign(profile, "backgroundUrl", url);
         const storageErrors = await deleteUploadedMediaBatch([previousUrl]);
         if (storageErrors.length) {
           toast.warning("Nova imagem salva, mas o arquivo antigo não pôde ser removido");
           return;
         }
-        toast.success("Imagem de fundo enviada");
+        toast.success("Imagem de fundo otimizada em WebP e enviada");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Erro ao enviar a imagem de fundo");
       }

@@ -703,8 +703,8 @@ export default function AdManager({
             await updateMetricsEnabled(checked);
             toast.success(
               checked
-                ? "Contador de exibições do telão ativado."
-                : "Contador de exibições do telão desativado.",
+                ? "Telão e contador ativados para o evento."
+                : "Telão e contador desativados.",
             );
           } catch (error) {
             toast.error(
