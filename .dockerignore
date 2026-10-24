@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+coverage
+*.log
+build-output.txt
+REA-*.md
+rea-analysis.txt

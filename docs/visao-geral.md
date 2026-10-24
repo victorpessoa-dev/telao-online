@@ -1,12 +1,14 @@
 # Visao Geral e Arquitetura
 
+> Atualizado em 2026-10: o sistema é multi-igreja. Cada igreja possui um único administrador (`churches.admin_id`), e a rota pública é controlada por `churches.is_active`.
+
 ## Objetivo
 
-Explicar a arquitetura atual do PASCOM Stream View e como os dominios principais se conectam.
+Explicar a arquitetura atual do Telão Online e como os domínios principais se conectam.
 
 ## Descricao
 
-O PASCOM Stream View e uma aplicacao Next.js App Router com Supabase para operar patrocinadores, teloes e overlays de transmissao. O painel administrativo e protegido por login e permissao de admin; as rotas publicas exibem patrocinadores, relatorios, telao normal, telao master e overlays compartilhaveis.
+O Telão Online é uma aplicação Next.js App Router com Supabase para operar patrocinadores, telões e overlays de transmissão. A raiz abre a única igreja ativa ou direciona para `/igrejas`; o painel administrativo é protegido por login e permissão de admin.
 
 ## Arquitetura
 
@@ -22,7 +24,7 @@ flowchart LR
   SupabaseBrowser --> DB[(Supabase Postgres)]
   SupabaseServer --> DB
   DB --> RPC[RPCs e RLS]
-  SupabaseBrowser --> Storage[Supabase Storage pascom-media]
+  SupabaseBrowser --> Storage[Supabase Storage v-playcast-midia]
 ```
 
 ## Dominios
@@ -38,6 +40,8 @@ flowchart LR
 - `app`: rotas, paginas e route handlers.
 - `components`: UI e componentes por dominio.
 - `lib/repositories`: acesso Supabase/RPC.
+- `lib/services/churches`: diretório público e ativação da rota da igreja.
+- `lib/services/provisioning`: convite administrativo no servidor.
 - `lib/services`: regras de aplicacao e montagem de payload.
 - `lib/mappers`: conversao entre linhas do banco e formato de tela.
 - `lib/store`: provider global usado pelo admin.
@@ -47,7 +51,7 @@ flowchart LR
 ## Regras Importantes
 
 - Admin nao funciona em mobile.
-- Admin exige usuario autenticado e `profiles.is_admin = true`.
+- Admin exige usuário autenticado que seja proprietário de uma igreja (`churches.admin_id = auth.uid()`).
 - Escritas dependem de RLS no Supabase.
 - APIs publicas retornam `no-store`.
 - Links publicos externos sao filtrados para `http/https`.

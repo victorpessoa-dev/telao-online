@@ -1,5 +1,12 @@
 # Componentes, Hooks, Services e Providers
 
+## Atualização multi-igreja
+
+- `lib/services/churches.js` lista igrejas públicas e altera `is_active` para o administrador proprietário.
+- `lib/services/provisioning.js` envia o convite; ele não cria a igreja. A igreja é criada pelo administrador em `/configurar-igreja`.
+- `services/supabase/admin.js` é exclusivo do servidor e usa `SUPABASE_SERVICE_ROLE_KEY`.
+- `services/supabase/upload.js` grava mídia no prefixo da igreja e depende das políticas de Storage.
+
 ## Objetivo
 
 Mapear responsabilidades e oportunidades de separacao.

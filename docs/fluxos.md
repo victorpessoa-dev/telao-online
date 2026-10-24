@@ -1,5 +1,7 @@
 # Fluxos da Aplicacao
 
+> Atualizado em 2026-10: convite → confirmação de senha → configuração da própria igreja é o onboarding administrativo.
+
 ## Objetivo
 
 Documentar inicializacao, autenticacao, estado, dados, eventos, erros, build e atualizacoes.
@@ -31,7 +33,7 @@ flowchart TD
   D -- Nao --> E[Redirect /login?error=missing_supabase_env]
   D -- Sim --> F[supabase.auth.getUser]
   F -- Sem usuario --> G[Redirect /login com redirectTo]
-  F -- Usuario valido --> H{profiles.is_admin?}
+  F -- Usuário válido --> H{é dono de uma igreja?}
   H -- Sim --> I[Permite rota admin]
   H -- Nao --> J[Redirect /login?error=admin_required]
   K[Login page] --> L[signInWithPassword]
@@ -42,14 +44,14 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  A[TelaoPlayer] --> B[GET /api/ads-novenario]
-  B --> C[RPC get_public_sponsors + get_sponsor_settings]
+  A[TelaoPlayer] --> B[Consulta patrocinadores no Supabase]
+  B --> C[Filtra dados públicos por igreja]
   C --> D[Filtra NORMAL ou MASTER]
   D --> E[Embaralha quando assinatura muda]
   E --> F[Preload e cache local]
   F --> G[Timer de exibicao]
   G --> H{metricas ligadas e tipo nao pausado?}
-  H -- Sim --> I[POST /api/anunciantes/logs]
+  H -- Sim --> I[POST /api/parceiros/logs]
   I --> J[RPC log_sponsor_impression]
   I -- Falha --> K[Fila localStorage]
   G --> L[Proximo patrocinador]
@@ -59,7 +61,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  A[/shared/:publicId] --> B[RPC get_public_overlay]
+  A[/{slug}/shared/:publicId] --> B[RPC get_public_overlay]
   B --> C[Renderiza elementos visiveis]
   C --> D[Realtime postgres_changes]
   C --> E[Polling 1s]

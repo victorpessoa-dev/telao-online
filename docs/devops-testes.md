@@ -1,5 +1,9 @@
 # Build, Deploy e Testes
 
+## Ambiente obrigatório
+
+Copie `.env.example` para `.env` e siga [Configuração de ambiente passo a passo](./configuracao-de-ambiente.md). O build precisa das variáveis públicas do Supabase; o fluxo de convites também precisa das duas chaves privadas em runtime.
+
 ## Scripts
 
 ```bash

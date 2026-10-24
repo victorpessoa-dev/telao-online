@@ -1,5 +1,7 @@
 # Guia do Usuario
 
+> Cada administrador cria e administra a própria igreja após aceitar o convite recebido por email.
+
 ## Acesso
 
 Use `/login` para entrar no painel administrativo. O painel nao funciona em mobile; use computador ou tela maior.
@@ -12,7 +14,7 @@ Em `/painel-telao` voce pode:
 - enviar imagem, GIF, MP4 ou WebM;
 - editar nome, tipo, link, site e duracao;
 - ativar ou desativar patrocinador;
-- abrir `/telao` e `/telao-master`;
+- abrir `/{slug}/ads-telao`;
 - copiar URLs publicas;
 - abrir relatorio publico.
 
@@ -31,7 +33,7 @@ O contador de exibicoes fica no painel do telao.
 
 Em `/overlay`, crie overlays para transmissao. Em `/editor/:id`, adicione imagens e textos, ajuste posicao, tamanho, camada e visibilidade.
 
-Use `/shared/:id` no OBS ou ferramenta equivalente.
+Use `/{slug}/shared/:id` no OBS ou ferramenta equivalente.
 
 ## Pagina Publica
 
@@ -46,7 +48,7 @@ Use `/shared/:id` no OBS ou ferramenta equivalente.
 
 ## Relatorios
 
-Cada patrocinador tem pagina publica em `/anunciantes/:id`, com:
+Cada patrocinador tem página pública em `/{slug}/parceiros/:id`, com:
 
 - midia;
 - total de exibicoes;

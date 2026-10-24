@@ -1,5 +1,13 @@
 # Estrutura de Pastas
 
+## Atualização de autenticação e igreja
+
+- `app/api/admin/invites/`: endpoint de convite protegido.
+- `app/api/igrejas/`: diretório público de igrejas ativas.
+- `app/(public)/confirmar-convite`, `esqueci-senha` e `redefinir-senha`: fluxos de Auth.
+- `lib/services/churches.js` e `lib/services/provisioning.js`: regras de negócio de igreja e convite.
+- `services/supabase/admin.js`: client server-only com service role.
+
 ## Inventario
 
 ```text

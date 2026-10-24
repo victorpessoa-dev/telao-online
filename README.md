@@ -1,47 +1,54 @@
-# PASCOM Stream View
+# Telão Online
 
-PASCOM Stream View e uma aplicacao Next.js para equipes de comunicacao paroquial gerenciarem patrocinadores, telao publico, overlays de transmissao e relatorios de exibicao.
+Aplicação web para equipes paroquiais organizarem patrocinadores, mídias e a programação exibida no telão. Cada igreja administra seus próprios dados e disponibiliza uma página pública com patrocinadores e registros de exibição.
 
-O projeto usa Next.js App Router, Supabase Auth/Postgres/Storage, RLS, RPCs publicas controladas, Recharts, Radix UI e Tailwind CSS.
+## Acesso público
 
-## Como Funciona
+- `/` abre a página pública da única igreja ativa.
+- Quando há zero ou mais de uma igreja ativa, `/` direciona para `/igrejas`.
+- `/igrejas` lista e permite buscar igrejas com perfil público ativo.
+- `/comunidade` é mantida somente como redirecionamento permanente para `/igrejas`.
+- `/{slug}` exibe o perfil público de uma igreja; `/{slug}/parceiros/{id}` exibe o detalhe público de um patrocinador.
 
-- O administrador acessa `/login` e entra no painel protegido.
-- Patrocinadores sao cadastrados em `/painel-telao` com imagem, GIF ou video.
-- O conteudo ativo aparece em `/telao` ou `/telao-master`.
-- O contador de exibicoes pode ser ativado por tipo de telao: NORMAL e MASTER.
-- A pagina publica `/` lista patrocinadores, mostra estatisticas e direciona para relatorios.
-- Cada patrocinador tem relatorio publico em `/anunciantes/:id`.
-- Overlays sao criados em `/overlay`, editados em `/editor/:id` e exibidos por `/shared/:id`.
+## Recursos
 
-## Documentacao
+- Painel administrativo protegido por Supabase Auth.
+- Cadastro de patrocinadores com imagens, GIFs e vídeos.
+- Programação determinística para os modos NORMAL e MASTER.
+- Sessão oficial de exibição, métricas e relatórios públicos.
+- Perfil público, links sociais e captação de interesse em patrocínio por igreja.
+- Grade TV administrativa e overlays compartilháveis.
 
-Comece por [docs/projeto-como-funciona.md](docs/projeto-como-funciona.md).
+## Tecnologias
 
-Indice completo: [docs/README.md](docs/README.md).
+Next.js App Router, React, Tailwind CSS, Supabase (Auth, Postgres e Storage), RLS, RPCs públicas controladas, Radix UI, Recharts e Vitest.
 
-## Variaveis Principais
+## Configuração
+
+Crie um arquivo `.env` a partir de `.env.example` e informe:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SUPABASE_SERVICE_ROLE_KEY=
+PROVISIONING_API_KEY=
 ```
 
-Essas variaveis sao obrigatorias no client e no server. Nunca versionar chaves sensiveis fora dos arquivos de exemplo.
+As variáveis `NEXT_PUBLIC_*` podem ser expostas ao navegador. `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` são exclusivas do servidor e nunca devem ser versionadas.
 
-## Scripts
+## Banco de dados
+
+Para uma instalação nova, execute somente [supabase/schema.sql](supabase/schema.sql) no SQL Editor de um projeto Supabase vazio. Para instalações existentes, siga os scripts de upgrade indicados em [docs/banco-de-dados.md](docs/banco-de-dados.md).
+
+## Desenvolvimento
 
 ```bash
+npm install
 npm run dev
-npm run build
-npm run lint
-npm run typecheck
-npm run test
 ```
 
-## Validacao Recomendada
-
-Antes de publicar:
+Para validar antes de publicar:
 
 ```bash
 npm run lint
@@ -50,19 +57,20 @@ npm run test
 npm run build
 ```
 
-No Windows, em alguns ambientes sandbox, Vitest/Next podem falhar com `spawn EPERM` ao iniciar workers. Rode fora do sandbox quando isso acontecer.
+## Docker
 
-## Midia
+Com as variáveis do Supabase definidas em `.env`:
 
-- Imagens JPEG/PNG/WebP sao otimizadas para WebP antes do upload.
-- GIF e preservado.
-- Videos aceitos: MP4 e WebM.
-- Limite atual de upload: 100 MB.
+```bash
+docker compose up --build
+```
 
-## Seguranca
+A aplicação fica disponível em `http://localhost:3000`.
 
-- Admin bloqueado em mobile.
-- Rotas administrativas protegidas por Supabase Auth e verificacao de `profiles.is_admin`.
-- Escritas protegidas por RLS com `public.is_admin()`.
-- APIs publicas usam RPCs e respostas `no-store`.
-- Links publicos sao filtrados para `http/https`.
+## Documentação
+
+- [Índice da documentação](docs/README.md)
+- [Como o projeto funciona](docs/projeto-como-funciona.md)
+- [Configuração de ambiente](docs/configuracao-de-ambiente.md)
+- [Plano futuro de Cloudflare R2](docs/plano-cloudflare-r2.md)
+- [Execução futura da integração R2](docs/plano-execucao-cloudflare-r2.md)

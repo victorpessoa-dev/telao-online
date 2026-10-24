@@ -1,4 +1,4 @@
-# Documentacao - PASCOM Stream View
+# Documentação - Telão Online
 
 ## Comece Aqui
 
@@ -6,6 +6,7 @@
 - [Visao geral e arquitetura](./visao-geral.md)
 - [Guia do usuario](./guia-do-usuario.md)
 - [Guia do desenvolvedor](./guia-do-desenvolvedor.md)
+- [Configuração de ambiente passo a passo](./configuracao-de-ambiente.md)
 
 ## Referencias Tecnicas
 
@@ -15,6 +16,9 @@
 - [APIs](./apis.md)
 - [Componentes, hooks, services e providers](./componentes-hooks-services.md)
 - [Cache e midia](./cache-e-midia.md)
+- [Plano de integracao Cloudflare R2](./plano-cloudflare-r2.md)
+- [Plano de execucao da integracao Cloudflare R2](./plano-execucao-cloudflare-r2.md)
+- [Planejamento versionado do projeto](./planejamento/README.md)
 - [Autenticacao, seguranca, logs e operacao](./seguranca-operacao.md)
 - [Deploy, ambientes e operacao](./deploy.md)
 - [Docker, build e testes](./devops-testes.md)
@@ -27,12 +31,12 @@
 
 ```mermaid
 flowchart TD
-  A[Operacao PASCOM] --> B[Painel admin]
+  A[Operação Telão Online] --> B[Painel admin]
   B --> C[Patrocinadores]
   B --> D[Overlays]
   C --> E[Telao NORMAL e MASTER]
   E --> F[Metricas e relatorios publicos]
-  D --> G[Links /shared para transmissao]
+  D --> G[Links /{slug}/shared para transmissao]
 ```
 
 ## Convencao

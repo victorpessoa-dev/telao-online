@@ -1,186 +1,287 @@
-﻿'use client'
+"use client";
 
-import { useMemo } from 'react'
-import Link from 'next/link'
-import { Activity, ArrowRight, Clock, Eye, Layers, Megaphone, TrendingUp } from 'lucide-react'
-import { DonutChart, HorizontalBarChart } from '@/components/shared/simple-charts'
-import PageContainer from '@/components/layout/page-container'
-import LoadingState from '@/components/shared/loading-state'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { useStore } from '@/lib/store/store'
-import { cn } from '@/lib/utils/cn'
+import { useMemo } from "react";
+import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
+import { BarChart3, Clock3, Eye, Megaphone } from "lucide-react";
+import PageContainer from "@/components/layout/page-container";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DonutChart,
+  HorizontalBarChart,
+} from "@/components/shared/simple-charts";
+import { useStore } from "@/lib/store/store";
 
 function formatDuration(seconds) {
-  const total = Math.max(0, Math.floor(Number(seconds) || 0))
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
-  const rest = total % 60
-
-  if (hours > 0) return `${hours}h ${minutes}m`
-  if (minutes > 0) return `${minutes}m ${rest}s`
-  return `${rest}s`
+  const total = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(total / 60);
+  const remainingSeconds = Math.round(total % 60);
+  return minutes > 0
+    ? `${minutes}m ${remainingSeconds}s`
+    : `${remainingSeconds}s`;
 }
 
-function StatCard({ title, value, description, icon: Icon, trend, className }) {
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  index,
+  reduceMotion,
+}) {
   return (
-    <Card className={cn('relative overflow-hidden', className)}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className="rounded-lg bg-primary/10 p-2">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-bold tracking-tight">{value}</div>
-        {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
-        {trend ? (
-          <div className="mt-2 flex items-center gap-1 text-xs text-green-500">
-            <TrendingUp className="h-3 w-3" />
-            <span>{trend}</span>
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: reduceMotion ? 0 : 0.3,
+        delay: reduceMotion ? 0 : index * 0.06,
+        ease: "easeOut",
+      }}
+    >
+      <Card className="h-full overflow-hidden">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="rounded-lg bg-primary/10 p-3 text-primary">
+            <Icon className="h-5 w-5" />
           </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  )
-}
-
-function QuickActionCard({ title, description, href, icon: Icon, color }) {
-  return (
-    <Link href={href} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-      <Card className="group h-full cursor-pointer transition-colors hover:border-primary/50">
-        <CardContent className="pt-6">
-          <div className={cn('mb-4 flex h-12 w-12 items-center justify-center rounded-xl', color)}>
-            <Icon className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h3 className="mb-1 font-semibold transition-colors group-hover:text-primary">{title}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
-          <div className="mt-4 flex items-center gap-1 text-sm text-primary opacity-0 transition-opacity group-hover:opacity-100">
-            <span>Acessar</span>
-            <ArrowRight className="h-4 w-4" />
+          <div>
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <p className="mt-0.5 text-2xl font-semibold tracking-tight">
+              {value}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
           </div>
         </CardContent>
       </Card>
-    </Link>
-  )
+    </motion.div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <PageContainer size="narrow" aria-busy="true">
+      <span className="sr-only" role="status">
+        Carregando painel...
+      </span>
+      <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-44" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-28" />
+        </div>
+      </header>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Card key={index} className="h-[118px]">
+            <CardContent className="flex items-center gap-4 p-5">
+              <Skeleton className="h-11 w-11 shrink-0 rounded-lg" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        {["chart", "composition"].map((key) => (
+          <Card key={key} className="h-[326px]">
+            <CardHeader className="space-y-3">
+              <Skeleton className="h-5 w-52" />
+              <Skeleton className="h-4 w-full max-w-sm" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-4/5" />
+              <Skeleton className="h-10 w-3/5" />
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+    </PageContainer>
+  );
 }
 
 export default function DashboardContent() {
-  const { overlays, ads, isLoaded } = useStore()
+  const { metricAds: ads, churchSlug, publicViews, error, isLoaded, reload } =
+    useStore();
+  const reduceMotion = useReducedMotion();
+  const metrics = useMemo(() => {
+    const activeAds = ads.filter((ad) => ad.active);
+    const totalDisplays = activeAds.reduce(
+      (sum, ad) => sum + (Number(ad.views) || 0),
+      0,
+    );
+    const totalSeconds = activeAds.reduce(
+      (sum, ad) => sum + (Number(ad.totalSeconds) || 0),
+      0,
+    );
 
-  const activeAds = useMemo(() => ads.filter((ad) => ad.active).length, [ads])
-  const inactiveAds = useMemo(() => ads.filter((ad) => !ad.active).length, [ads])
-  const totalViews = useMemo(() => ads.reduce((sum, ad) => sum + (ad.views || 0), 0), [ads])
-  const totalSeconds = useMemo(() => ads.reduce((sum, ad) => sum + (ad.totalSeconds || 0), 0), [ads])
-  const totalElements = useMemo(() => overlays.reduce((acc, overlay) => acc + (overlay.elements?.length || 0), 0), [overlays])
-  const sponsorStatusData = useMemo(
+    return {
+      activeAds,
+      totalDisplays,
+      totalSeconds,
+      averageSeconds:
+        activeAds.length > 0 ? Math.round(totalSeconds / activeAds.length) : 0,
+      masterAds: activeAds.filter((ad) => ad.type === "MASTER").length,
+    };
+  }, [ads]);
+  const sponsorChartData = useMemo(
     () =>
-      [
-        { label: 'Ativos', value: activeAds },
-        { label: 'Inativos', value: inactiveAds, className: 'bg-muted-foreground' },
-      ].filter((item) => item.value > 0),
-    [activeAds, inactiveAds]
-  )
-  const sponsorTypeData = useMemo(() => {
-    const normal = ads.filter((ad) => ad.type === 'NORMAL').length
-    const master = ads.filter((ad) => ad.type === 'MASTER').length
-    return [
-      { label: 'Normal', value: normal },
-      { label: 'Master', value: master, className: 'bg-chart-4' },
-    ].filter((item) => item.value > 0)
-  }, [ads])
-  const topViewsData = useMemo(
-    () =>
-      [...ads]
+      [...metrics.activeAds]
         .sort((a, b) => (b.views || 0) - (a.views || 0))
         .slice(0, 5)
-        .filter((ad) => (ad.views || 0) > 0)
-        .map((ad) => ({ label: ad.name, value: ad.views || 0 })),
-    [ads]
-  )
-  const topTimeData = useMemo(
+        .map((ad, index) => ({
+          label: ad.name,
+          value: ad.views || 0,
+          className: `bg-chart-${(index % 5) + 1}`,
+        })),
+    [metrics.activeAds],
+  );
+  const typeChartData = useMemo(
     () =>
-      [...ads]
-        .sort((a, b) => (b.totalSeconds || 0) - (a.totalSeconds || 0))
-        .slice(0, 5)
-        .filter((ad) => (ad.totalSeconds || 0) > 0)
-        .map((ad) => ({ label: ad.name, value: ad.totalSeconds || 0, className: 'bg-chart-2' })),
-    [ads]
-  )
+      [
+        {
+          label: "Normal",
+          value: metrics.activeAds.filter((ad) => ad.type !== "MASTER").length,
+          className: "bg-chart-1",
+        },
+        {
+          label: "Master",
+          value: metrics.masterAds,
+          className: "bg-chart-2",
+        },
+      ].filter((item) => item.value > 0),
+    [metrics.activeAds, metrics.masterAds],
+  );
 
-  if (!isLoaded) {
-    return <LoadingState label="Carregando dashboard..." />
-  }
+  if (!isLoaded) return <DashboardSkeleton />;
 
   return (
-    <PageContainer>
-      <section className="mb-6 flex flex-col gap-4 border-b border-border/70 pb-5 xl:flex-row xl:items-end xl:justify-between">
+    <PageContainer size="narrow">
+      {error ? (
+        <div
+          className="mb-6 flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between"
+          role="alert"
+        >
+          <span>{error}</span>
+          <Button size="sm" variant="outline" onClick={reload}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : null}
+      <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Visão operacional da transmissão, overlays e patrocinadores.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Visão geral</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Acesse o que está no ar e faça ajustes rápidos.
+          </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild variant="outline">
-            <Link href="/overlay">Gerenciar overlays</Link>
-          </Button>
+        <div className="flex gap-2">
+          {churchSlug ? (
+            <Button asChild variant="outline">
+              <Link href={`/${churchSlug}`}>Página pública</Link>
+            </Button>
+          ) : null}
           <Button asChild>
-            <Link href="/painel-telao">Painel do telão</Link>
+            <Link href="/painel-telao">Patrocínios</Link>
           </Button>
         </div>
+      </header>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard
+          icon={Megaphone}
+          label="Patrocínios ativos"
+          value={metrics.activeAds.length}
+          detail={`${ads.length} cadastrados para o evento`}
+          index={0}
+          reduceMotion={reduceMotion}
+        />
+        <SummaryCard
+          icon={Clock3}
+          label="Tempo exibido"
+          value={formatDuration(metrics.totalSeconds)}
+          detail="Soma de todas as exibições no telão"
+          index={1}
+          reduceMotion={reduceMotion}
+        />
+        <SummaryCard
+          icon={BarChart3}
+          label="Média por patrocínio"
+          value={formatDuration(metrics.averageSeconds)}
+          detail={`${metrics.totalDisplays.toLocaleString("pt-BR")} exibições registradas`}
+          index={2}
+          reduceMotion={reduceMotion}
+        />
+        <SummaryCard
+          icon={Eye}
+          label="Visitas ao perfil"
+          value={Number(publicViews || 0).toLocaleString("pt-BR")}
+          detail={`${metrics.masterAds} destaque${metrics.masterAds === 1 ? "" : "s"} Master ativo${metrics.masterAds === 1 ? "" : "s"}`}
+          index={3}
+          reduceMotion={reduceMotion}
+        />
       </section>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total de overlays" value={overlays.length} description="Overlays criados" icon={Layers} />
-        <StatCard title="Patrocínios ativos" value={activeAds} description={`De ${ads.length} cadastrados`} icon={Megaphone} />
-        <StatCard title="Elementos" value={totalElements} description="Total de elementos" icon={Activity} />
-        <StatCard title="Exibições" value={totalViews} description={`Tempo total: ${formatDuration(totalSeconds)}`} icon={Eye} />
-      </div>
-
-      <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Visão dos patrocínios</CardTitle>
-            <CardDescription>Status e tipos cadastrados no painel.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid min-w-0 gap-6 lg:grid-cols-2">
-            <div className="min-w-0">
-              <h3 className="mb-3 text-sm font-medium">Status</h3>
-              <DonutChart data={sponsorStatusData} emptyMessage="Nenhum patrocínio cadastrado." />
-            </div>
-            <div className="min-w-0">
-              <h3 className="mb-3 text-sm font-medium">Tipo</h3>
-              <DonutChart data={sponsorTypeData} emptyMessage="Nenhum patrocínio cadastrado." />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Desempenho dos patrocínios</CardTitle>
-            <CardDescription>Ranking por exibições e tempo acumulado.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid min-w-0 gap-6 lg:grid-cols-2">
-            <div className="min-w-0">
-              <h3 className="mb-3 text-sm font-medium">Mais exibidos</h3>
-              <HorizontalBarChart data={topViewsData} emptyMessage="Ainda não há exibições registradas." />
-            </div>
-            <div className="min-w-0">
-              <h3 className="mb-3 text-sm font-medium">Maior tempo no ar</h3>
-              <HorizontalBarChart data={topTimeData} valueFormatter={formatDuration} emptyMessage="Ainda não há tempo registrado." />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold">Acesso rápido</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <QuickActionCard title="Gerenciar overlays" description="Crie e edite seus overlays para transmissões." href="/overlay" icon={Layers} color="bg-primary" />
-          <QuickActionCard title="Painel do telão" description="Configure patrocínios para /telao e /telao-master." href="/painel-telao" icon={Megaphone} color="bg-chart-2" />
-          <QuickActionCard title="Configurações" description="Ajuste as preferências do sistema." href="/configuracoes" icon={Clock} color="bg-chart-4" />
-        </div>
-      </div>
-
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, delay: 0.18 }}
+        >
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Patrocinadores mais exibidos</CardTitle>
+              <CardDescription>
+                Passe sobre as barras para comparar as exibições registradas.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="min-w-0">
+              <HorizontalBarChart
+                data={sponsorChartData}
+                valueFormatter={(value) =>
+                  `${value.toLocaleString("pt-BR")} ${value === 1 ? "exibição" : "exibições"}`
+                }
+                emptyMessage="As exibições aparecerão aqui quando o telão começar a registrar dados."
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, delay: 0.24 }}
+        >
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Composição da playlist</CardTitle>
+              <CardDescription>
+                Distribuição dos patrocínios ativos por prioridade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="min-w-0">
+              <DonutChart
+                data={typeChartData}
+                valueFormatter={(value) => value.toLocaleString("pt-BR")}
+                emptyMessage="Cadastre um patrocínio para visualizar a composição."
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+      </section>
     </PageContainer>
-  )
+  );
 }

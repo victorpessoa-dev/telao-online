@@ -1,12 +1,27 @@
-version: '3.9'
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: telao-online:local
     ports:
       - '3000:3000'
     environment:
       NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      PROVISIONING_API_KEY: ${PROVISIONING_API_KEY}
+    init: true
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider http://127.0.0.1:3000/igrejas || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

@@ -1,5 +1,7 @@
 # Guia do Desenvolvedor
 
+Para instalar e explicar cada variável, siga [Configuração de ambiente passo a passo](./configuracao-de-ambiente.md).
+
 ## Setup
 
 ```bash
@@ -12,7 +14,12 @@ Variaveis:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SUPABASE_SERVICE_ROLE_KEY=
+PROVISIONING_API_KEY=
 ```
+
+Não exponha `SUPABASE_SERVICE_ROLE_KEY` nem `PROVISIONING_API_KEY` em componentes de cliente.
 
 ## Rotina de Qualidade
 
@@ -46,6 +53,10 @@ flowchart TD
 ```
 
 ## Supabase
+
+- Para um banco novo, use `supabase/schema.sql`; para bancos existentes, aplique as migrations em ordem.
+- Não importe `services/supabase/admin.js` em um componente marcado com `'use client'`.
+- Acesse conteúdo administrativo filtrando a igreja do usuário; não use o modelo legado `admin_church_association`.
 
 Ao alterar banco:
 

@@ -7,12 +7,18 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 next.user-config.*
 
-# Environment variables
-.env*.local
-.env
+# Environment variables and server secrets. Keep only the documented template.
+.env*
+!.env.example
 
 # Common ignores
 node_modules
 .next/
+dist-electron/
 *.tsbuildinfo
 .DS_Store
+codex
+.agents/
+.planning/
+.codex/
+.aws/

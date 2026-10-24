@@ -1,5 +1,7 @@
 # Cache e Midia
 
+> As mídias do bucket `v-playcast-midia` usam o ID da igreja como primeiro segmento do caminho. As políticas de Storage validam esse segmento antes de gravar, alterar ou excluir.
+
 ## Objetivo
 
 Documentar como o projeto evita dados velhos e como trata arquivos de midia.
@@ -13,7 +15,7 @@ flowchart TD
   A[Admin altera patrocinador/settings] --> B[Supabase]
   B --> C[Realtime postgres_changes]
   C --> D[Telao agenda refresh rapido]
-  D --> E[GET /api/ads-novenario no-store]
+  D --> E[Consulta publica ao Supabase]
   E --> F[Atualiza playlist]
 ```
 
@@ -21,8 +23,8 @@ flowchart TD
 
 O componente de telao mantem uma copia local da ultima playlist por tipo:
 
-- `pascom:telao:ads-cache:NORMAL`
-- `pascom:telao:ads-cache:MASTER`
+- `vplaycast:telao:ads-cache:NORMAL`
+- `vplaycast:telao:ads-cache:MASTER`
 
 Se a API falhar e houver cache local, o telao continua exibindo a ultima lista conhecida e mostra aviso de cache local.
 
@@ -33,7 +35,7 @@ Quando o contador esta ativo e o POST de logs falha, o player salva os logs em `
 Chave local:
 
 ```text
-pascom:telao:log-queue
+vplaycast:telao:log-queue
 ```
 
 ## Atualizacao
@@ -44,7 +46,7 @@ pascom:telao:log-queue
 
 ## Upload e Midia
 
-- Bucket: `pascom-media`.
+- Bucket: `v-playcast-midia`.
 - Limite: 100 MB.
 - Imagens permitidas: GIF, JPEG, PNG, WebP.
 - Videos permitidos: MP4 e WebM.

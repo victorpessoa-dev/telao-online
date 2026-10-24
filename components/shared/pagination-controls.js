@@ -1,16 +1,16 @@
-'use client'
+"use client";
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function PaginationControls({
   currentPage,
   totalPages,
   onPageChange,
-  itemLabel = 'itens',
+  itemLabel = "itens",
   totalItems = 0,
 }) {
-  if (totalPages <= 1) return null
+  if (totalPages <= 1) return null;
 
   return (
     <nav
@@ -43,5 +43,5 @@ export default function PaginationControls({
         </Button>
       </div>
     </nav>
-  )
+  );
 }

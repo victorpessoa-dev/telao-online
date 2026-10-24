@@ -1,12 +1,7 @@
-'use client'
+"use client";
 
-import AppShell from '@/components/layout/app-shell'
-import DashboardContent from '@/components/dashboard/dashboard-content'
+import DashboardContent from "@/components/dashboard/dashboard-content";
 
 export default function AdminHomePage() {
-  return (
-    <AppShell>
-      <DashboardContent />
-    </AppShell>
-  )
+  return <DashboardContent />;
 }

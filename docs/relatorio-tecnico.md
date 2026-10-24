@@ -1,5 +1,9 @@
 # Revisao Tecnica, Roadmap e Relatorio Final Inicial
 
+## Atualização de outubro de 2026
+
+O Telão Online usa o modelo multi-igreja com um único administrador por igreja, RLS orientada por `church_id`, mídia segregada por prefixo no Storage e exclusão física sem restauração. A raiz abre o único slug ativo ou direciona para `/igrejas`, que lista apenas igrejas com `is_active = true`; ao desativar uma igreja, suas rotas públicas `/{slug}/...` deixam de responder.
+
 ## Resumo Executivo
 
 O projeto compila em producao com TypeScript ativo, tem um dominio claro e usa Supabase com RLS/RPCs. Os principais riscos restantes estao em componentes grandes, baixa cobertura de testes de fluxo, dependencia forte do store client-side e falta de documentacao operacional de deploy/backup.
@@ -50,12 +54,12 @@ flowchart TD
 
 ## Problemas Encontrados
 
-| Severidade | Problema | Causa | Impacto | Solucao |
-| --- | --- | --- | --- | --- |
-| Alta | Componentes gigantes | UI, estado e persistencia juntos | Baixa manutencao/testabilidade | Extrair features e hooks |
-| Media | Cobertura de testes ainda pequena | Harness criado agora | Regressao ainda pode escapar em fluxos UI/player | Expandir unit/integration/e2e |
-| Media | Logs sequenciais | Loop RPC por item | Latencia em lote | RPC bulk ou Promise controlado |
-| Baixa | Docker ausente | Nao configurado | Onboarding/deploy menos previsivel | Adicionar Docker opcional |
+| Severidade | Problema                          | Causa                            | Impacto                                          | Solucao                        |
+| ---------- | --------------------------------- | -------------------------------- | ------------------------------------------------ | ------------------------------ |
+| Alta       | Componentes gigantes              | UI, estado e persistencia juntos | Baixa manutencao/testabilidade                   | Extrair features e hooks       |
+| Media      | Cobertura de testes ainda pequena | Harness criado agora             | Regressao ainda pode escapar em fluxos UI/player | Expandir unit/integration/e2e  |
+| Media      | Logs sequenciais                  | Loop RPC por item                | Latencia em lote                                 | RPC bulk ou Promise controlado |
+| Baixa      | Docker ausente                    | Nao configurado                  | Onboarding/deploy menos previsivel               | Adicionar Docker opcional      |
 
 ## Problemas Corrigidos Nesta Etapa
 
@@ -136,7 +140,7 @@ flowchart TD
 ### Melhorias Implementadas
 
 - `StoreProvider` ficou restrito ao grupo administrativo, evitando consultas administrativas em rotas publicas.
-- Dashboard publico passou a consumir apenas APIs publicas (`/api/ads-novenario` e `/api/anunciantes`).
+- Dashboard publico passou a consumir apenas dados públicos de patrocinadores.
 - A pagina publica principal foi consolidada em `/`, e a rota duplicada `/dashboard` foi removida.
 - RPCs publicas de anunciantes passaram a retornar dados apenas de patrocinadores ativos.
 - Upload valida tipo e tamanho antes de otimizar imagem, evitando decodificacao desnecessaria de arquivo invalido.
