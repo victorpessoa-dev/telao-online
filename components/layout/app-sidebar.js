@@ -113,7 +113,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
           </div>
           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg p-1">
             <img
-              src="/brand/logo-telao-online.png"
+              src="/brand/logo-telao-online.webp"
               alt=""
               className="h-full w-full object-contain"
             />

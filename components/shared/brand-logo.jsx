@@ -17,8 +17,8 @@ export default function BrandLogo({
         <img
           src={
             markOnly
-              ? "/brand/logo-telao-online.png"
-              : "/brand/logotipo-telao-online.png"
+              ? "/brand/logo-telao-online.webp"
+              : "/brand/logotipo-telao-online.webp"
           }
           alt={markOnly ? alt : ""}
           className={

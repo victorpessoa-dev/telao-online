@@ -33,8 +33,8 @@ export const metadata = {
     "Telão Online",
   ],
   icons: {
-    icon: "/brand/logo-telao-online.png",
-    apple: "/brand/logo-telao-online.png",
+    icon: "/brand/logo-telao-online.webp",
+    apple: "/brand/logo-telao-online.webp",
   },
   openGraph: {
     type: "website",
@@ -43,14 +43,14 @@ export const metadata = {
     title: "Telão Online",
     description:
       "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
-    images: [{ url: "/brand/emblema-telao-online.png", alt: "Telão Online" }],
+    images: [{ url: "/brand/emblema-telao-online.webp", alt: "Telão Online" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Telão Online",
     description:
       "Transparência na divulgação de parceiros em novenários e festas paroquiais.",
-    images: ["/brand/emblema-telao-online.png"],
+    images: ["/brand/emblema-telao-online.webp"],
   },
 };
 

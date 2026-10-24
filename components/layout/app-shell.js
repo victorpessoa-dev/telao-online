@@ -57,7 +57,7 @@ export default function AppShell({ children }) {
             Telão Online
           </span>
           <img
-            src="/brand/logo-telao-online.png"
+            src="/brand/logo-telao-online.webp"
             alt=""
             className="h-8 w-8 shrink-0 object-contain"
           />

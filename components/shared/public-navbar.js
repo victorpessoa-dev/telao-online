@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 const fallbackProfile = {
   parishName: "Telão Online",
-  parishLogoUrl: "/brand/logo-telao-online.png",
+  parishLogoUrl: "/brand/logo-telao-online.webp",
 };
 
 export default function PublicNavbar({
@@ -72,7 +72,7 @@ export default function PublicNavbar({
         >
           {profile.parishName === "Telão Online" ? (
             <img
-              src="/brand/logotipo-telao-online.png"
+              src="/brand/logotipo-telao-online.webp"
               alt="Telão Online"
               className="h-7 w-auto max-w-44 object-contain sm:h-8"
             />

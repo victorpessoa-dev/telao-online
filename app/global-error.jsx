@@ -48,7 +48,7 @@ export default function GlobalError({ error, reset }) {
             }}
           >
             <img
-              src="/brand/logo-telao-online.png"
+              src="/brand/logo-telao-online.webp"
               alt="Telão Online"
               style={{ height: 56, objectFit: "contain", width: 56 }}
             />
