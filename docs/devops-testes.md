@@ -44,7 +44,8 @@ tsc --noEmit -p jsconfig.json
 
 ## Docker
 
-O repositorio possui `Dockerfile` e `docker-compose.yml`, mas o fluxo principal recomendado continua sendo Vercel ou Node com `npm run build` e `npm run start`.
+O repositorio possui `Dockerfile` e `docker-compose.yml`. O fluxo principal
+recomendado é Node com `npm run build` e `npm run start`.
 
 ## Pipeline Recomendada
 
