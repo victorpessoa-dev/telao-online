@@ -42,6 +42,14 @@ describe("global telão schedule", () => {
     }
   });
 
+  it("resolves a long-running event without recursive stack growth", () => {
+    const cycle = 1_000_000;
+
+    expect(getCycleOrder(ads, "long-running-event", cycle)).toEqual(
+      getCycleOrder(ads, "long-running-event", cycle),
+    );
+  });
+
   it("places a visitor directly in the ad currently in progress", () => {
     const enteredAt = Date.parse("2026-01-01T00:00:07.000Z");
     const firstDisplay = getSchedulePosition(ads, schedule, enteredAt);

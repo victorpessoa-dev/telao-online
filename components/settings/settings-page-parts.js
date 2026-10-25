@@ -143,10 +143,10 @@ export function DesignAdjustmentDrop({
                   <div className="space-y-2">
                     <Label>Upload da imagem</Label>
                     <FileDropzone
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
                       onFileSelect={onUpload}
                       title="Arraste uma imagem ou clique para enviar"
-                      description="PNG, JPG, WebP ou SVG"
+                      description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 3 MB"
                     />
                   </div>
                 </div>

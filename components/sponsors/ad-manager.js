@@ -17,6 +17,7 @@ import { useStore } from "@/lib/store/store";
 import {
   deleteUploadedMedia,
   cropImageForUpload,
+  getMediaOptimizationSummary,
   prepareMediaForUpload,
   uploadMedia,
 } from "@/services/supabase/upload";
@@ -399,9 +400,7 @@ export default function AdManager({
       });
       onProgress?.(100);
       toast.success(
-        mediaType === "video"
-          ? "Vídeo preparado. Ele será enviado ao salvar."
-          : "Imagem otimizada. Ela será enviada ao salvar.",
+        `${getMediaOptimizationSummary(file, preparedFile).message} Ele será enviado ao salvar.`,
       );
     } catch (error) {
       toast.error(

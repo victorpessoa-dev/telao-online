@@ -26,6 +26,7 @@ import { BRAND } from "@/lib/constants/brand";
 const ADS_CACHE_KEY = "telao-online:telao:ads-cache";
 const LOG_QUEUE_KEY = SPONSOR_LOG_QUEUE_PREFIX.slice(0, -1);
 const ADS_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const INACTIVE_TELAO_REFRESH_INTERVAL_MS = 10 * 1000;
 const LOG_FLUSH_INTERVAL_MS = 90 * 1000;
 const LOG_BATCH_SIZE = 100;
 const DISPLAY_CLIENT_KEY = "telao-online:official-display-client";
@@ -98,6 +99,57 @@ function sameOfficialDisplay(left, right) {
     left?.clientId === right?.clientId
   );
 }
+
+function getTelaoDesign(settings, profile) {
+  return (
+    settings?.designs?.[profile] ||
+    settings?.designs?.DESKTOP ||
+    settings?.designs?.SHARED ||
+    {}
+  );
+}
+
+function getSponsorAreaStyle(design) {
+  return {
+    width: `${getDesignValue(design, "contentWidth", "imageWidth", 58)}%`,
+    height: `${getDesignValue(design, "contentHeight", "imageHeight", 58)}%`,
+    left: `${getDesignValue(design, "x", null, 50)}%`,
+    top: `${getDesignValue(design, "y", null, 50)}%`,
+  };
+}
+
+/** Preserves the configured telão composition when its playlist is empty. */
+function EmptySponsorCanvas({ canvasClassName, design }) {
+  return (
+    <main className="ads-telao-screen fixed inset-0 overflow-hidden bg-black select-none">
+      <div className={`${canvasClassName} overflow-hidden bg-[#071423]`}>
+        {design.backgroundUrl ? (
+          <img
+            src={design.backgroundUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            draggable={false}
+          />
+        ) : null}
+        <div
+          className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-3xl border border-sky-300/45 bg-slate-950/65 px-5 py-6 text-center shadow-2xl backdrop-blur-sm sm:px-10 sm:py-12"
+          style={getSponsorAreaStyle(design)}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-sky-300 sm:text-xs sm:tracking-[0.32em]">
+            Espaço para patrocinadores
+          </p>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-blue-400 sm:text-6xl">
+            Sua marca aqui
+          </h1>
+          <p className="mt-4 max-w-xl text-xs leading-5 text-blue-200 sm:mt-5 sm:text-base sm:leading-6">
+            Seja um parceiro desta festa.
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export default function TelaoPlayer({
   kind = "NORMAL",
   backgroundMode = "auto",
@@ -367,19 +419,27 @@ export default function TelaoPlayer({
 
   const carregarAnuncios = useCallback(async () => {
     try {
-      if (!churchId) throw new Error("Igreja não informada para o telão");
+      // Public displays identify the church by slug. Requiring an id here
+      // made a fresh /{slug}/ads-telao visit skip its public payload and fall
+      // back to an empty local cache.
+      if (!churchSlug && !churchId) {
+        throw new Error("Igreja não informada para o telão");
+      }
 
       let data;
       let publicSettings;
       let payloadSchedule = null;
+      const wasInactive = eventActive !== true;
       if (churchSlug) {
+        // A version check can detect that an event was enabled while this
+        // browser still has the previous inactive payload cached. Bypass that
+        // cache once so the first active playlist is always the server's one.
         const isOfficialDisplay = Boolean(officialDisplayCandidateRef.current);
-        const cacheSuffix = isOfficialDisplay
-          ? `?official=${Date.now()}`
-          : "";
+        const bypassCache = isOfficialDisplay || wasInactive;
+        const cacheSuffix = bypassCache ? `?refresh=${Date.now()}` : "";
         const response = await fetch(
           `/api/telao/${encodeURIComponent(churchSlug)}${cacheSuffix}`,
-          isOfficialDisplay ? { cache: "no-store" } : undefined,
+          bypassCache ? { cache: "no-store" } : undefined,
         );
         const payload = await response.json().catch(() => ({}));
         if (!response.ok)
@@ -395,6 +455,9 @@ export default function TelaoPlayer({
           setGlobalSchedule(null);
           globalScheduleRef.current = null;
           officialDisplayRef.current = null;
+          lastSignatureRef.current = "";
+          lastContentVersionRef.current = null;
+          lastScheduleVersionRef.current = null;
           localStorage.removeItem(cacheKey);
           localStorage.removeItem(logQueueKey);
           return false;
@@ -453,7 +516,10 @@ export default function TelaoPlayer({
         playlist: buildAdsSignature(normalizedAds, mergedSettings),
         schedule: payloadSchedule?.version || payloadSchedule?.startsAt || null,
       });
-      const shouldUpdate = lastSignatureRef.current !== nextSignature;
+      // Returning from the inactive canvas must repopulate the playlist even
+      // if its content signature happens to match an earlier cached cycle.
+      const shouldUpdate =
+        wasInactive || lastSignatureRef.current !== nextSignature;
       const nextSchedule = churchSlug ? payloadSchedule : null;
       const position = nextSchedule
         ? getSchedulePosition(
@@ -526,6 +592,7 @@ export default function TelaoPlayer({
     cacheKey,
     churchId,
     churchSlug,
+    eventActive,
     filterMaster,
     isOfflineCache,
     kind,
@@ -546,17 +613,21 @@ export default function TelaoPlayer({
         setGlobalSchedule(null);
         globalScheduleRef.current = null;
         officialDisplayRef.current = null;
+        lastSignatureRef.current = "";
+        lastContentVersionRef.current = null;
+        lastScheduleVersionRef.current = null;
         localStorage.removeItem(cacheKey);
         localStorage.removeItem(logQueueKey);
         return;
       }
+      const wasInactive = eventActive !== true;
       const hasContentChange =
         lastContentVersionRef.current !== null &&
         String(payload.version) !== String(lastContentVersionRef.current);
       const hasScheduleChange =
         lastScheduleVersionRef.current !== null &&
         String(payload.scheduleVersion) !== String(lastScheduleVersionRef.current);
-      if (hasContentChange || hasScheduleChange) {
+      if (wasInactive || hasContentChange || hasScheduleChange) {
         carregarAnuncios();
       } else if (lastContentVersionRef.current === null) {
         lastContentVersionRef.current = payload.version;
@@ -565,7 +636,7 @@ export default function TelaoPlayer({
     } catch {
       // The cached playlist keeps running until connectivity returns.
     }
-  }, [cacheKey, carregarAnuncios, churchSlug, logQueueKey]);
+  }, [cacheKey, carregarAnuncios, churchSlug, eventActive, logQueueKey]);
 
   const avancarAd = useCallback(async () => {
     if (ads.length === 0 || advancingRef.current) return;
@@ -699,9 +770,18 @@ export default function TelaoPlayer({
   ]);
 
   useEffect(() => {
-    if (eventActive !== true) return undefined;
+    const refreshInterval =
+      eventActive === true
+        ? ADS_REFRESH_INTERVAL_MS
+        : INACTIVE_TELAO_REFRESH_INTERVAL_MS;
+    const adsRefreshTimer = window.setInterval(
+      checkContentVersion,
+      refreshInterval,
+    );
+    if (eventActive !== true) {
+      return () => window.clearInterval(adsRefreshTimer);
+    }
 
-    const adsRefreshTimer = window.setInterval(checkContentVersion, ADS_REFRESH_INTERVAL_MS);
     const scheduleNextFlush = () => {
       const jitterMs = Math.round((Math.random() - 0.5) * 10_000);
       flushTimerRef.current = window.setTimeout(async () => {
@@ -722,11 +802,7 @@ export default function TelaoPlayer({
     () => ads[currentIndex] || ads[0],
     [ads, currentIndex],
   );
-  const design = currentAd
-    ? sponsorSettings?.designs?.[telaoProfile] ||
-      sponsorSettings?.designs?.DESKTOP ||
-      sponsorSettings?.designs?.SHARED
-    : null;
+  const design = getTelaoDesign(sponsorSettings, telaoProfile);
   const canvasClassName = {
     MOBILE:
       // Each profile owns a fixed model canvas. It can only change when the
@@ -760,12 +836,6 @@ export default function TelaoPlayer({
     currentAd,
     sponsorSettings.mediaDurations,
   );
-  const emptyMessage = useMemo(() => {
-    return {
-      title: "Nenhum patrocinador ativo",
-    };
-  }, []);
-
   // Master-only is a clean playback mode: it hides the background as well as
   // excluding NORMAL ads. The setting stays authoritative across all screens.
   const showBackground = useMemo(() => {
@@ -839,21 +909,7 @@ export default function TelaoPlayer({
   }
 
   if (!currentAd) {
-    return (
-      <main
-        className={`ads-telao-screen fixed inset-0 flex items-center justify-center overflow-hidden select-none ${masterOnlyMode ? "bg-transparent" : "bg-black"}`}
-        style={{ userSelect: "none" }}
-      >
-        <div className="max-w-lg px-6 text-center">
-          <div className="text-2xl font-semibold text-white">
-            {emptyMessage.title}
-          </div>
-          <div className="mt-3 text-sm leading-6 text-white/65">
-            Sem anúncios ativos no telão
-          </div>
-        </div>
-      </main>
-    );
+    return <EmptySponsorCanvas canvasClassName={canvasClassName} design={design} />;
   }
 
   return (

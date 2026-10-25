@@ -413,12 +413,12 @@ export function SponsorForm({
           <Label>Upload</Label>
           <FileDropzone
             accept={
-              "image/gif,image/jpeg,image/png,image/webp,video/webm,video/mp4"
+              "image/gif,image/jpeg,image/png,image/webp,image/avif,video/webm,video/mp4,video/quicktime,video/x-m4v"
             }
             disabled={uploading}
             onFileSelect={handleUpload}
             title="Arraste a mídia ou clique para enviar"
-            description={"Imagens são convertidas para WebP; vídeos aceitam MP4 ou WebM"}
+            description={"Imagens são otimizadas para até 3 MB; vídeos para MP4 de até 10 MB"}
           />
           <p className="text-xs text-muted-foreground">
             A duração é definida em Configurações &gt; Telão, de acordo com o
