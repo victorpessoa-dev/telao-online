@@ -12,6 +12,12 @@ import {
   MonitorPlay,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PaginationControls from "@/components/shared/pagination-controls";
 import AppFooter from "@/components/shared/app-footer";
@@ -44,6 +50,11 @@ function formatarTempo(segundos) {
 function formatarDataHora(data) {
   if (!data) return "Nunca exibido";
   return new Date(data).toLocaleString("pt-BR");
+}
+
+function formatarPeriodoTelao(openedAt, closedAt) {
+  const aberto = formatarDataHora(openedAt);
+  return closedAt ? `${aberto} — ${formatarDataHora(closedAt)}` : `${aberto} — Em andamento`;
 }
 
 function calcularSaidaExibicao(log) {
@@ -144,6 +155,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
   const [data, setData] = useState({
     advertiser: null,
     logs: [],
+    sessions: [],
     daily: [],
     pagination: { page: 1, pageSize: REPORT_PAGE_SIZE, totalItems: 0 },
   });
@@ -165,7 +177,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
         const response = await fetch(`/api/parceiros/${id}${query}`);
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.advertiser)
-          throw new Error(payload.error || "Falha ao carregar anunciante");
+          throw new Error(payload.error || "Falha ao carregar parceiro");
 
         if (!cancelled) {
           setData(payload);
@@ -176,7 +188,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
           setError(
             loadError instanceof Error
               ? loadError.message
-              : "Falha ao carregar anunciante",
+              : "Falha ao carregar parceiro",
           );
         }
       } finally {
@@ -186,7 +198,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
 
     if (id) carregar();
     else {
-      setError("Anunciante não encontrado");
+      setError("Parceiro não encontrado");
       setLoading(false);
     }
     return () => {
@@ -200,6 +212,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
 
   const advertiser = data?.advertiser ?? null;
   const logs = useMemo(() => data?.logs ?? [], [data?.logs]);
+  const sessions = useMemo(() => data?.sessions ?? [], [data?.sessions]);
   const daily = useMemo(() => data?.daily ?? [], [data?.daily]);
   const pagination = data?.pagination ?? {
     page: currentPage,
@@ -208,10 +221,10 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
   };
   const chronologicalLogs = useMemo(
     () =>
-      [...logs].sort(
+      [...(sessions.length ? sessions.flatMap((session) => session.events) : logs)].sort(
         (a, b) => new Date(a.displayedAt) - new Date(b.displayedAt),
       ),
-    [logs],
+    [logs, sessions],
   );
   const chartData = useMemo(
     () =>
@@ -235,17 +248,6 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     1,
     Math.ceil(pagination.totalItems / pagination.pageSize),
   );
-  const paginatedLogs = useMemo(
-    () =>
-      logs.map((log, index) => ({
-        ...log,
-        displayNumber:
-          pagination.totalItems -
-          (pagination.page - 1) * pagination.pageSize -
-          index,
-      })),
-    [logs, pagination.page, pagination.pageSize, pagination.totalItems],
-  );
   const viewsChartData = useMemo(
     () => chartData.map((item) => ({ label: item.date, value: item.total })),
     [chartData],
@@ -261,14 +263,14 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
   );
 
   if (loading) {
-    return <LoadingState fullScreen label="Carregando anunciante..." />;
+    return <LoadingState fullScreen label="Carregando parceiro..." />;
   }
 
   if (error || !advertiser) {
     return (
       <PageError
-        title="Não foi possível carregar este anunciante."
-        description={error || "Anunciante não encontrado."}
+        title="Não foi possível carregar este parceiro."
+        description={error || "Parceiro não encontrado."}
         onRetry={() => setReloadVersion((version) => version + 1)}
       />
     );
@@ -393,45 +395,50 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
             <CardTitle>Horários no telão</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {pagination.totalItems === 0 ? (
+            {sessions.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 Nenhuma exibição registrada.
               </div>
             ) : (
-              paginatedLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-border p-3"
-                >
-                  <div className="flex items-center gap-3 text-sm">
-                    <History className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div>
-                        {log.displayNumber}° exibição ·{" "}
-                        {formatarDataHora(log.displayedAt)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Origem: {log.source}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" />{log.viewsCount || 1}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock3 className="h-4 w-4" />
-                      {formatarTempo(log.durationSeconds)}
-                    </span>
-                  </div>
-                </div>
-              ))
+              <Accordion type="single" collapsible className="rounded-lg border border-border px-3">
+                {sessions.map((session) => (
+                  <AccordionItem key={session.id} value={session.id}>
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="flex min-w-0 items-center gap-3">
+                        <History className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0">
+                          <span className="block truncate">{formatarPeriodoTelao(session.openedAt, session.closedAt)}</span>
+                          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                            Telão ativado {formatarDataHora(session.openedAt)}
+                            {session.closedAt ? ` · desativado ${formatarDataHora(session.closedAt)}` : ""}
+                          </span>
+                        </span>
+                      </span>
+                      <span className="grid shrink-0 grid-cols-[4.5rem_5rem] items-center gap-2 text-sm font-normal tabular-nums text-muted-foreground">
+                        <span className="flex items-center justify-end gap-1 whitespace-nowrap"><Eye className="h-4 w-4 shrink-0" />{session.viewsCount}</span>
+                        <span className="flex items-center justify-end gap-1 whitespace-nowrap"><Clock3 className="h-4 w-4 shrink-0" />{formatarTempo(session.totalSeconds)}</span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 pb-3 pr-8">
+                      {session.events.map((event) => (
+                        <div key={event.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-md bg-muted/50 px-3 py-2 text-sm">
+                          <span className="truncate">{formatarDataHora(event.displayedAt)}</span>
+                          <span className="grid grid-cols-[4.5rem_5rem] items-center gap-2 tabular-nums text-muted-foreground">
+                            <span className="flex items-center gap-1 whitespace-nowrap"><Eye className="h-4 w-4 shrink-0" />{event.viewsCount || 1}</span>
+                            <span className="flex items-center gap-1 whitespace-nowrap"><Clock3 className="h-4 w-4 shrink-0" />{formatarTempo(event.durationSeconds)}</span>
+                          </span>
+                        </div>
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             )}
             <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={pagination.totalItems}
-              itemLabel="registros"
+              itemLabel="períodos"
               onPageChange={setCurrentPage}
             />
           </CardContent>
