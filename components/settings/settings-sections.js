@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Loader2,
   Monitor,
   Palette,
   Plus,
@@ -98,11 +99,11 @@ export function SettingsHeader({
           className="w-full gap-2 xs:w-auto"
         >
           {isSaving ? (
-            <Check className="h-4 w-4" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Save className="h-4 w-4" />
           )}
-          {isSaving ? "Salvo" : "Salvar"}
+          {isSaving ? "Salvando..." : "Salvar"}
         </Button>
       </div>
     </div>
@@ -516,7 +517,7 @@ export function AppearanceSettingsSection({
                   accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
                   onFileSelect={onUploadParishLogo}
                   title="Arraste a logo ou clique para enviar"
-                  description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 3 MB"
+                  description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 1 MB"
                 />
               </div>
               <div className="space-y-2">
@@ -539,7 +540,7 @@ export function AppearanceSettingsSection({
                   accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
                   onFileSelect={onUploadParishCover}
                   title="Arraste a capa ou clique para enviar"
-                  description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 3 MB"
+                  description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 1 MB"
                 />
               </div>
             </div>

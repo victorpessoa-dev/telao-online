@@ -146,7 +146,7 @@ export function DesignAdjustmentDrop({
                       accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
                       onFileSelect={onUpload}
                       title="Arraste uma imagem ou clique para enviar"
-                      description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 3 MB"
+                      description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 1 MB"
                     />
                   </div>
                 </div>

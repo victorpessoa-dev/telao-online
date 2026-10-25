@@ -52,22 +52,22 @@ describe("media upload validation", () => {
     ).toThrow("Tipo de arquivo não permitido");
   });
 
-  it("enforces the final 3 MB image budget", () => {
+  it("enforces the final 1 MB image budget", () => {
     expect(() =>
       validateFinalMediaFile({
         size: MAX_IMAGE_SIZE_BYTES + 1,
         type: "image/webp",
       }),
-    ).toThrow("3 MB");
+    ).toThrow("1 MB");
   });
 
-  it("enforces the final 10 MB video budget", () => {
+  it("enforces the final 5 MB video budget", () => {
     expect(() =>
       validateFinalMediaFile({
         size: MAX_VIDEO_SIZE_BYTES + 1,
         type: "video/mp4",
       }),
-    ).toThrow("10 MB");
+    ).toThrow("5 MB");
   });
 
   it("reports the actual media reduction from file sizes", () => {

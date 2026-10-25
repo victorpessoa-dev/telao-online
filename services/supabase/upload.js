@@ -5,8 +5,8 @@ const BUCKET = "telao-online-midia";
 // read and removed without breaking existing sponsor and branding URLs.
 const LEGACY_BUCKETS = ["v-playcast-midia", "pascom-media"];
 const MAX_SOURCE_SIZE_BYTES = 100 * 1024 * 1024;
-export const MAX_IMAGE_SIZE_BYTES = 3_000_000;
-export const MAX_VIDEO_SIZE_BYTES = 10_000_000;
+export const MAX_IMAGE_SIZE_BYTES = 1_000_000;
+export const MAX_VIDEO_SIZE_BYTES = 5_000_000;
 const ALLOWED_MEDIA_TYPES = new Set([
   "image/gif",
   "image/jpeg",
@@ -25,11 +25,10 @@ const MAX_IMAGE_SIDE = 2560;
 const MIN_IMAGE_SIDE = 960;
 const TELAO_BACKGROUND_MAX_SIDE = 1920;
 const TELAO_BACKGROUND_WEBP_QUALITY = 0.82;
-export const MAX_VIDEO_DURATION_SECONDS = 20;
 const VIDEO_OPTIMIZATION_ATTEMPTS = [
-  { maxSide: 1280, videoBitrate: "3200k" },
-  { maxSide: 1080, videoBitrate: "2400k" },
-  { maxSide: 960, videoBitrate: "1600k" },
+  { maxSide: 1280, quality: 1 },
+  { maxSide: 1080, quality: 0.8 },
+  { maxSide: 960, quality: 0.62 },
 ];
 let ffmpegPromise;
 
@@ -193,7 +192,7 @@ async function optimizeImageToWebp(
     }
 
     throw new Error(
-      "Não foi possível otimizar a imagem abaixo de 3 MB sem reduzir demais sua qualidade.",
+      `Não foi possível otimizar a imagem abaixo de ${formatBytes(MAX_IMAGE_SIZE_BYTES)} sem reduzir demais sua qualidade.`,
     );
   } finally {
     bitmap.close?.();
@@ -233,36 +232,64 @@ export async function cropImageForUpload(file, crop = {}) {
       crop.aspect
     ] || bitmap.width / bitmap.height;
     const sourceAspect = bitmap.width / bitmap.height;
-    const baseWidth = sourceAspect > aspect ? bitmap.height * aspect : bitmap.width;
-    const baseHeight = sourceAspect > aspect ? bitmap.height : bitmap.width / aspect;
-    const sourceWidth = baseWidth / zoom;
-    const sourceHeight = baseHeight / zoom;
-    const sourceX = (bitmap.width - sourceWidth) * (cropX / 100);
-    const sourceY = (bitmap.height - sourceHeight) * (cropY / 100);
-    const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(sourceWidth, sourceHeight));
-    const width = Math.max(1, Math.round(sourceWidth * scale));
-    const height = Math.max(1, Math.round(sourceHeight * scale));
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Não foi possível recortar a imagem");
-
-    canvas.width = width;
-    canvas.height = height;
-    context.fillStyle = /^#[0-9a-f]{6}$/i.test(crop.backgroundColor || "")
+    const backgroundColor = /^#[0-9a-f]{6}$/i.test(crop.backgroundColor || "")
       ? crop.backgroundColor
       : "#050505";
-    context.fillRect(0, 0, width, height);
-    context.drawImage(
-      bitmap,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      0,
-      0,
-      width,
-      height,
-    );
+
+    if (crop.fitMode === "contain") {
+      const baseWidth =
+        sourceAspect > aspect ? bitmap.width : bitmap.height * aspect;
+      const baseHeight =
+        sourceAspect > aspect ? bitmap.width / aspect : bitmap.height;
+      const outputScale = Math.min(
+        1,
+        MAX_IMAGE_SIDE / Math.max(baseWidth, baseHeight),
+      );
+      const width = Math.max(1, Math.round(baseWidth * outputScale));
+      const height = Math.max(1, Math.round(baseHeight * outputScale));
+      const scale = Math.min(width / bitmap.width, height / bitmap.height, 1);
+      const drawWidth = Math.max(1, Math.round(bitmap.width * scale));
+      const drawHeight = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.width = width;
+      canvas.height = height;
+      context.fillStyle = backgroundColor;
+      context.fillRect(0, 0, width, height);
+      context.drawImage(
+        bitmap,
+        Math.round((width - drawWidth) / 2),
+        Math.round((height - drawHeight) / 2),
+        drawWidth,
+        drawHeight,
+      );
+    } else {
+      const baseWidth = sourceAspect > aspect ? bitmap.height * aspect : bitmap.width;
+      const baseHeight = sourceAspect > aspect ? bitmap.height : bitmap.width / aspect;
+      const sourceWidth = baseWidth / zoom;
+      const sourceHeight = baseHeight / zoom;
+      const sourceX = (bitmap.width - sourceWidth) * (cropX / 100);
+      const sourceY = (bitmap.height - sourceHeight) * (cropY / 100);
+      const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(sourceWidth, sourceHeight));
+      const width = Math.max(1, Math.round(sourceWidth * scale));
+      const height = Math.max(1, Math.round(sourceHeight * scale));
+      canvas.width = width;
+      canvas.height = height;
+      context.fillStyle = backgroundColor;
+      context.fillRect(0, 0, width, height);
+      context.drawImage(
+        bitmap,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        width,
+        height,
+      );
+    }
 
     const blob = await canvasToBlob(canvas, "image/webp", WEBP_QUALITY);
     return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "image"}.webp`, {
@@ -292,7 +319,22 @@ async function getFfmpeg() {
   return ffmpegPromise;
 }
 
-async function optimizeVideoForUpload(file, onProgress) {
+function getVideoBitrateKbps(durationSeconds, quality) {
+  // Reserve a small container margin. Removing audio leaves the available
+  // budget for a sharper image at the configured Telão duration.
+  const duration = Math.max(3, Number(durationSeconds) || 10);
+  const budgetKbps = Math.floor(
+    (MAX_VIDEO_SIZE_BYTES * 8 * 0.9) / duration / 1000,
+  );
+  return Math.max(500, Math.min(3200, Math.floor(budgetKbps * quality)));
+}
+
+async function optimizeVideoForUpload(file, onProgress, options = {}) {
+  const trimStartSeconds = Math.max(0, Number(options.videoStartSeconds) || 0);
+  const trimDurationSeconds = Math.max(
+    3,
+    Number(options.videoDurationSeconds) || 10,
+  );
   onProgress?.(20);
   const ffmpeg = await getFfmpeg();
   const inputName = `input-${crypto.randomUUID()}.${file.name.split(".").pop() || "mp4"}`;
@@ -305,17 +347,22 @@ async function optimizeVideoForUpload(file, onProgress) {
     ffmpeg.on("progress", reportProgress);
     for (const [attemptIndex, attempt] of VIDEO_OPTIMIZATION_ATTEMPTS.entries()) {
       const outputName = `video-${crypto.randomUUID()}.mp4`;
+      const bitrateKbps = getVideoBitrateKbps(
+        trimDurationSeconds,
+        attempt.quality,
+      );
       await ffmpeg.exec([
         "-i", inputName,
-        "-t", String(MAX_VIDEO_DURATION_SECONDS),
+        "-ss", String(trimStartSeconds),
+        "-t", String(trimDurationSeconds),
+        "-map", "0:v:0",
+        "-an",
         "-vf", `scale='min(${attempt.maxSide},iw)':-2`,
         "-c:v", "libx264",
         "-preset", "ultrafast",
-        "-b:v", attempt.videoBitrate,
-        "-maxrate", attempt.videoBitrate,
-        "-bufsize", `${Number.parseInt(attempt.videoBitrate, 10) * 2}k`,
-        "-c:a", "aac",
-        "-b:a", "96k",
+        "-b:v", `${bitrateKbps}k`,
+        "-maxrate", `${bitrateKbps}k`,
+        "-bufsize", `${bitrateKbps * 2}k`,
         "-movflags", "+faststart",
         outputName,
       ]);
@@ -331,7 +378,7 @@ async function optimizeVideoForUpload(file, onProgress) {
     }
 
     throw new Error(
-      "Não foi possível otimizar o vídeo abaixo de 10 MB sem reduzir demais sua qualidade.",
+      "Não foi possível otimizar o trecho do vídeo abaixo de 5 MB. Escolha outro trecho ou um vídeo menor.",
     );
   } finally {
     ffmpeg.off?.("progress", reportProgress);
@@ -343,10 +390,10 @@ async function optimizeVideoForUpload(file, onProgress) {
 
 // This runs locally while the form is being edited. It never writes to
 // Storage; the actual upload remains part of the Save action.
-export async function prepareMediaForUpload(file, onProgress) {
+export async function prepareMediaForUpload(file, onProgress, options = {}) {
   validateMediaFile(file);
   const optimized = file.type.startsWith("video/")
-    ? await optimizeVideoForUpload(file, onProgress)
+    ? await optimizeVideoForUpload(file, onProgress, options)
     : await optimizeImageForUpload(file);
   validateFinalMediaFile(optimized);
   onProgress?.(96);

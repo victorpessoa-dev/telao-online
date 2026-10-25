@@ -8,6 +8,7 @@ import {
   ChevronUp,
   Edit2,
   ExternalLink,
+  Loader2,
   RotateCcw,
   Search,
   Trash2,
@@ -20,11 +21,13 @@ import {
   getMediaOptimizationSummary,
   prepareMediaForUpload,
   uploadMedia,
+  validateMediaFile,
 } from "@/services/supabase/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HoverTip } from "@/components/shared/hover-tip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingIndicator } from "@/components/shared/loading-state";
 import {
   Dialog,
   DialogContent,
@@ -117,6 +120,24 @@ function AdManagerSkeleton() {
   );
 }
 
+function PendingOperationOverlay({ label }) {
+  return (
+    <div
+      className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-[inherit] bg-background/88 p-6 text-center backdrop-blur-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <LoadingIndicator />
+      <div>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Não feche esta janela enquanto concluímos a operação.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function createEmptyAd(defaultDurations) {
   return {
     name: "",
@@ -126,7 +147,14 @@ function createEmptyAd(defaultDurations) {
     mediaType: "image",
     sourceType: "link",
     websiteUrl: "",
-    imageCrop: { zoom: 1, x: 50, y: 50, aspect: "landscape", backgroundColor: "#050505" },
+    imageCrop: {
+      zoom: 1,
+      x: 50,
+      y: 50,
+      aspect: "landscape",
+      fitMode: "cover",
+      backgroundColor: "#050505",
+    },
   };
 }
 
@@ -381,6 +409,30 @@ export default function AdManager({
 
     try {
       onProgress?.(12);
+      validateMediaFile(file);
+      if (file.type.startsWith("video/")) {
+        const previewUrl = URL.createObjectURL(file);
+        const videoDurationSeconds = getMediaDuration("video");
+        setter((prev) => {
+          if (prev.pendingPreviewUrl) URL.revokeObjectURL(prev.pendingPreviewUrl);
+          return {
+            ...prev,
+            src: previewUrl,
+            pendingFile: file,
+            pendingPreviewUrl: previewUrl,
+            sourceType: "pending-upload",
+            mediaType: "video",
+            videoTrim: {
+              startSeconds: 0,
+              durationSeconds: videoDurationSeconds,
+              sourceDurationSeconds: 0,
+            },
+          };
+        });
+        onProgress?.(100);
+        toast.success("Escolha o trecho de vídeo que será salvo no telão.");
+        return;
+      }
       const preparedFile = await prepareMediaForUpload(file, onProgress);
       onProgress?.(98);
       const mediaType = preparedFile.type?.startsWith("video/")
@@ -408,14 +460,28 @@ export default function AdManager({
       );
       throw error;
     }
-  }, []);
+  }, [getMediaDuration]);
 
   const uploadPendingMedia = useCallback(async (ad) => {
     if (!ad.pendingFile) return ad;
+    const videoDurationSeconds = getMediaDuration("video");
+    const sourceVideoDuration = Number(ad.videoTrim?.sourceDurationSeconds);
+    if (ad.mediaType === "video" && sourceVideoDuration <= 0) {
+      throw new Error(
+        "Aguarde a duração do vídeo carregar antes de salvar.",
+      );
+    }
+    const savedVideoDuration = Math.min(
+      videoDurationSeconds,
+      sourceVideoDuration || videoDurationSeconds,
+    );
     const file =
       ad.mediaType === "image"
         ? await cropImageForUpload(ad.pendingFile, ad.imageCrop)
-        : ad.pendingFile;
+        : await prepareMediaForUpload(ad.pendingFile, undefined, {
+            videoStartSeconds: ad.videoTrim?.startSeconds,
+            videoDurationSeconds: savedVideoDuration,
+          });
     const uploadedUrl = await uploadMedia(file, "sponsors", "", {
       alreadyPrepared: true,
     });
@@ -426,8 +492,9 @@ export default function AdManager({
       pendingPreviewUrl: undefined,
       sourceType: "upload",
       imageCrop: undefined,
+      videoTrim: undefined,
     };
-  }, []);
+  }, [getMediaDuration]);
 
   const normalizeAd = useCallback(
     (ad) => ({
@@ -745,7 +812,8 @@ export default function AdManager({
         <DialogTrigger asChild>
           <span className="hidden" />
         </DialogTrigger>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="relative max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+          {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
           <DialogHeader>
             <DialogTitle>Novo patrocínio</DialogTitle>
             <DialogDescription>
@@ -759,6 +827,7 @@ export default function AdManager({
             setAd={setNewAd}
             onUpload={readUpload}
             onUploadStateChange={setUploadingMedia}
+            videoDurationSeconds={defaultDurations.VIDEO}
           />
           <DialogFooter>
             <Button
@@ -772,6 +841,7 @@ export default function AdManager({
               onClick={handleCreateAd}
               disabled={savingAd || uploadingMedia}
             >
+              {savingAd ? <Loader2 className="animate-spin" /> : null}
               {savingAd ? "Salvando..." : "Cadastrar patrocínio"}
             </Button>
           </DialogFooter>
@@ -1108,7 +1178,8 @@ export default function AdManager({
 
       {/* Keep destructive actions and form state inside controlled dialogs. */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="relative max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+          {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
           <DialogHeader>
             <DialogTitle>Editar patrocínio</DialogTitle>
             <DialogDescription>
@@ -1122,6 +1193,7 @@ export default function AdManager({
               onUpload={readUpload}
               onUploadStateChange={setUploadingMedia}
               allowMediaRemoval
+              videoDurationSeconds={defaultDurations.VIDEO}
             />
           ) : null}
           <DialogFooter>
@@ -1136,6 +1208,7 @@ export default function AdManager({
               onClick={handleEditAd}
               disabled={savingAd || uploadingMedia}
             >
+              {savingAd ? <Loader2 className="animate-spin" /> : null}
               {savingAd ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>

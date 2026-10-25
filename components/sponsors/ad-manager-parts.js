@@ -50,14 +50,18 @@ export function MediaPreview({ ad, compact = false }) {
   const sizeClass = compact ? "h-14 w-20" : `${previewAspect} w-full`;
   const detectedBackgroundColor = useMediaBackgroundColor(ad?.src, ad?.mediaType);
   const backgroundColor = ad?.imageCrop?.backgroundColor || detectedBackgroundColor;
+  const fitMode = ad?.imageCrop?.fitMode === "contain" ? "contain" : "cover";
   const zoom = Number(ad?.imageCrop?.zoom) || 1;
   const cropX = Number(ad?.imageCrop?.x ?? 50);
   const cropY = Number(ad?.imageCrop?.y ?? 50);
-  const mediaStyle = {
-    objectPosition: `${cropX}% ${cropY}%`,
-    transform: zoom === 1 ? undefined : `scale(${zoom})`,
-    transformOrigin: `${cropX}% ${cropY}%`,
-  };
+  const mediaStyle =
+    fitMode === "contain"
+      ? undefined
+      : {
+          objectPosition: `${cropX}% ${cropY}%`,
+          transform: zoom === 1 ? undefined : `scale(${zoom})`,
+          transformOrigin: `${cropX}% ${cropY}%`,
+        };
   const backgroundStyle = {
     backgroundColor,
     backgroundImage: `radial-gradient(circle at center, color-mix(in srgb, ${backgroundColor} 82%, white 18%), ${backgroundColor})`,
@@ -109,7 +113,7 @@ export function MediaPreview({ ad, compact = false }) {
         <StaticMediaFrame
           src={ad.src}
           alt={ad.name || "Patrocínio"}
-          className="h-full w-full object-cover"
+          className={`h-full w-full ${fitMode === "contain" ? "object-contain" : "object-cover"}`}
           style={mediaStyle}
         />
       </div>
@@ -164,6 +168,7 @@ function ImageCropCanvas({ ad, setAd }) {
   const zoom = clamp(Number(crop.zoom) || 1, 1, 3);
   const cropX = clamp(Number(crop.x ?? 50), 0, 100);
   const cropY = clamp(Number(crop.y ?? 50), 0, 100);
+  const fitMode = crop.fitMode === "contain" ? "contain" : "cover";
   const aspect = crop.aspect || "source";
   const frameAspect =
     { square: 1, landscape: 16 / 9, portrait: 9 / 16 }[aspect] ||
@@ -177,6 +182,7 @@ function ImageCropCanvas({ ad, setAd }) {
   };
 
   const handleWheel = (event) => {
+    if (fitMode === "contain") return;
     event.preventDefault();
     const direction = event.deltaY < 0 ? 1 : -1;
     const nextZoom = clamp(zoom + direction * 0.1, 1, 3);
@@ -184,6 +190,7 @@ function ImageCropCanvas({ ad, setAd }) {
   };
 
   const handlePointerDown = (event) => {
+    if (fitMode === "contain") return;
     const frame = frameRef.current;
     if (!frame) return;
 
@@ -225,14 +232,19 @@ function ImageCropCanvas({ ad, setAd }) {
       <div className="flex items-start gap-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
         <Move className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-sm text-muted-foreground">
-          Arraste a imagem para definir o enquadramento. Você também pode usar a
-          roda do mouse ou os controles abaixo para aproximar.
+          {fitMode === "contain"
+            ? "A imagem inteira será mantida; a cor escolhida preencherá as áreas que sobrarem."
+            : "Arraste a imagem para definir o enquadramento. Você também pode usar a roda do mouse ou os controles abaixo para aproximar."}
         </p>
       </div>
       <div
         ref={frameRef}
-        className="relative w-full cursor-grab touch-none select-none overflow-hidden rounded-lg border border-border bg-muted shadow-inner active:cursor-grabbing"
-        style={{ aspectRatio: frameAspect }}
+        className={`relative w-full touch-none select-none overflow-hidden rounded-lg border border-border bg-muted shadow-inner ${fitMode === "contain" ? "" : "cursor-grab active:cursor-grabbing"}`}
+        style={{
+          aspectRatio: frameAspect,
+          backgroundColor:
+            fitMode === "contain" ? crop.backgroundColor || "#050505" : undefined,
+        }}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -245,12 +257,16 @@ function ImageCropCanvas({ ad, setAd }) {
           src={ad.src}
           alt="Prévia do recorte da imagem"
           draggable={false}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-          style={{
-            objectPosition: `${cropX}% ${cropY}%`,
-            transform: zoom === 1 ? undefined : `scale(${zoom})`,
-            transformOrigin: `${cropX}% ${cropY}%`,
-          }}
+          className={`pointer-events-none absolute inset-0 h-full w-full ${fitMode === "contain" ? "object-contain" : "object-cover"}`}
+          style={
+            fitMode === "contain"
+              ? { backgroundColor: crop.backgroundColor || "#050505" }
+              : {
+                  objectPosition: `${cropX}% ${cropY}%`,
+                  transform: zoom === 1 ? undefined : `scale(${zoom})`,
+                  transformOrigin: `${cropX}% ${cropY}%`,
+                }
+          }
           onLoad={(event) => {
             const { naturalWidth, naturalHeight } = event.currentTarget;
             if (naturalWidth && naturalHeight)
@@ -259,10 +275,180 @@ function ImageCropCanvas({ ad, setAd }) {
         />
         <div className="pointer-events-none absolute inset-0 border-2 border-primary/70" />
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,transparent_33.2%,hsl(var(--border)/0.55)_33.5%,transparent_33.8%,transparent_66.2%,hsl(var(--border)/0.55)_66.5%,transparent_66.8%),linear-gradient(to_bottom,transparent_33.2%,hsl(var(--border)/0.55)_33.5%,transparent_33.8%,transparent_66.2%,hsl(var(--border)/0.55)_66.5%,transparent_66.8%)]" />
-        <div className="pointer-events-none absolute bottom-2 right-2 rounded bg-background/85 px-2 py-1 text-xs font-medium tabular-nums text-foreground shadow-sm">
-          {zoom.toFixed(2)}×
-        </div>
+        {fitMode === "cover" ? (
+          <div className="pointer-events-none absolute bottom-2 right-2 rounded bg-background/85 px-2 py-1 text-xs font-medium tabular-nums text-foreground shadow-sm">
+            {zoom.toFixed(2)}×
+          </div>
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+function formatVideoTime(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(total / 60);
+  const rest = total - minutes * 60;
+  return `${minutes}:${rest.toFixed(1).padStart(4, "0")}`;
+}
+
+function VideoTrimEditor({ ad, setAd, durationSeconds }) {
+  const videoRef = useRef(null);
+  const timelineRef = useRef(null);
+  const dragRef = useRef(null);
+  const [sourceDuration, setSourceDuration] = useState(
+    Number(ad.videoTrim?.sourceDurationSeconds) || 0,
+  );
+  const clipDuration = clamp(Number(durationSeconds) || 10, 3, 25);
+  const maximumStart = Math.max(0, sourceDuration - clipDuration);
+  const requiresTrim = sourceDuration > clipDuration;
+  const startSeconds = clamp(
+    Number(ad.videoTrim?.startSeconds) || 0,
+    0,
+    maximumStart,
+  );
+  const clipEnd = Math.min(sourceDuration, startSeconds + clipDuration);
+  const frameWidth = sourceDuration
+    ? Math.min(100, (clipDuration / sourceDuration) * 100)
+    : 100;
+  const frameLeft = sourceDuration ? (startSeconds / sourceDuration) * 100 : 0;
+
+  const updateStart = (nextStart) => {
+    const next = clamp(Number(nextStart) || 0, 0, maximumStart);
+    setAd((current) => ({
+      ...current,
+      videoTrim: {
+        ...current.videoTrim,
+        startSeconds: Number(next.toFixed(1)),
+        durationSeconds: clipDuration,
+        sourceDurationSeconds: sourceDuration,
+      },
+    }));
+    if (videoRef.current) videoRef.current.currentTime = next;
+  };
+
+  const moveFrameFromPointer = (event) => {
+    const timeline = timelineRef.current;
+    const drag = dragRef.current;
+    if (!timeline || !drag) return;
+    const ratio = clamp(
+      (event.clientX - timeline.getBoundingClientRect().left) /
+        Math.max(1, timeline.clientWidth),
+      0,
+      1,
+    );
+    updateStart((ratio - drag.grabOffset) * sourceDuration);
+  };
+
+  const startFrameDrag = (event) => {
+    if (!requiresTrim) return;
+    const timeline = timelineRef.current;
+    if (!timeline) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const ratio = clamp(
+      (event.clientX - timeline.getBoundingClientRect().left) /
+        Math.max(1, timeline.clientWidth),
+      0,
+      1,
+    );
+    dragRef.current = {
+      pointerId: event.pointerId,
+      grabOffset: ratio - frameLeft / 100,
+    };
+    moveFrameFromPointer(event);
+  };
+
+  const moveFrameDrag = (event) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      moveFrameFromPointer(event);
+    }
+  };
+
+  const stopFrameDrag = (event) => {
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-sm text-muted-foreground">
+        {requiresTrim
+          ? `Escolha o trecho de ${clipDuration}s que será salvo, sem áudio e em MP4.`
+          : "O vídeo será salvo inteiro, sem áudio e em MP4."}
+      </div>
+      <video
+        ref={videoRef}
+        src={ad.src}
+        controls
+        muted
+        playsInline
+        preload="metadata"
+        className="aspect-video w-full rounded-lg bg-black"
+        onLoadedMetadata={(event) => {
+          const duration = event.currentTarget.duration;
+          if (!Number.isFinite(duration) || duration <= 0) return;
+          setSourceDuration(duration);
+          setAd((current) => ({
+            ...current,
+            videoTrim: {
+              ...current.videoTrim,
+              startSeconds: clamp(
+                Number(current.videoTrim?.startSeconds) || 0,
+                0,
+                Math.max(0, duration - clipDuration),
+              ),
+              durationSeconds: Math.min(clipDuration, duration),
+              sourceDurationSeconds: duration,
+            },
+          }));
+        }}
+      />
+      {sourceDuration > 0 ? (
+        <>
+          {requiresTrim ? (
+          <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+            <div
+              ref={timelineRef}
+              className="relative h-10 touch-none select-none overflow-hidden rounded bg-muted"
+              role="slider"
+              tabIndex={0}
+              aria-label="Trecho selecionado do vídeo"
+              aria-valuemin={0}
+              aria-valuemax={maximumStart}
+              aria-valuenow={startSeconds}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft") {
+                  event.preventDefault();
+                  updateStart(startSeconds - 0.1);
+                }
+                if (event.key === "ArrowRight") {
+                  event.preventDefault();
+                  updateStart(startSeconds + 0.1);
+                }
+              }}
+              onPointerMove={moveFrameDrag}
+              onPointerUp={stopFrameDrag}
+              onPointerCancel={stopFrameDrag}
+            >
+              <div
+                className="absolute inset-y-1 cursor-grab rounded border-2 border-primary bg-primary/25 shadow-sm active:cursor-grabbing"
+                style={{ left: `${frameLeft}%`, width: `${frameWidth}%` }}
+                onPointerDown={startFrameDrag}
+              />
+            </div>
+            <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
+              <span>Início: {formatVideoTime(startSeconds)}</span>
+              <span>Fim: {formatVideoTime(clipEnd)}</span>
+            </div>
+          </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Duração original: {formatVideoTime(sourceDuration)}. O recorte só aparece para vídeos acima de {clipDuration}s.
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">Carregando duração do vídeo…</p>
+      )}
     </div>
   );
 }
@@ -273,6 +459,7 @@ export function SponsorForm({
   onUpload,
   onUploadStateChange,
   allowMediaRemoval = false,
+  videoDurationSeconds = 15,
 }) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -280,12 +467,21 @@ export function SponsorForm({
   const [removeMediaOpen, setRemoveMediaOpen] = useState(false);
   const hasPendingMedia = ad.sourceType === "pending-upload" && Boolean(ad.src);
   const hasPendingImage = hasPendingMedia && ad.mediaType === "image";
+  const hasPendingVideo = hasPendingMedia && ad.mediaType === "video";
   const [activeTab, setActiveTab] = useState("data");
+  const hadPendingAdjustmentRef = useRef(false);
 
   useEffect(() => {
-    if (hasPendingImage) setActiveTab("adjustment");
-    else if (activeTab === "adjustment") setActiveTab("media");
-  }, [activeTab, hasPendingImage]);
+    const hasPendingAdjustment = hasPendingImage || hasPendingVideo;
+    // Open the adjustment view after a new upload, but let the admin freely
+    // return to data or media tabs to replace the file before saving.
+    if (hasPendingAdjustment && !hadPendingAdjustmentRef.current) {
+      setActiveTab("adjustment");
+    } else if (!hasPendingAdjustment && activeTab === "adjustment") {
+      setActiveTab("media");
+    }
+    hadPendingAdjustmentRef.current = hasPendingAdjustment;
+  }, [activeTab, hasPendingImage, hasPendingVideo]);
 
   const handleUpload = async (file) => {
     if (!file) return;
@@ -310,12 +506,12 @@ export function SponsorForm({
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="py-4">
       <TabsList
-        className={`grid w-full ${hasPendingImage ? "grid-cols-3" : "grid-cols-2"}`}
+        className={`grid w-full ${hasPendingImage || hasPendingVideo ? "grid-cols-3" : "grid-cols-2"}`}
       >
         <TabsTrigger value="data">Dados</TabsTrigger>
         <TabsTrigger value="media">Mídia e prévia</TabsTrigger>
-        {hasPendingImage ? (
-          <TabsTrigger value="adjustment">Ajustar imagem</TabsTrigger>
+        {hasPendingImage || hasPendingVideo ? (
+          <TabsTrigger value="adjustment">Ajustar mídia</TabsTrigger>
         ) : null}
       </TabsList>
 
@@ -418,11 +614,10 @@ export function SponsorForm({
             disabled={uploading}
             onFileSelect={handleUpload}
             title="Arraste a mídia ou clique para enviar"
-            description={"Imagens são otimizadas para até 3 MB; vídeos para MP4 de até 10 MB"}
+            description={"Imagens são otimizadas para até 1 MB; vídeos sem áudio para MP4 de até 5 MB"}
           />
           <p className="text-xs text-muted-foreground">
-            A duração é definida em Configurações &gt; Telão, de acordo com o
-            tipo de mídia.
+            A duração é definida em Configurações &gt; Telão. Para vídeos, escolha o trecho com essa duração antes de salvar.
           </p>
           {uploadError ? (
             <p className="text-xs font-medium text-destructive">
@@ -489,32 +684,58 @@ export function SponsorForm({
 
       {hasPendingImage ? (
         <TabsContent value="adjustment" className="mt-5 space-y-5">
-          <div className="space-y-2">
-            <Label>Formato de exibição</Label>
-            <Select
-              value={ad.imageCrop?.aspect || "source"}
-              onValueChange={(aspect) =>
-                setAd((prev) => ({
-                  ...prev,
-                  imageCrop: { ...prev.imageCrop, aspect },
-                }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="source">Proporção original</SelectItem>
-                <SelectItem value="landscape">Paisagem 16:9</SelectItem>
-                <SelectItem value="square">Quadrado 1:1</SelectItem>
-                <SelectItem value="portrait">Retrato 9:16</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Escolha o formato antes de posicionar os elementos importantes.
-            </p>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Ajuste da área</Label>
+              <Select
+                value={ad.imageCrop?.fitMode === "contain" ? "contain" : "cover"}
+                onValueChange={(fitMode) =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: { ...prev.imageCrop, fitMode },
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cover">Preencher a área</SelectItem>
+                  <SelectItem value="contain">Manter imagem inteira</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Em “manter imagem inteira”, nenhuma parte é cortada e a cor de fundo ocupa os espaços restantes.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Formato de exibição</Label>
+              <Select
+                value={ad.imageCrop?.aspect || "source"}
+                onValueChange={(aspect) =>
+                  setAd((prev) => ({
+                    ...prev,
+                    imageCrop: { ...prev.imageCrop, aspect },
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="source">Proporção original</SelectItem>
+                  <SelectItem value="landscape">Paisagem 16:9</SelectItem>
+                  <SelectItem value="square">Quadrado 1:1</SelectItem>
+                  <SelectItem value="portrait">Retrato 9:16</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Escolha o formato antes de posicionar os elementos importantes.
+              </p>
+            </div>
           </div>
           <ImageCropCanvas ad={ad} setAd={setAd} />
+          {ad.imageCrop?.fitMode !== "contain" ? (
           <div className="rounded-lg border border-border bg-muted/20 p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <Label htmlFor="image-zoom">Zoom</Label>
@@ -597,6 +818,7 @@ export function SponsorForm({
               Centralizar e restaurar zoom
             </Button>
           </div>
+          ) : null}
           <div className="space-y-2">
             <Label>Cor de fundo para transparência</Label>
             <div className="flex items-center gap-3">
@@ -636,6 +858,15 @@ export function SponsorForm({
               recortado e salvo em WebP ao confirmar.
             </p>
           </div>
+        </TabsContent>
+      ) : null}
+      {hasPendingVideo ? (
+        <TabsContent value="adjustment" className="mt-5 space-y-5">
+          <VideoTrimEditor
+            ad={ad}
+            setAd={setAd}
+            durationSeconds={videoDurationSeconds}
+          />
         </TabsContent>
       ) : null}
     </Tabs>

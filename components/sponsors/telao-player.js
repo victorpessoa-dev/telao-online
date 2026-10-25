@@ -281,7 +281,7 @@ export default function TelaoPlayer({
     sponsorSettings.metricsPaused,
   ]);
 
-  const preloadImages = useCallback((items) => {
+  const preloadUpcomingImages = useCallback((items, currentItemIndex = 0) => {
     const preload = (src) => {
       if (imagePreloadsRef.current.has(src)) {
         return imagePreloadsRef.current.get(src);
@@ -311,9 +311,13 @@ export default function TelaoPlayer({
       return request;
     };
 
+    const nextImages = Array.from(
+      { length: Math.min(3, Math.max(items.length - 1, 0)) },
+      (_, offset) => items[(currentItemIndex + offset + 1) % items.length],
+    );
     return Promise.all(
-      items
-        .filter((item) => item.mediaType === "image" && item.src)
+      nextImages
+        .filter((item) => item?.mediaType === "image" && item.src)
         .map((item) => preload(item.src)),
     );
   }, []);
@@ -538,11 +542,9 @@ export default function TelaoPlayer({
         : -1;
 
       if (shouldUpdate || isOfflineCache) {
-        // Start the schedule only after every image in its playlist is in the
-        // browser cache. This means the next sponsor is ready before its
-        // configured slot begins, so rotation never needs to extend a slot
-        // while waiting for an image download.
-        await preloadImages(scheduledAds);
+        // Keep playback smooth without downloading the entire sponsor gallery
+        // for every visitor who opens the public display.
+        await preloadUpcomingImages(scheduledAds, position?.index ?? 0);
         setAds(scheduledAds);
         setSponsorSettings(mergedSettings);
         setCurrentIndex(
@@ -569,7 +571,7 @@ export default function TelaoPlayer({
         const cachedSettings = mergeSponsorSettings(
           cached.sponsorSettings || emptyTelaoSettings,
         );
-        await preloadImages(cached.ads);
+        await preloadUpcomingImages(cached.ads, currentIndexRef.current);
         setAds(cached.ads);
         setSponsorSettings(cachedSettings);
         setCurrentIndex((prev) =>
@@ -596,7 +598,7 @@ export default function TelaoPlayer({
     filterMaster,
     isOfflineCache,
     kind,
-    preloadImages,
+    preloadUpcomingImages,
   ]);
 
   const checkContentVersion = useCallback(async () => {
@@ -768,6 +770,11 @@ export default function TelaoPlayer({
     loaded,
     sponsorSettings.mediaDurations,
   ]);
+
+  useEffect(() => {
+    if (!ads.length) return;
+    preloadUpcomingImages(ads, currentIndex);
+  }, [ads, currentIndex, preloadUpcomingImages]);
 
   useEffect(() => {
     const refreshInterval =
