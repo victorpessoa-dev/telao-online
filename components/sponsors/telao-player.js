@@ -326,32 +326,17 @@ export default function TelaoPlayer({
     (log) => {
       const currentQueue = readLogQueue(logQueueKey);
       const displayedAt = new Date(log.displayedAt || Date.now());
-      const day = displayedAt.toISOString().slice(0, 10);
-      const aggregateKey = `${log.sponsorId}:${day}:${log.source || "telao"}:${log.displaySessionId}`;
-      const existingIndex = currentQueue.findIndex(
-        (item) => item.aggregateKey === aggregateKey,
-      );
+      // Keep each cycle as a durable event until the API confirms it. The
+      // report groups these events by official display session in the
+      // database, preserving the exact time of every display on expansion.
       const nextLog = {
         ...log,
-        aggregateKey,
         displayedAt: displayedAt.toISOString(),
         durationSeconds: Math.max(0, Number(log.durationSeconds) || 0),
         viewsCount: 1,
         eventId: createEventId(),
       };
-      if (existingIndex >= 0) {
-        const previous = currentQueue[existingIndex];
-        currentQueue[existingIndex] = {
-          ...previous,
-          displayedAt: nextLog.displayedAt,
-          durationSeconds: previous.durationSeconds + nextLog.durationSeconds,
-          viewsCount: previous.viewsCount + 1,
-        };
-      } else {
-        currentQueue.push(nextLog);
-      }
-      // The queue is also read by the admin views to show an immediate local
-      // preview while the confirmed total waits for the three-minute sync.
+      currentQueue.push(nextLog);
       localStorage.setItem(logQueueKey, JSON.stringify(currentQueue));
     },
     [logQueueKey],

@@ -584,7 +584,7 @@ export default function ConfiguracoesPage() {
                   </div>
                   <p className="mt-1 text-sm leading-6 text-muted-foreground">
                     Quando ativa, sua igreja aparece na landing page e libera /
-                    {`{slug}`}, /ads-telao e /anunciantes.
+                    {`{slug}`}, /ads-telao e /parceiros.
                   </p>
                 </div>
                 <Switch
