@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+/** Last-resort document-level error boundary used when the root layout cannot render. */
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
     console.error("Global application error:", error);

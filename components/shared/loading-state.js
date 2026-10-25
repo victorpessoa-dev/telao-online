@@ -1,7 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { BRAND } from "@/lib/constants/brand";
 
+/** Compact animated indicator used inside loading states and the display player. */
 export function LoadingIndicator({ className = "" }) {
   return (
     <div
@@ -19,7 +21,7 @@ export function LoadingIndicator({ className = "" }) {
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       />
       <motion.img
-        src="/brand/logo-telao-online.webp"
+        src={BRAND.markAsset}
         alt=""
         className="h-8 w-8 object-contain"
         animate={{ scale: [0.92, 1.05, 0.92] }}
@@ -29,6 +31,7 @@ export function LoadingIndicator({ className = "" }) {
   );
 }
 
+/** Accessible loading state with an optional full-screen layout. */
 export default function LoadingState({
   label = "Carregando...",
   fullScreen = false,

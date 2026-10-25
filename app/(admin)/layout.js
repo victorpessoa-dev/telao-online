@@ -6,6 +6,7 @@ import { AdminSidebarStateProvider } from "@/components/layout/admin-sidebar-sta
 import { StoreProvider } from "@/lib/store/store";
 import AdminSessionGate from "@/components/auth/admin-session-gate";
 
+/** Wraps every administrative route with authentication and the dashboard shell. */
 export default function AdminLayout({ children }) {
   return (
     <AdminSessionGate>

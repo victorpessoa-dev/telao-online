@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { PUBLIC_TELAO_CACHE_HEADERS } from "@/lib/utils/http";
 import { createSupabasePublicClient } from "@/services/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
+import { isValidChurchSlug, normalizeChurchSlug } from "@/lib/utils/church-slug";
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
+/**
+ * Delivers the cacheable playlist and design payload for a public display.
+ */
 export async function GET(request, { params }) {
   const rate = await checkRateLimit(`public-telao:${getClientIp(request)}`, {
     limit: 240,
@@ -17,11 +19,9 @@ export async function GET(request, { params }) {
     );
   }
   const { slug: rawSlug } = await params;
-  const slug = String(rawSlug || "")
-    .trim()
-    .toLowerCase();
+  const slug = normalizeChurchSlug(rawSlug);
 
-  if (!SLUG_PATTERN.test(slug)) {
+  if (!isValidChurchSlug(slug)) {
     return NextResponse.json(
       { error: "Igreja não encontrada" },
       { status: 404, headers: PUBLIC_TELAO_CACHE_HEADERS },

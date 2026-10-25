@@ -8,11 +8,11 @@ import {
   Clock3,
   Eye,
   Layers3,
-  Monitor,
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingState from "@/components/shared/loading-state";
+import StaticMediaFrame from "@/components/shared/static-media-frame";
 import { mapSponsorRow } from "@/lib/mappers/sponsors";
 import { mergeSponsorSettings } from "@/lib/mappers/settings";
 import {
@@ -26,7 +26,7 @@ const CYCLES_BEFORE_AND_AFTER = 5;
 
 function sponsorColor(id) {
   let hash = 0;
-  for (const character of String(id || "vplaycast")) {
+  for (const character of String(id || "telao-online")) {
     hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   }
   return `hsl(${hash % 360} 62% 42%)`;
@@ -88,27 +88,28 @@ function MetricCard({ icon: Icon, label, value, detail }) {
 function CurrentSponsorCard({ entry, cycle, progress, now, serverOffset, frozen = false }) {
   if (!entry || !cycle) return null;
 
-  const showPhoto = entry.ad.mediaType === "image" && entry.ad.src;
   return (
     <section className="rounded-2xl border border-border/80 bg-card p-4 shadow-sm sm:p-5">
       <p className="text-sm font-semibold text-foreground">
         {frozen ? "Programação do telão pausada" : "Agora no telão"}
       </p>
       <div className="mt-4 flex items-center gap-4">
-        <span
+        <div
           className="relative grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl text-white"
           style={{ backgroundColor: sponsorColor(entry.ad.id) }}
         >
-          <Monitor className="h-8 w-8" />
-          {showPhoto ? (
-            <img
-              src={entry.ad.src}
-              alt={`Patrocínio de ${entry.ad.name}`}
-              className="absolute inset-0 h-full w-full object-cover"
-              onError={(event) => event.currentTarget.remove()}
-            />
+          {entry.ad.src ? (
+            <div className="absolute inset-0">
+              <StaticMediaFrame
+                src={entry.ad.src}
+                alt={`Patrocínio de ${entry.ad.name}`}
+                type={entry.ad.mediaType}
+                className="absolute inset-0 h-full w-full object-cover"
+                onError={(event) => event.currentTarget.remove()}
+              />
+            </div>
           ) : null}
-        </span>
+        </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-xl font-semibold text-foreground">{entry.ad.name}</p>
           <p className="mt-0.5 text-sm text-muted-foreground">

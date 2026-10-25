@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vplaycast-v5";
+const CACHE_VERSION = "telao-online-v1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 const MEDIA_CACHE = `${CACHE_VERSION}-media`;

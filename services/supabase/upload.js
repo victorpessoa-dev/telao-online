@@ -4,20 +4,32 @@ const BUCKET = "telao-online-midia";
 // Kept only so media uploaded before the Telão Online migration can still be
 // read and removed without breaking existing sponsor and branding URLs.
 const LEGACY_BUCKETS = ["v-playcast-midia", "pascom-media"];
-const MAX_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
+const MAX_SOURCE_SIZE_BYTES = 100 * 1024 * 1024;
+export const MAX_IMAGE_SIZE_BYTES = 1_000_000;
+export const MAX_VIDEO_SIZE_BYTES = 5_000_000;
 const ALLOWED_MEDIA_TYPES = new Set([
   "image/gif",
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/avif",
   "video/mp4",
   "video/webm",
+  "video/quicktime",
+  "video/x-m4v",
 ]);
-const WEBP_QUALITY = 0.86;
+const WEBP_QUALITY = 0.9;
+const MIN_WEBP_QUALITY = 0.68;
+const WEBP_QUALITY_STEP = 0.06;
 const MAX_IMAGE_SIDE = 2560;
+const MIN_IMAGE_SIDE = 960;
 const TELAO_BACKGROUND_MAX_SIDE = 1920;
 const TELAO_BACKGROUND_WEBP_QUALITY = 0.82;
-export const MAX_VIDEO_DURATION_SECONDS = 20;
+const VIDEO_OPTIMIZATION_ATTEMPTS = [
+  { maxSide: 1280, quality: 1 },
+  { maxSide: 1080, quality: 0.8 },
+  { maxSide: 960, quality: 0.62 },
+];
 let ffmpegPromise;
 
 function loadFfmpegScript() {
@@ -43,18 +55,62 @@ export function sanitizeFileName(name) {
     .toLowerCase();
 }
 
+/**
+ * Validates the source file before browser-side conversion starts. The higher
+ * source cap prevents exhausting memory; final caps are enforced separately.
+ */
 export function validateMediaFile(file) {
   if (!file) return;
 
-  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+  if (file.size > MAX_SOURCE_SIZE_BYTES) {
     throw new Error("Arquivo maior que 100MB");
   }
 
   if (!file.type || !ALLOWED_MEDIA_TYPES.has(file.type)) {
     throw new Error(
-      "Tipo de arquivo não permitido. Envie imagem, MP4 ou WebM.",
+      "Tipo de arquivo não permitido. Envie imagem, MP4, WebM, MOV ou M4V.",
     );
   }
+}
+
+/**
+ * Rejects converted media that would exceed the Storage and delivery budget.
+ * This check runs after processing and immediately before upload.
+ */
+export function validateFinalMediaFile(file) {
+  const maxBytes = file?.type?.startsWith("video/")
+    ? MAX_VIDEO_SIZE_BYTES
+    : MAX_IMAGE_SIZE_BYTES;
+  const mediaLabel = file?.type?.startsWith("video/") ? "Vídeo" : "Imagem";
+
+  if (!file || file.size > maxBytes) {
+    throw new Error(
+      `${mediaLabel} otimizado excede o limite de ${formatBytes(maxBytes)}. Escolha uma mídia menor ou reduza sua qualidade.`,
+    );
+  }
+}
+
+/** Formats exact byte counts for status messages shown during real processing. */
+export function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1_000_000) return `${Math.round(bytes / 1_000)} KB`;
+  return `${(bytes / 1_000_000).toFixed(1).replace(".0", "")} MB`;
+}
+
+/** Describes the actual reduction achieved by an optimized media file. */
+export function getMediaOptimizationSummary(sourceFile, optimizedFile) {
+  const originalBytes = Number(sourceFile?.size) || 0;
+  const finalBytes = Number(optimizedFile?.size) || 0;
+  const reduction = originalBytes
+    ? Math.max(0, Math.round((1 - finalBytes / originalBytes) * 100))
+    : 0;
+
+  return {
+    originalBytes,
+    finalBytes,
+    reduction,
+    message: `Mídia otimizada de ${formatBytes(originalBytes)} para ${formatBytes(finalBytes)} (${reduction}% menor).`,
+  };
 }
 
 function canvasToBlob(canvas, type, quality) {
@@ -76,7 +132,7 @@ function canvasToBlob(canvas, type, quality) {
 
 async function loadImageBitmap(file) {
   if ("createImageBitmap" in window) {
-    return createImageBitmap(file);
+    return createImageBitmap(file, { imageOrientation: "from-image" });
   }
 
   const image = new Image();
@@ -101,36 +157,53 @@ async function optimizeImageToWebp(
 ) {
   const bitmap = await loadImageBitmap(file);
   try {
-    const scale = Math.min(
-      1,
-      maxSide / Math.max(bitmap.width, bitmap.height),
-    );
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context)
       throw new Error("Não foi possível preparar a imagem para envio");
 
-    canvas.width = width;
-    canvas.height = height;
-    context.drawImage(bitmap, 0, 0, width, height);
+    const sourceSide = Math.max(bitmap.width, bitmap.height);
+    const minimumSide = Math.min(MIN_IMAGE_SIDE, sourceSide);
+    let targetSide = Math.min(maxSide, sourceSide);
+    let targetQuality = quality;
 
-    const blob = await canvasToBlob(canvas, "image/webp", quality);
-    const originalName = file.name.replace(/\.[^.]+$/, "");
-    const optimizedName = `${originalName || "image"}.webp`;
-    const optimizedFile = new File([blob], optimizedName, {
-      type: "image/webp",
-      lastModified: file.lastModified,
-    });
+    while (targetSide >= minimumSide) {
+      const scale = Math.min(1, targetSide / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(bitmap, 0, 0, width, height);
 
-    return optimizedFile;
+      while (targetQuality >= MIN_WEBP_QUALITY) {
+        const blob = await canvasToBlob(canvas, "image/webp", targetQuality);
+        if (blob.size <= MAX_IMAGE_SIZE_BYTES) {
+          const originalName = file.name.replace(/\.[^.]+$/, "");
+          return new File([blob], `${originalName || "image"}.webp`, {
+            type: "image/webp",
+            lastModified: file.lastModified,
+          });
+        }
+        targetQuality -= WEBP_QUALITY_STEP;
+      }
+
+      targetSide = Math.floor(targetSide * 0.8);
+      targetQuality = quality;
+    }
+
+    throw new Error(
+      `Não foi possível otimizar a imagem abaixo de ${formatBytes(MAX_IMAGE_SIZE_BYTES)} sem reduzir demais sua qualidade.`,
+    );
   } finally {
     bitmap.close?.();
   }
 }
 
 export async function optimizeImageForUpload(file) {
+  if (file.type === "image/gif") {
+    validateFinalMediaFile(file);
+    return file;
+  }
   return optimizeImageToWebp(file);
 }
 
@@ -159,36 +232,64 @@ export async function cropImageForUpload(file, crop = {}) {
       crop.aspect
     ] || bitmap.width / bitmap.height;
     const sourceAspect = bitmap.width / bitmap.height;
-    const baseWidth = sourceAspect > aspect ? bitmap.height * aspect : bitmap.width;
-    const baseHeight = sourceAspect > aspect ? bitmap.height : bitmap.width / aspect;
-    const sourceWidth = baseWidth / zoom;
-    const sourceHeight = baseHeight / zoom;
-    const sourceX = (bitmap.width - sourceWidth) * (cropX / 100);
-    const sourceY = (bitmap.height - sourceHeight) * (cropY / 100);
-    const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(sourceWidth, sourceHeight));
-    const width = Math.max(1, Math.round(sourceWidth * scale));
-    const height = Math.max(1, Math.round(sourceHeight * scale));
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Não foi possível recortar a imagem");
-
-    canvas.width = width;
-    canvas.height = height;
-    context.fillStyle = /^#[0-9a-f]{6}$/i.test(crop.backgroundColor || "")
+    const backgroundColor = /^#[0-9a-f]{6}$/i.test(crop.backgroundColor || "")
       ? crop.backgroundColor
       : "#050505";
-    context.fillRect(0, 0, width, height);
-    context.drawImage(
-      bitmap,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      0,
-      0,
-      width,
-      height,
-    );
+
+    if (crop.fitMode === "contain") {
+      const baseWidth =
+        sourceAspect > aspect ? bitmap.width : bitmap.height * aspect;
+      const baseHeight =
+        sourceAspect > aspect ? bitmap.width / aspect : bitmap.height;
+      const outputScale = Math.min(
+        1,
+        MAX_IMAGE_SIDE / Math.max(baseWidth, baseHeight),
+      );
+      const width = Math.max(1, Math.round(baseWidth * outputScale));
+      const height = Math.max(1, Math.round(baseHeight * outputScale));
+      const scale = Math.min(width / bitmap.width, height / bitmap.height, 1);
+      const drawWidth = Math.max(1, Math.round(bitmap.width * scale));
+      const drawHeight = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.width = width;
+      canvas.height = height;
+      context.fillStyle = backgroundColor;
+      context.fillRect(0, 0, width, height);
+      context.drawImage(
+        bitmap,
+        Math.round((width - drawWidth) / 2),
+        Math.round((height - drawHeight) / 2),
+        drawWidth,
+        drawHeight,
+      );
+    } else {
+      const baseWidth = sourceAspect > aspect ? bitmap.height * aspect : bitmap.width;
+      const baseHeight = sourceAspect > aspect ? bitmap.height : bitmap.width / aspect;
+      const sourceWidth = baseWidth / zoom;
+      const sourceHeight = baseHeight / zoom;
+      const sourceX = (bitmap.width - sourceWidth) * (cropX / 100);
+      const sourceY = (bitmap.height - sourceHeight) * (cropY / 100);
+      const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(sourceWidth, sourceHeight));
+      const width = Math.max(1, Math.round(sourceWidth * scale));
+      const height = Math.max(1, Math.round(sourceHeight * scale));
+      canvas.width = width;
+      canvas.height = height;
+      context.fillStyle = backgroundColor;
+      context.fillRect(0, 0, width, height);
+      context.drawImage(
+        bitmap,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        width,
+        height,
+      );
+    }
 
     const blob = await canvasToBlob(canvas, "image/webp", WEBP_QUALITY);
     return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "image"}.webp`, {
@@ -218,11 +319,25 @@ async function getFfmpeg() {
   return ffmpegPromise;
 }
 
-async function optimizeVideoForUpload(file, onProgress) {
+function getVideoBitrateKbps(durationSeconds, quality) {
+  // Reserve a small container margin. Removing audio leaves the available
+  // budget for a sharper image at the configured Telão duration.
+  const duration = Math.max(3, Number(durationSeconds) || 10);
+  const budgetKbps = Math.floor(
+    (MAX_VIDEO_SIZE_BYTES * 8 * 0.9) / duration / 1000,
+  );
+  return Math.max(500, Math.min(3200, Math.floor(budgetKbps * quality)));
+}
+
+async function optimizeVideoForUpload(file, onProgress, options = {}) {
+  const trimStartSeconds = Math.max(0, Number(options.videoStartSeconds) || 0);
+  const trimDurationSeconds = Math.max(
+    3,
+    Number(options.videoDurationSeconds) || 10,
+  );
   onProgress?.(20);
   const ffmpeg = await getFfmpeg();
   const inputName = `input-${crypto.randomUUID()}.${file.name.split(".").pop() || "mp4"}`;
-  const outputName = `video-${crypto.randomUUID()}.mp4`;
   const reportProgress = ({ progress }) => {
     onProgress?.(Math.min(90, Math.max(35, 35 + progress * 55)));
   };
@@ -230,44 +345,57 @@ async function optimizeVideoForUpload(file, onProgress) {
     await ffmpeg.writeFile(inputName, new Uint8Array(await file.arrayBuffer()));
     onProgress?.(35);
     ffmpeg.on("progress", reportProgress);
-    await ffmpeg.exec([
-      "-i", inputName,
-      "-t", String(MAX_VIDEO_DURATION_SECONDS),
-      "-vf", "scale='min(1280,iw)':-2",
-      "-c:v", "libx264",
-      "-preset", "ultrafast",
-      "-crf", "28",
-      "-c:a", "aac",
-      "-b:a", "96k",
-      "-movflags", "+faststart",
-      outputName,
-    ]);
-    onProgress?.(92);
-    const data = await ffmpeg.readFile(outputName);
-    onProgress?.(96);
-    return new File([data], `${file.name.replace(/\.[^.]+$/, "") || "video"}.mp4`, {
-      type: "video/mp4",
-      lastModified: file.lastModified,
-    });
+    for (const [attemptIndex, attempt] of VIDEO_OPTIMIZATION_ATTEMPTS.entries()) {
+      const outputName = `video-${crypto.randomUUID()}.mp4`;
+      const bitrateKbps = getVideoBitrateKbps(
+        trimDurationSeconds,
+        attempt.quality,
+      );
+      await ffmpeg.exec([
+        "-i", inputName,
+        "-ss", String(trimStartSeconds),
+        "-t", String(trimDurationSeconds),
+        "-map", "0:v:0",
+        "-an",
+        "-vf", `scale='min(${attempt.maxSide},iw)':-2`,
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-b:v", `${bitrateKbps}k`,
+        "-maxrate", `${bitrateKbps}k`,
+        "-bufsize", `${bitrateKbps * 2}k`,
+        "-movflags", "+faststart",
+        outputName,
+      ]);
+      const data = await ffmpeg.readFile(outputName);
+      await ffmpeg.deleteFile(outputName);
+      const optimizedFile = new File(
+        [data],
+        `${file.name.replace(/\.[^.]+$/, "") || "video"}.mp4`,
+        { type: "video/mp4", lastModified: file.lastModified },
+      );
+      onProgress?.(Math.min(92, 60 + attemptIndex * 16));
+      if (optimizedFile.size <= MAX_VIDEO_SIZE_BYTES) return optimizedFile;
+    }
+
+    throw new Error(
+      "Não foi possível otimizar o trecho do vídeo abaixo de 5 MB. Escolha outro trecho ou um vídeo menor.",
+    );
   } finally {
     ffmpeg.off?.("progress", reportProgress);
     await Promise.allSettled([
       ffmpeg.deleteFile(inputName),
-      ffmpeg.deleteFile(outputName),
     ]);
   }
 }
 
 // This runs locally while the form is being edited. It never writes to
 // Storage; the actual upload remains part of the Save action.
-export async function prepareMediaForUpload(file, onProgress) {
+export async function prepareMediaForUpload(file, onProgress, options = {}) {
   validateMediaFile(file);
-  if (file.type.startsWith("video/")) {
-    return optimizeVideoForUpload(file, onProgress);
-  }
-  onProgress?.(20);
-  const optimized = await optimizeImageForUpload(file);
-  validateMediaFile(optimized);
+  const optimized = file.type.startsWith("video/")
+    ? await optimizeVideoForUpload(file, onProgress, options)
+    : await optimizeImageForUpload(file);
+  validateFinalMediaFile(optimized);
   onProgress?.(96);
   return optimized;
 }
@@ -282,6 +410,7 @@ export async function uploadMedia(
   if (!ALLOWED_UPLOAD_FOLDERS.has(folder))
     throw new Error("Pasta de upload inválida");
   const optimizedFile = alreadyPrepared ? file : await prepareMediaForUpload(file);
+  validateFinalMediaFile(optimizedFile);
 
   const supabase = createSupabaseBrowserClient();
   const {

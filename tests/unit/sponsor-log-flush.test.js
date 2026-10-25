@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { flushPendingSponsorLogs } from "@/lib/services/sponsor-log-flush";
 
 const churchId = "church-1";
-const queueKey = `vplaycast:telao:log-queue:${churchId}:ALL`;
+const queueKey = `telao-online:telao:log-queue:${churchId}:ALL`;
 
 function createStorage(initial = {}) {
   const values = new Map(Object.entries(initial));

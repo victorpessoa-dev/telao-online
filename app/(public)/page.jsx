@@ -3,6 +3,7 @@ import { createSupabasePublicClient } from "@/services/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+/** Redirects the root URL to the only active church or to the public directory. */
 export default async function PublicHomePage() {
   let destination = "/igrejas";
 

@@ -8,6 +8,7 @@ import { getTelaoDefaultDurations } from "@/lib/services/settings";
 import { useStore } from "@/lib/store/store";
 import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 
+/** Administrative route for managing sponsor playback on the display. */
 export default function PainelTelaoPage() {
   const { churchId, churchSlug, sponsorSettings, updateSponsorSettings } =
     useStore();

@@ -8,9 +8,10 @@ import {
   useState,
 } from "react";
 
-const SIDEBAR_STORAGE_KEY = "vplaycast:admin-sidebar-collapsed";
+const SIDEBAR_STORAGE_KEY = "telao-online:admin-sidebar-collapsed";
 const AdminSidebarStateContext = createContext(null);
 
+/** Shares the persisted desktop sidebar state across administrative components. */
 export function AdminSidebarStateProvider({ children }) {
   const [collapsed, setCollapsed] = useState(true);
 
@@ -32,7 +33,7 @@ export function AdminSidebarStateProvider({ children }) {
   const updateCollapsed = useCallback((value) => {
     setCollapsed(value);
     localStorage.setItem(SIDEBAR_STORAGE_KEY, String(value));
-    window.dispatchEvent(new CustomEvent("vplaycast_sidebar_resize"));
+    window.dispatchEvent(new CustomEvent("telao_online_sidebar_resize"));
   }, []);
 
   return (
@@ -42,6 +43,7 @@ export function AdminSidebarStateProvider({ children }) {
   );
 }
 
+/** Reads the administrative sidebar context and fails fast outside its provider. */
 export function useAdminSidebarState() {
   const state = useContext(AdminSidebarStateContext);
 

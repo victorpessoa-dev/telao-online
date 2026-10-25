@@ -1,7 +1,10 @@
+import { BRAND } from "@/lib/constants/brand";
+
+/** Builds the installable web-app manifest from the centralized brand contract. */
 export default function manifest() {
   return {
-    name: "Telão Online",
-    short_name: "Telão Online",
+    name: BRAND.name,
+    short_name: BRAND.name,
     description: "Transmissão de missas e celebrações religiosas da paróquia",
     start_url: "/",
     scope: "/",
@@ -12,7 +15,7 @@ export default function manifest() {
     categories: ["religion", "video"],
     icons: [
       {
-        src: "/brand/logo-telao-online.webp",
+        src: BRAND.markAsset,
         sizes: "1110x780",
         type: "image/webp",
         purpose: "any maskable",

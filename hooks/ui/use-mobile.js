@@ -2,6 +2,10 @@ import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;
 
+/**
+ * Tracks whether the viewport is below the application's mobile breakpoint.
+ * The initial undefined state avoids reading browser APIs during server rendering.
+ */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState(undefined);
 

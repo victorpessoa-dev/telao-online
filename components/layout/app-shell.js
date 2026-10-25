@@ -8,8 +8,10 @@ import { useAdminSidebarState } from "@/components/layout/admin-sidebar-state";
 import AppFooter from "@/components/shared/app-footer";
 import { HoverTip } from "@/components/shared/hover-tip";
 import { Button } from "@/components/ui/button";
+import { BRAND } from "@/lib/constants/brand";
 import { cn } from "@/lib/utils/cn";
 
+/** Responsive administrative shell that coordinates sidebar and mobile navigation. */
 export default function AppShell({ children }) {
   const { collapsed } = useAdminSidebarState();
   const pathname = usePathname();
@@ -54,10 +56,10 @@ export default function AppShell({ children }) {
             </Button>
           </HoverTip>
           <span className="font-brand truncate text-sm font-extrabold">
-            Telão Online
+            {BRAND.name}
           </span>
           <img
-            src="/brand/logo-telao-online.webp"
+            src={BRAND.markAsset}
             alt=""
             className="h-8 w-8 shrink-0 object-contain"
           />

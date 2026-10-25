@@ -49,4 +49,3 @@ Cada patrocinador tem página pública em `/{slug}/parceiros/:id`, com:
 - tempo acumulado;
 - graficos;
 - historico;
-- exportacao XLSX.

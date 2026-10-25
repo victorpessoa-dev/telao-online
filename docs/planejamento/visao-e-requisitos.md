@@ -20,7 +20,7 @@ Telão Online é uma aplicação web para igrejas organizarem patrocinadores, ex
 | O produto permanece web | Painel, conteúdo público e telões dependem de URLs e dados centralizados. |
 | Não haverá aplicativo desktop | A operação é feita no navegador, sem runtime local ou IPC. |
 | A autorização efetiva fica no banco | RLS e RPCs são a fronteira de acesso aos dados de cada igreja. |
-| O bucket atual é `v-playcast-midia` | Cloudflare R2 será tratado em uma atualização futura planejada. |
+| O bucket atual é `telao-online-midia` | Cloudflare R2 será tratado em uma atualização futura planejada. |
 | A Grade TV não mede exibições | Ela é uma visualização administrativa da agenda oficial. |
 
 ## Requisitos do produto

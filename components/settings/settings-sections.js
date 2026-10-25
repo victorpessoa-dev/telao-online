@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Loader2,
   Monitor,
   Palette,
   Plus,
@@ -46,7 +47,10 @@ import {
   BrandPreview,
   DesignAdjustmentDrop,
 } from "@/components/settings/settings-page-parts";
-import { defaultSponsorSettings } from "@/lib/mappers/settings";
+import {
+  defaultSponsorSettings,
+  MAX_TELAO_DURATION_SECONDS,
+} from "@/lib/mappers/settings";
 
 export function SettingsHeader({
   onReset,
@@ -95,11 +99,11 @@ export function SettingsHeader({
           className="w-full gap-2 xs:w-auto"
         >
           {isSaving ? (
-            <Check className="h-4 w-4" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Save className="h-4 w-4" />
           )}
-          {isSaving ? "Salvo" : "Salvar"}
+          {isSaving ? "Salvando..." : "Salvar"}
         </Button>
       </div>
     </div>
@@ -304,7 +308,7 @@ export function TelaoSettingsSection({ settings, updateSettings }) {
                 updateSettings("telao", "defaultDurationImage", value)
               }
               min={3}
-              max={60}
+              max={MAX_TELAO_DURATION_SECONDS}
               step={1}
             />
             <p className="text-xs text-muted-foreground">
@@ -321,7 +325,7 @@ export function TelaoSettingsSection({ settings, updateSettings }) {
                 updateSettings("telao", "defaultDurationVideo", value)
               }
               min={3}
-              max={60}
+              max={MAX_TELAO_DURATION_SECONDS}
               step={1}
             />
             <p className="text-xs text-muted-foreground">
@@ -510,10 +514,10 @@ export function AppearanceSettingsSection({
               <div className="space-y-2">
                 <Label>Upload da logo</Label>
                 <FileDropzone
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
                   onFileSelect={onUploadParishLogo}
                   title="Arraste a logo ou clique para enviar"
-                  description="PNG, JPG ou WebP"
+                  description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 1 MB"
                 />
               </div>
               <div className="space-y-2">
@@ -533,10 +537,10 @@ export function AppearanceSettingsSection({
               <div className="space-y-2">
                 <Label>Upload da capa</Label>
                 <FileDropzone
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
                   onFileSelect={onUploadParishCover}
                   title="Arraste a capa ou clique para enviar"
-                  description="PNG, JPG ou WebP"
+                  description="JPG, PNG, WebP, AVIF ou GIF; resultado final de até 1 MB"
                 />
               </div>
             </div>

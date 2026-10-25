@@ -1,3 +1,6 @@
+import { BRAND } from "@/lib/constants/brand";
+
+/** Shared visual shell for recoverable route and public-page errors. */
 export default function ErrorPageLayout({
   eyebrow,
   title,
@@ -14,8 +17,8 @@ export default function ErrorPageLayout({
         <div className="flex items-start justify-between gap-5">
           <div className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl border border-sky-100 bg-sky-50 shadow-sm">
             <img
-              src="/brand/logo-telao-online.webp"
-              alt="Telão Online"
+              src={BRAND.markAsset}
+              alt={BRAND.name}
               className="h-14 w-14 object-contain"
             />
           </div>

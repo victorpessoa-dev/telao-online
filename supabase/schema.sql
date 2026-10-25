@@ -584,20 +584,20 @@ set
   ) || jsonb_build_object(
     'mediaDurations',
     jsonb_build_object(
-      'image', greatest(3, coalesce(
+      'image', least(25, greatest(3, coalesce(
         nullif((select value #>> '{telao,defaultDurationImage}' from public.app_settings
           where church_id = church_id_arg and key = 'admin_settings'), '')::integer,
         nullif((select value #>> '{telao,defaultDurationNormal}' from public.app_settings
           where church_id = church_id_arg and key = 'admin_settings'), '')::integer,
         10
-      )),
-      'video', greatest(3, coalesce(
+      ))),
+      'video', least(25, greatest(3, coalesce(
         nullif((select value #>> '{telao,defaultDurationVideo}' from public.app_settings
           where church_id = church_id_arg and key = 'admin_settings'), '')::integer,
         nullif((select value #>> '{telao,defaultDurationMaster}' from public.app_settings
           where church_id = church_id_arg and key = 'admin_settings'), '')::integer,
         15
-      ))
+      )))
     )
   )
 $$;
