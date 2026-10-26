@@ -87,7 +87,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
       <aside
         id="admin-sidebar"
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-dvh w-60 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transition-[width,transform] duration-300 ease-in-out md:z-20 md:translate-x-0",
+          "fixed left-0 top-0 z-50 flex h-dvh w-60 flex-col overflow-hidden bg-sidebar transition-[width,transform] duration-300 ease-in-out md:z-20 md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           collapsed ? "md:w-16" : "md:w-60",
         )}

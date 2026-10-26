@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 :root {
-  --background: oklch(0.975 0.004 240);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.18 0.015 250);
   --card: oklch(0.995 0.002 240);
   --card-foreground: oklch(0.15 0.03 230);
@@ -219,6 +219,10 @@
     min-height: 100vh;
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  main {
+    @apply bg-background;
   }
 
   html {
