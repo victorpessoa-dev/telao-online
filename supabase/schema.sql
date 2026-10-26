@@ -80,6 +80,7 @@ comment on column public.app_settings.value is
 create table public.sponsor_impressions (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null default gen_random_uuid(),
+  -- Removing a sponsor permanently removes every individual display/view log.
   sponsor_id uuid not null references public.sponsors (id) on delete cascade,
   displayed_at timestamptz not null default now(),
   duration_seconds integer not null default 0 check (duration_seconds >= 0),
@@ -91,6 +92,7 @@ create table public.sponsor_impressions (
 -- The raw log remains available for audit, while report screens read the
 -- compact daily rollup below instead of scanning every individual display.
 create table public.sponsor_impression_daily_rollups (
+  -- Daily aggregates have no value without their sponsor either.
   sponsor_id uuid not null references public.sponsors (id) on delete cascade,
   displayed_on date not null,
   views integer not null default 0 check (views >= 0),
@@ -576,77 +578,6 @@ set search_path = public as $$
   )
 $$;
 
--- Session-oriented reporting: the dashboard shows one expandable record per
--- official display period, while preserving every individual cycle inside it.
-create or replace function public.get_public_sponsor_report (
-  sponsor_id_arg uuid,
-  church_id_arg uuid,
-  page_arg integer default 1,
-  page_size_arg integer default 20
-) returns jsonb language sql stable security definer
-set search_path = public as $$
-  with authorized as (
-    select s.id,s.views from public.sponsors s
-    where s.id = sponsor_id_arg and s.church_id = church_id_arg
-      and s.active and public.is_public_church(s.church_id)
-  ), paging as (
-    select greatest(1, coalesce(page_arg, 1)) as page,
-      least(100, greatest(1, coalesce(page_size_arg, 20))) as page_size
-  ), impressions as (
-    select si.id,si.displayed_at,si.duration_seconds,si.views_count,si.source,
-      si.official_display_session_id,ods.opened_at as session_opened_at,
-      ods.revoked_at as session_revoked_at,ods.expires_at as session_expires_at
-    from public.sponsor_impressions si
-    join authorized a on a.id = si.sponsor_id
-    left join public.official_display_sessions ods
-      on ods.id = si.official_display_session_id
-  ), session_summaries as (
-    select coalesce(i.official_display_session_id, i.id) as session_id,
-      min(coalesce(i.session_opened_at, i.displayed_at)) as opened_at,
-      max(coalesce(i.session_revoked_at,
-        case when i.session_expires_at <= now() then i.session_expires_at end
-      )) as closed_at,
-      sum(i.views_count)::integer as views_count,
-      sum(i.duration_seconds)::integer as total_seconds
-    from impressions i
-    group by coalesce(i.official_display_session_id, i.id)
-  ), page_sessions as (
-    select s.* from session_summaries s, paging p
-    order by s.opened_at desc
-    limit (select page_size from paging)
-    offset ((select page from paging) - 1) * (select page_size from paging)
-  ), sessions as (
-    select ps.*,
-      coalesce((
-        select jsonb_agg(jsonb_build_object(
-          'id', i.id, 'displayed_at', i.displayed_at,
-          'duration_seconds', i.duration_seconds, 'views_count', i.views_count,
-          'source', i.source
-        ) order by i.displayed_at asc)
-        from impressions i
-        where coalesce(i.official_display_session_id, i.id) = ps.session_id
-      ), '[]'::jsonb) as events
-    from page_sessions ps
-  ), daily as (
-    select r.displayed_on,r.views,r.total_seconds
-    from public.sponsor_impression_daily_rollups r
-    join authorized a on a.id = r.sponsor_id
-    order by r.displayed_on asc
-  )
-  select jsonb_build_object(
-    'page', (select page from paging),
-    'pageSize', (select page_size from paging),
-    'totalItems', (select count(*) from session_summaries),
-    'sessions', coalesce((select jsonb_agg(jsonb_build_object(
-      'id', session_id, 'opened_at', opened_at, 'closed_at', closed_at,
-      'views_count', views_count, 'total_seconds', total_seconds, 'events', events
-    ) order by opened_at desc) from sessions), '[]'::jsonb),
-    'daily', coalesce((select jsonb_agg(jsonb_build_object(
-      'displayed_on', displayed_on, 'views', views, 'total_seconds', total_seconds
-    ) order by displayed_on asc) from daily), '[]'::jsonb)
-  )
-$$;
-
 create or replace function public.get_sponsor_settings (church_id_arg uuid) returns jsonb language sql stable security definer
 set
   search_path = public as $$
@@ -779,6 +710,77 @@ create index official_display_sessions_active_idx on public.official_display_ses
   where revoked_at is null;
 alter table public.telao_schedules enable row level security;
 alter table public.official_display_sessions enable row level security;
+
+-- Session-oriented reporting must be defined after the session table and the
+-- impression foreign-key column exist.
+create or replace function public.get_public_sponsor_report (
+  sponsor_id_arg uuid,
+  church_id_arg uuid,
+  page_arg integer default 1,
+  page_size_arg integer default 20
+) returns jsonb language sql stable security definer
+set search_path = public as $$
+  with authorized as (
+    select s.id from public.sponsors s
+    where s.id = sponsor_id_arg and s.church_id = church_id_arg
+      and s.active and public.is_public_church(s.church_id)
+  ), paging as (
+    select greatest(1, coalesce(page_arg, 1)) as page,
+      least(100, greatest(1, coalesce(page_size_arg, 20))) as page_size
+  ), impressions as (
+    select si.id,si.displayed_at,si.duration_seconds,si.views_count,si.source,
+      si.official_display_session_id,ods.opened_at as session_opened_at,
+      ods.revoked_at as session_revoked_at,ods.expires_at as session_expires_at
+    from public.sponsor_impressions si
+    join authorized a on a.id = si.sponsor_id
+    left join public.official_display_sessions ods
+      on ods.id = si.official_display_session_id
+  ), session_summaries as (
+    select coalesce(i.official_display_session_id, i.id) as session_id,
+      min(coalesce(i.session_opened_at, i.displayed_at)) as opened_at,
+      max(coalesce(i.session_revoked_at,
+        case when i.session_expires_at <= now() then i.session_expires_at end
+      )) as closed_at,
+      sum(i.views_count)::integer as views_count,
+      sum(i.duration_seconds)::integer as total_seconds
+    from impressions i
+    group by coalesce(i.official_display_session_id, i.id)
+  ), page_sessions as (
+    select s.* from session_summaries s, paging p
+    order by s.opened_at desc
+    limit (select page_size from paging)
+    offset ((select page from paging) - 1) * (select page_size from paging)
+  ), sessions as (
+    select ps.*,
+      coalesce((
+        select jsonb_agg(jsonb_build_object(
+          'id', i.id, 'displayed_at', i.displayed_at,
+          'duration_seconds', i.duration_seconds, 'views_count', i.views_count,
+          'source', i.source
+        ) order by i.displayed_at asc)
+        from impressions i
+        where coalesce(i.official_display_session_id, i.id) = ps.session_id
+      ), '[]'::jsonb) as events
+    from page_sessions ps
+  ), daily as (
+    select r.displayed_on,r.views,r.total_seconds
+    from public.sponsor_impression_daily_rollups r
+    join authorized a on a.id = r.sponsor_id
+    order by r.displayed_on asc
+  )
+  select jsonb_build_object(
+    'page', (select page from paging),
+    'pageSize', (select page_size from paging),
+    'totalItems', (select count(*) from session_summaries),
+    'sessions', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', session_id, 'opened_at', opened_at, 'closed_at', closed_at,
+      'views_count', views_count, 'total_seconds', total_seconds, 'events', events
+    ) order by opened_at desc) from sessions), '[]'::jsonb),
+    'daily', coalesce((select jsonb_agg(jsonb_build_object(
+      'displayed_on', displayed_on, 'views', views, 'total_seconds', total_seconds
+    ) order by displayed_on asc) from daily), '[]'::jsonb)
+  )
+$$;
 
 create or replace function public.refresh_telao_schedule(target_church_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
@@ -999,31 +1001,9 @@ create policy telao_online_media_owner_delete on storage.objects for delete to a
   and public.owns_media_object (name)
 );
 
--- Storage is outside the application tables, so clean a church's media
--- explicitly before the database cascades remove its records.
-create or replace function public.delete_church_media_objects () returns trigger language plpgsql security definer
-set
-  search_path = public,
-  storage as $$
-begin
-  delete from storage.objects
-  where bucket_id in ('telao-online-midia', 'v-playcast-midia', 'pascom-media')
-    and name like old.id::text || '/%';
-  return old;
-end $$;
-
--- This function is invoked only by the database trigger below.
-revoke
-execute on function public.delete_church_media_objects ()
-from
-  public,
-  anon,
-  authenticated;
-
-drop trigger if exists churches_delete_media_before_delete on public.churches;
-
-create trigger churches_delete_media_before_delete before delete on public.churches for each row
-execute function public.delete_church_media_objects ();
+-- Storage objects are intentionally managed only through the Storage API.
+-- Its tables are read-only from SQL; sponsor/church delete flows remove their
+-- files through the application before database cascades remove the rows.
 
 -- Supabase Auth configuration: disable public signups. Invite administrators
 -- only from the server endpoint using the service-role key.

@@ -3,7 +3,6 @@ import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 const BUCKET = "telao-online-midia";
 // Kept only so media uploaded before the Telão Online migration can still be
 // read and removed without breaking existing sponsor and branding URLs.
-const LEGACY_BUCKETS = ["v-playcast-midia", "pascom-media"];
 const MAX_SOURCE_SIZE_BYTES = 100 * 1024 * 1024;
 export const MAX_IMAGE_SIZE_BYTES = 1_000_000;
 export const MAX_VIDEO_SIZE_BYTES = 5_000_000;
@@ -455,15 +454,11 @@ export async function uploadMedia(
 function getUploadedMediaLocation(source = "") {
   try {
     const url = new URL(String(source).trim());
-    const buckets = [BUCKET, ...LEGACY_BUCKETS];
-    const bucket = buckets.find((candidate) =>
-      url.pathname.includes(`/storage/v1/object/public/${candidate}/`),
-    );
-    if (!bucket) return null;
+    if (!url.pathname.includes(`/storage/v1/object/public/${BUCKET}/`)) return null;
 
-    const marker = `/storage/v1/object/public/${bucket}/`;
+    const marker = `/storage/v1/object/public/${BUCKET}/`;
     return {
-      bucket,
+      bucket: BUCKET,
       path: decodeURIComponent(
         url.pathname.slice(url.pathname.indexOf(marker) + marker.length),
       ),

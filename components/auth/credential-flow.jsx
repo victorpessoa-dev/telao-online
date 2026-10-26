@@ -7,9 +7,9 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 import {
   acceptInviteAndSetPassword,
-  exchangeAuthCode,
   getAuthErrorMessage,
   requestPasswordReset,
+  resolveEmailLinkSession,
 } from "@/lib/services/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,8 +43,22 @@ function BackToHome() {
 }
 
 function getAuthRedirectError() {
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  if (params.get("error") !== "access_denied") return "";
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const queryParams = new URLSearchParams(window.location.search);
+  const error = hashParams.get("error") || queryParams.get("error");
+  if (!error) return "";
+
+  if (error !== "access_denied") {
+    return getAuthErrorMessage(
+      {
+        code: hashParams.get("error_code") || queryParams.get("error_code"),
+        message:
+          hashParams.get("error_description") ||
+          queryParams.get("error_description"),
+      },
+      "Não foi possível validar o link. Solicite um novo link para continuar.",
+    );
+  }
 
   return "O Supabase bloqueou o link de acesso. Autorize esta URL em Authentication > URL Configuration > Redirect URLs e solicite um novo link.";
 }
@@ -131,10 +145,11 @@ export function SetPasswordForm({ invitation = false }) {
     }
 
     const supabase = createSupabaseBrowserClient();
-    exchangeAuthCode({ supabase, code: searchParams.get("code") })
+    resolveEmailLinkSession({ supabase, code: searchParams.get("code") })
       .then(() => supabase.auth.getUser())
-      .then(({ data }) => {
-        if (!data.user) throw new Error("O link é inválido ou expirou.");
+      .then(({ data, error: userError }) => {
+        if (userError || !data.user)
+          throw new Error("O link é inválido ou expirou.");
         setReady(true);
       })
       .catch((cause) =>

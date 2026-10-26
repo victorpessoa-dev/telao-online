@@ -87,9 +87,9 @@ describe("media upload validation", () => {
     ).toBe("sponsors/video teste.mp4");
     expect(
       getUploadedMediaPath(
-        "https://project.supabase.co/storage/v1/object/public/v-playcast-midia/sponsors/video%20antigo.mp4",
+        "https://project.supabase.co/storage/v1/object/public/other-bucket/sponsors/video%20antigo.mp4",
       ),
-    ).toBe("sponsors/video antigo.mp4");
+    ).toBe("");
     expect(getUploadedMediaPath("https://youtube.com/watch?v=abc")).toBe("");
   });
 });
