@@ -23,7 +23,7 @@ export default function AppFooter({ className }) {
   return (
     <footer
       aria-label="Rodapé"
-      className={cn("border-t border-slate-200 bg-white py-8", className)}
+      className={cn("bg-white py-8", className)}
     >
       <div className="mx-auto flex w-[min(80%,1600px)] flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left max-md:w-full max-md:items-center max-md:px-4">
         <div className="max-md:flex max-md:flex-col max-md:items-center">

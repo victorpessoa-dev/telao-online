@@ -44,7 +44,7 @@ export default function AppShell({ children }) {
         onMobileClose={() => setMobileMenuOpen(false)}
       />
       {isMobileAdmin ? (
-        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
+        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 bg-background/95 px-4 backdrop-blur md:hidden">
           <HoverTip label="Abrir menu principal" side="bottom">
             <Button
               variant="ghost"
