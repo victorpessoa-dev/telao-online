@@ -8,7 +8,7 @@
    ```bash
    npx supabase db dump --project-ref <project-ref> --debug > backup.sql
    ```
-2. Fazer backup do bucket `telao-online-midia` via CLI do Storage ou painel do Supabase. Em instalações migradas, preservar também o bucket legado `v-playcast-midia` enquanto houver URLs antigas.
+2. Fazer backup do bucket `telao-online-midia` via CLI do Storage ou painel do Supabase.
 3. Exportar os arquivos que estiverem em uso pela aplicação para repositório seguro.
 
 ## Restore

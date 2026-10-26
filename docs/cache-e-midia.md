@@ -1,6 +1,6 @@
 # Cache e Midia
 
-> As mídias do bucket `telao-online-midia` usam o ID da igreja como primeiro segmento do caminho. As políticas de Storage validam esse segmento antes de gravar, alterar ou excluir. URLs já existentes no bucket `v-playcast-midia` continuam compatíveis.
+> As mídias usam exclusivamente o bucket `telao-online-midia` e o ID da igreja como primeiro segmento do caminho. As políticas de Storage validam esse segmento antes de gravar, alterar ou excluir.
 
 ## Objetivo
 

@@ -147,7 +147,7 @@ Para cada ponto, testar cancelamento, erro de rede, upload invalido, troca conse
 ## Etapa 6 — migracao de conteudo ja existente
 
 1. Adicionar suporte R2 e publicar sem mover arquivo algum.
-2. Criar script administrativo idempotente que lista somente URLs dos buckets `v-playcast-midia` e `pascom-media`, baixa o objeto, confere tipo/tamanho, envia ao R2 e cria/atualiza o `media_assets`.
+2. Criar script administrativo idempotente que lista somente URLs do bucket `telao-online-midia`, baixa o objeto, confere tipo/tamanho, envia ao R2 e cria/atualiza o `media_assets`.
 3. Executar primeiro para uma igreja de teste e conferir telão NORMAL, MASTER, Grade TV, pagina publica, logo e capa.
 4. Migrar por igreja e gerar relatorio de sucesso, falha e URL antiga/nova.
 5. Manter as origens no Supabase por sete dias. Somente entao remover objetos que tenham referencia R2 confirmada.
