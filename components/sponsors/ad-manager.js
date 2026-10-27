@@ -462,8 +462,39 @@ export default function AdManager({
     }
   }, [getMediaDuration]);
 
+  const getImageFileFromUrl = useCallback(async (sourceUrl) => {
+    let response;
+    try {
+      response = await fetch(sourceUrl);
+    } catch {
+      throw new Error(
+        "Não foi possível baixar a imagem atual para aplicar o ajuste. Envie o arquivo novamente.",
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        "Não foi possível baixar a imagem atual para aplicar o ajuste. Envie o arquivo novamente.",
+      );
+    }
+
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) {
+      throw new Error("A mídia atual não é uma imagem válida para ajuste.");
+    }
+
+    const pathname = new URL(sourceUrl, window.location.origin).pathname;
+    const filename = pathname.split("/").pop() || "imagem";
+    return new File([blob], filename, { type: blob.type });
+  }, []);
+
   const uploadPendingMedia = useCallback(async (ad) => {
-    if (!ad.pendingFile) return ad;
+    const imageFileToAdjust =
+      ad.mediaType === "image" && ad.sourceType === "supabase" && ad.imageCrop
+        ? await getImageFileFromUrl(ad.src)
+        : null;
+    const pendingFile = ad.pendingFile || imageFileToAdjust;
+    if (!pendingFile) return ad;
     const videoDurationSeconds = getMediaDuration("video");
     const sourceVideoDuration = Number(ad.videoTrim?.sourceDurationSeconds);
     if (ad.mediaType === "video" && sourceVideoDuration <= 0) {
@@ -477,8 +508,8 @@ export default function AdManager({
     );
     const file =
       ad.mediaType === "image"
-        ? await cropImageForUpload(ad.pendingFile, ad.imageCrop)
-        : await prepareMediaForUpload(ad.pendingFile, undefined, {
+        ? await cropImageForUpload(pendingFile, ad.imageCrop)
+        : await prepareMediaForUpload(pendingFile, undefined, {
             videoStartSeconds: ad.videoTrim?.startSeconds,
             videoDurationSeconds: savedVideoDuration,
           });
@@ -494,7 +525,7 @@ export default function AdManager({
       imageCrop: undefined,
       videoTrim: undefined,
     };
-  }, [getMediaDuration]);
+  }, [getImageFileFromUrl, getMediaDuration]);
 
   const normalizeAd = useCallback(
     (ad) => ({
@@ -676,7 +707,15 @@ export default function AdManager({
     let uploadedUrl = "";
     try {
       ad = normalizeAd(await uploadPendingMedia(ad));
-      uploadedUrl = ad.sourceType === "upload" && editingAd.pendingFile ? ad.src : "";
+      const adjustedSavedImage =
+        editingAd.mediaType === "image" &&
+        editingAd.sourceType === "supabase" &&
+        Boolean(editingAd.imageCrop);
+      uploadedUrl =
+        ad.sourceType === "upload" &&
+        (editingAd.pendingFile || adjustedSavedImage)
+          ? ad.src
+          : "";
       if (ad.mediaType === "video" && !uploadedUrl)
         await validatePublicVideoSource(ad.src);
       const previousMediaUrl =
@@ -711,7 +750,14 @@ export default function AdManager({
   const handleEditAd = async () => {
     if (!editingAd) return;
     const previousMediaUrl = ads.find((item) => item.id === editingAd.id)?.src;
-    if (previousMediaUrl && editingAd.src !== previousMediaUrl) {
+    const isAdjustingSavedImage =
+      editingAd.mediaType === "image" &&
+      editingAd.sourceType === "supabase" &&
+      Boolean(editingAd.imageCrop);
+    if (
+      previousMediaUrl &&
+      (editingAd.src !== previousMediaUrl || isAdjustingSavedImage)
+    ) {
       setReplacementPending({ previousMediaUrl });
       return;
     }

@@ -468,6 +468,10 @@ export function SponsorForm({
   const hasPendingMedia = ad.sourceType === "pending-upload" && Boolean(ad.src);
   const hasPendingImage = hasPendingMedia && ad.mediaType === "image";
   const hasPendingVideo = hasPendingMedia && ad.mediaType === "video";
+  const canAdjustImage =
+    hasPendingImage ||
+    (ad.sourceType === "supabase" && ad.mediaType === "image" && Boolean(ad.src));
+  const canAdjustMedia = canAdjustImage || hasPendingVideo;
   const [activeTab, setActiveTab] = useState("data");
   const hadPendingAdjustmentRef = useRef(false);
 
@@ -477,11 +481,11 @@ export function SponsorForm({
     // return to data or media tabs to replace the file before saving.
     if (hasPendingAdjustment && !hadPendingAdjustmentRef.current) {
       setActiveTab("adjustment");
-    } else if (!hasPendingAdjustment && activeTab === "adjustment") {
+    } else if (!canAdjustMedia && activeTab === "adjustment") {
       setActiveTab("media");
     }
     hadPendingAdjustmentRef.current = hasPendingAdjustment;
-  }, [activeTab, hasPendingImage, hasPendingVideo]);
+  }, [activeTab, canAdjustMedia, hasPendingImage, hasPendingVideo]);
 
   const handleUpload = async (file) => {
     if (!file) return;
@@ -506,11 +510,11 @@ export function SponsorForm({
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="py-4">
       <TabsList
-        className={`grid w-full ${hasPendingImage || hasPendingVideo ? "grid-cols-3" : "grid-cols-2"}`}
+        className={`grid w-full ${canAdjustMedia ? "grid-cols-3" : "grid-cols-2"}`}
       >
         <TabsTrigger value="data">Dados</TabsTrigger>
         <TabsTrigger value="media">Mídia e prévia</TabsTrigger>
-        {hasPendingImage || hasPendingVideo ? (
+        {canAdjustMedia ? (
           <TabsTrigger value="adjustment">Ajustar mídia</TabsTrigger>
         ) : null}
       </TabsList>
@@ -682,7 +686,7 @@ export function SponsorForm({
         ) : null}
       </TabsContent>
 
-      {hasPendingImage ? (
+      {canAdjustImage ? (
         <TabsContent value="adjustment" className="mt-5 space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
@@ -854,8 +858,8 @@ export function SponsorForm({
             </div>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Maximize2 className="h-3.5 w-3.5" />
-              A prévia mostra exatamente o enquadramento. O arquivo final será
-              recortado e salvo em WebP ao confirmar.
+              A prévia mostra exatamente o enquadramento. Ao salvar, a imagem
+              será recortada e salva em WebP.
             </p>
           </div>
         </TabsContent>
