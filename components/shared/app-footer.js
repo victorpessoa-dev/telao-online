@@ -25,7 +25,7 @@ export default function AppFooter({ className }) {
       aria-label="Rodapé"
       className={cn("bg-white py-8", className)}
     >
-      <div className="mx-auto flex w-[min(80%,1600px)] flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left max-md:w-full max-md:items-center max-md:px-4">
+      <div className="mx-auto flex w-full min-w-0 max-w-[1600px] flex-col gap-6 px-4 text-center sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:text-left md:px-8 lg:px-10">
         <div className="max-md:flex max-md:flex-col max-md:items-center">
           <img
             src="/brand/emblema-telao-online.webp"

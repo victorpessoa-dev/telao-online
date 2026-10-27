@@ -243,7 +243,7 @@ export default function ChurchPublicPage() {
   return (
     <div className="public-page-shell flex min-h-screen flex-col bg-background">
       <PublicNavbar />
-      <main className="mx-auto w-[min(80%,1600px)] flex-1 space-y-8 py-8 max-md:w-full max-md:px-4">
+      <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 space-y-8 px-4 py-8 sm:px-6 md:px-8 lg:px-10">
         <Link href="/igrejas" className="back-link">
           <ArrowLeft className="h-4 w-4" />
           Ver igrejas

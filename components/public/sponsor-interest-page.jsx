@@ -116,7 +116,7 @@ export default function SponsorInterestPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <PublicNavbar projectBrand />
-      <main className="mx-auto w-[min(80%,1600px)] flex-1 py-8 max-md:w-full max-md:px-4">
+      <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-4 py-8 sm:px-6 md:px-8 lg:px-10">
         <div className="flex items-center justify-between gap-4">
           <Link href={`/${slug}`} className="back-link">
             <ArrowLeft className="h-4 w-4" />
