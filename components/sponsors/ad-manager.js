@@ -812,7 +812,7 @@ export default function AdManager({
         <DialogTrigger asChild>
           <span className="hidden" />
         </DialogTrigger>
-        <DialogContent className="relative max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
           <DialogHeader>
             <DialogTitle>Novo patrocínio</DialogTitle>
@@ -1178,7 +1178,7 @@ export default function AdManager({
 
       {/* Keep destructive actions and form state inside controlled dialogs. */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="relative max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
           <DialogHeader>
             <DialogTitle>Editar patrocínio</DialogTitle>

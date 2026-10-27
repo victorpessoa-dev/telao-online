@@ -414,16 +414,16 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
                           </span>
                         </span>
                       </span>
-                      <span className="grid shrink-0 grid-cols-[4.5rem_5rem] items-center gap-2 text-sm font-normal tabular-nums text-muted-foreground">
+                      <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-normal tabular-nums text-muted-foreground sm:mt-0 sm:grid sm:shrink-0 sm:grid-cols-[4.5rem_5rem] sm:gap-2 sm:text-sm">
                         <span className="flex items-center justify-end gap-1 whitespace-nowrap"><Eye className="h-4 w-4 shrink-0" />{session.viewsCount}</span>
                         <span className="flex items-center justify-end gap-1 whitespace-nowrap"><Clock3 className="h-4 w-4 shrink-0" />{formatarTempo(session.totalSeconds)}</span>
                       </span>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-2 pb-3 pr-8">
                       {session.events.map((event) => (
-                        <div key={event.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-md bg-muted/50 px-3 py-2 text-sm">
+                        <div key={event.id} className="flex flex-col gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4">
                           <span className="truncate">{formatarDataHora(event.displayedAt)}</span>
-                          <span className="grid grid-cols-[4.5rem_5rem] items-center gap-2 tabular-nums text-muted-foreground">
+                          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground sm:grid sm:grid-cols-[4.5rem_5rem] sm:gap-2 sm:text-sm">
                             <span className="flex items-center gap-1 whitespace-nowrap"><Eye className="h-4 w-4 shrink-0" />{event.viewsCount || 1}</span>
                             <span className="flex items-center gap-1 whitespace-nowrap"><Clock3 className="h-4 w-4 shrink-0" />{formatarTempo(event.durationSeconds)}</span>
                           </span>

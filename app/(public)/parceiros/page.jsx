@@ -126,7 +126,7 @@ export default function PartnersPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <PublicNavbar />
-      <main className="public-page-shell mx-auto w-[min(80%,1600px)] flex-1 py-8 max-md:w-full max-md:px-4">
+      <main className="public-page-shell mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-4 py-8 sm:px-6 md:px-8 lg:px-10">
         <motion.header initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.32, ease: "easeOut" }} className="max-w-2xl">
           <p className="eyebrow text-primary">Igrejas ativas</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Encontre a sua igreja</h1>

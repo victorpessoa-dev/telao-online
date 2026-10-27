@@ -61,7 +61,7 @@ export default function PublicNavbar({
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/92 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/78">
-      <div className="mx-auto flex min-h-16 w-[min(80%,1600px)] items-center justify-between gap-3 py-2 xs:gap-4 sm:py-3 max-md:w-full max-md:px-4 fhd:max-w-[1600px]">
+      <div className="mx-auto flex min-h-16 w-full min-w-0 max-w-[1600px] items-center justify-between gap-3 px-4 py-2 xs:gap-4 sm:px-6 sm:py-3 md:px-8 lg:px-10">
         <Link
           href={
             projectBrand
