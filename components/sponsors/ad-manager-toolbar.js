@@ -134,26 +134,25 @@ export function AdManagerToolbar({
               Disponível apenas enquanto o telão do evento estiver ligado.
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
-            <div className="w-full sm:w-auto">
+          <div className="grid gap-2 border-t border-border/60 pt-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onCopyPublicUrl(publicTelaoPath)}
               disabled={!publicTelaoPath}
-              className="group w-full min-w-0 justify-start border-primary/30 sm:w-80 hover:border-primary-hover hover:bg-primary-hover hover:text-primary-foreground"
+              className="group w-full min-w-0 justify-start border-primary/30 hover:border-primary-hover hover:bg-primary-hover hover:text-primary-foreground"
             >
               <Copy className="h-4 w-4 shrink-0" />
               <span className="shrink-0">Copiar</span>
-              <span className="min-w-0 flex-1 whitespace-nowrap text-[10px] leading-none text-muted-foreground transition-colors group-hover:text-primary-foreground/90">
+              <span className="min-w-0 flex-1 truncate text-[10px] leading-none text-muted-foreground transition-colors group-hover:text-primary-foreground/90">
                 {publicTelaoPath || "/{slug}/ads-telao"}
               </span>
             </Button>
-            </div>
             <Button
               size="sm"
               onClick={onOpenOfficialDisplay}
               disabled={!metricsEnabled || !publicTelaoPath}
+              className="w-full shrink-0 sm:w-auto"
             >
               Abrir telão
             </Button>

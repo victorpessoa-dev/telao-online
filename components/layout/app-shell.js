@@ -51,6 +51,8 @@ export default function AppShell({ children }) {
               size="icon"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Abrir menu principal"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="admin-sidebar"
             >
               <Menu className="h-5 w-5" />
             </Button>

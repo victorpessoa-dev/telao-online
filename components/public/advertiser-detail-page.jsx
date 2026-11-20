@@ -277,7 +277,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
   }
 
   return (
-    <div className="public-page-shell min-h-screen bg-background">
+    <div className="public-page-shell min-h-dvh bg-background">
       <PublicNavbar />
       <PageContainer>
         <Link href={slug ? `/${slug}` : "/"} className="back-link">

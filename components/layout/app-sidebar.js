@@ -131,6 +131,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
                 key={item.href}
                 href={item.href}
                 onClick={onMobileClose}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative flex items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg px-3 py-2.5 text-[13px] font-medium transition-[padding,background-color,color] duration-300",
                   "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

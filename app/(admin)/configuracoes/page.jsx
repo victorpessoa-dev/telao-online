@@ -53,7 +53,7 @@ import {
 } from "@/components/settings/settings-sections";
 
 export default function ConfiguracoesPage() {
-  const [initialTab, setInitialTab] = useState("telao");
+  const [activeTab, setActiveTab] = useState("telao");
   const [isClientReady, setIsClientReady] = useState(false);
 
   useEffect(() => {
@@ -63,9 +63,16 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
     if (["telao", "appearance", "data", "account"].includes(requestedTab)) {
-      setInitialTab(requestedTab);
+      setActiveTab(requestedTab);
     }
   }, []);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  };
   const { sponsorSettings, updateSponsorSettings, ads, churchId, reload } =
     useStore();
   const [settings, setSettings] = useState(defaultAdminSettings);
@@ -408,25 +415,26 @@ export default function ConfiguracoesPage() {
         sponsorSettings.designs.MASTER?.backgroundUrl,
       ];
       const supabase = createSupabaseBrowserClient();
+      const storageErrors = await deleteUploadedMediaBatch(storedFiles);
+      if (storageErrors.length) {
+        const [firstError] = storageErrors;
+        throw firstError instanceof Error
+          ? firstError
+          : new Error("Não foi possível remover todos os arquivos do Storage");
+      }
       const resetSettingsValue = await resetAdministrativeData(
         supabase,
         churchId,
       );
-      const storageErrors = await deleteUploadedMediaBatch(storedFiles);
       setSettings((current) => ({
         ...resetSettingsValue,
         appearance: current.appearance,
       }));
       setHasChanges(false);
       await reload();
-      if (storageErrors.length)
-        toast.warning(
-          "Dados redefinidos, mas alguns arquivos não puderam ser removidos",
-        );
-      else
-        toast.success(
-          "Patrocínios e configurações administrativas foram redefinidos",
-        );
+      toast.success(
+        "Patrocínios e configurações administrativas foram redefinidos",
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Erro ao apagar dados",
@@ -540,25 +548,30 @@ export default function ConfiguracoesPage() {
         </div>
       )}
 
-      <Tabs key={initialTab} defaultValue={initialTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
-          <TabsTrigger value="telao" className="gap-2">
-            <Monitor className="h-4 w-4" />
-            <span className="hidden sm:inline">Telão</span>
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="gap-2">
-            <Palette className="h-4 w-4" />
-            <span className="hidden sm:inline">Visual</span>
-          </TabsTrigger>
-          <TabsTrigger value="data" className="gap-2">
-            <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">Dados</span>
-          </TabsTrigger>
-          <TabsTrigger value="account" className="gap-2">
-            <UserRound className="h-4 w-4" />
-            <span className="hidden sm:inline">Conta</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          <TabsList
+            aria-label="Seções de configurações"
+            className="grid w-full min-w-[34rem] max-w-2xl grid-cols-4 sm:min-w-0"
+          >
+            <TabsTrigger value="telao" className="gap-2">
+              <Monitor className="h-4 w-4" />
+              <span>Telão</span>
+            </TabsTrigger>
+            <TabsTrigger value="appearance" className="gap-2">
+              <Palette className="h-4 w-4" />
+              <span>Visual</span>
+            </TabsTrigger>
+            <TabsTrigger value="data" className="gap-2">
+              <Database className="h-4 w-4" />
+              <span>Dados</span>
+            </TabsTrigger>
+            <TabsTrigger value="account" className="gap-2">
+              <UserRound className="h-4 w-4" />
+              <span>Conta</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <SettingsTabs>
           <TabsContent value="telao" className="space-y-6">

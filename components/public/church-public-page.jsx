@@ -7,7 +7,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
   BarChart3,
-  Building2,
   Clock3,
   Eye,
   Gauge,
@@ -221,27 +220,10 @@ export default function ChurchPublicPage() {
         eyebrow="Igreja não encontrada"
       />
     );
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <PublicNavbar />
-        <main className="mx-auto grid w-full max-w-2xl flex-1 place-items-center px-6 py-16 text-center">
-          <Link href="/igrejas" className="back-link absolute left-6 top-24">
-            <ArrowLeft className="h-4 w-4" />
-            Ver igrejas
-          </Link>
-          <EmptyState
-            icon={Building2}
-            title="Igreja não encontrada"
-            description={error || "Confira o endereço acessado."}
-          />
-        </main>
-        <AppFooter />
-      </div>
-    );
   }
 
   return (
-    <div className="public-page-shell flex min-h-screen flex-col bg-background">
+    <div className="public-page-shell flex min-h-dvh flex-col bg-background">
       <PublicNavbar />
       <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 space-y-8 px-4 py-8 sm:px-6 md:px-8 lg:px-10">
         <Link href="/igrejas" className="back-link">
@@ -276,7 +258,10 @@ export default function ChurchPublicPage() {
             </div>
             <div className="mt-11 flex flex-col gap-4 sm:mt-14 sm:flex-row sm:items-end sm:justify-between">
               <div className="min-w-0">
-                <h1 className="truncate text-2xl font-bold sm:text-3xl">
+                <h1
+                  className="truncate text-2xl font-bold sm:text-3xl"
+                  title={church.name}
+                >
                   {church.name}
                 </h1>
                 {church.city && (

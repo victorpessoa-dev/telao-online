@@ -1006,4 +1006,4 @@ create policy telao_online_media_owner_delete on storage.objects for delete to a
 -- files through the application before database cascades remove the rows.
 
 -- Supabase Auth configuration: disable public signups. Invite administrators
--- only from the server endpoint using the service-role key.
+-- only from the server endpoint using a secret key.

@@ -239,6 +239,7 @@ export default function AdManager({
   const [adPendingDelete, setAdPendingDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [savingAd, setSavingAd] = useState(false);
+  const [deletingAd, setDeletingAd] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [replacementPending, setReplacementPending] = useState(null);
   const [tableSort, setTableSort] = useState({
@@ -462,8 +463,39 @@ export default function AdManager({
     }
   }, [getMediaDuration]);
 
+  const getImageFileFromUrl = useCallback(async (sourceUrl) => {
+    let response;
+    try {
+      response = await fetch(sourceUrl);
+    } catch {
+      throw new Error(
+        "Não foi possível baixar a imagem atual para aplicar o ajuste. Envie o arquivo novamente.",
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        "Não foi possível baixar a imagem atual para aplicar o ajuste. Envie o arquivo novamente.",
+      );
+    }
+
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) {
+      throw new Error("A mídia atual não é uma imagem válida para ajuste.");
+    }
+
+    const pathname = new URL(sourceUrl, window.location.origin).pathname;
+    const filename = pathname.split("/").pop() || "imagem";
+    return new File([blob], filename, { type: blob.type });
+  }, []);
+
   const uploadPendingMedia = useCallback(async (ad) => {
-    if (!ad.pendingFile) return ad;
+    const imageFileToAdjust =
+      ad.mediaType === "image" && ad.sourceType === "supabase" && ad.imageCrop
+        ? await getImageFileFromUrl(ad.src)
+        : null;
+    const pendingFile = ad.pendingFile || imageFileToAdjust;
+    if (!pendingFile) return ad;
     const videoDurationSeconds = getMediaDuration("video");
     const sourceVideoDuration = Number(ad.videoTrim?.sourceDurationSeconds);
     if (ad.mediaType === "video" && sourceVideoDuration <= 0) {
@@ -477,8 +509,8 @@ export default function AdManager({
     );
     const file =
       ad.mediaType === "image"
-        ? await cropImageForUpload(ad.pendingFile, ad.imageCrop)
-        : await prepareMediaForUpload(ad.pendingFile, undefined, {
+        ? await cropImageForUpload(pendingFile, ad.imageCrop)
+        : await prepareMediaForUpload(pendingFile, undefined, {
             videoStartSeconds: ad.videoTrim?.startSeconds,
             videoDurationSeconds: savedVideoDuration,
           });
@@ -494,7 +526,7 @@ export default function AdManager({
       imageCrop: undefined,
       videoTrim: undefined,
     };
-  }, [getMediaDuration]);
+  }, [getImageFileFromUrl, getMediaDuration]);
 
   const normalizeAd = useCallback(
     (ad) => ({
@@ -676,7 +708,15 @@ export default function AdManager({
     let uploadedUrl = "";
     try {
       ad = normalizeAd(await uploadPendingMedia(ad));
-      uploadedUrl = ad.sourceType === "upload" && editingAd.pendingFile ? ad.src : "";
+      const adjustedSavedImage =
+        editingAd.mediaType === "image" &&
+        editingAd.sourceType === "supabase" &&
+        Boolean(editingAd.imageCrop);
+      uploadedUrl =
+        ad.sourceType === "upload" &&
+        (editingAd.pendingFile || adjustedSavedImage)
+          ? ad.src
+          : "";
       if (ad.mediaType === "video" && !uploadedUrl)
         await validatePublicVideoSource(ad.src);
       const previousMediaUrl =
@@ -684,7 +724,10 @@ export default function AdManager({
       const updatedAd = await updateAd(editingAd.id, ad);
       if (!updatedAd)
         throw new Error("O banco não retornou o patrocínio atualizado");
-      if (previousMediaUrl && previousMediaUrl !== updatedAd.src) {
+      if (
+        previousMediaUrl &&
+        previousMediaUrl !== updatedAd.src
+      ) {
         try {
           await deleteUploadedMedia(previousMediaUrl);
         } catch {
@@ -711,7 +754,14 @@ export default function AdManager({
   const handleEditAd = async () => {
     if (!editingAd) return;
     const previousMediaUrl = ads.find((item) => item.id === editingAd.id)?.src;
-    if (previousMediaUrl && editingAd.src !== previousMediaUrl) {
+    const isAdjustingSavedImage =
+      editingAd.mediaType === "image" &&
+      editingAd.sourceType === "supabase" &&
+      Boolean(editingAd.imageCrop);
+    if (
+      previousMediaUrl &&
+      (editingAd.src !== previousMediaUrl || isAdjustingSavedImage)
+    ) {
       setReplacementPending({ previousMediaUrl });
       return;
     }
@@ -719,22 +769,19 @@ export default function AdManager({
   };
 
   const handleDeleteAd = async () => {
-    if (!adPendingDelete) return;
+    if (!adPendingDelete || deletingAd) return;
 
+    setDeletingAd(true);
     try {
-      const result = await deleteAd(adPendingDelete.id);
-      if (result?.storageErrors?.length) {
-        toast.warning(
-          `Patrocínio "${adPendingDelete.name}" excluído, mas um arquivo não pôde ser removido.`,
-        );
-      } else {
-        toast.success(`Patrocínio "${adPendingDelete.name}" excluído.`);
-      }
+      await deleteAd(adPendingDelete.id);
+      toast.success(`Patrocínio "${adPendingDelete.name}" excluído.`);
       setAdPendingDelete(null);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Erro ao excluir o patrocínio.",
       );
+    } finally {
+      setDeletingAd(false);
     }
   };
 
@@ -805,6 +852,7 @@ export default function AdManager({
       <Dialog
         open={dialogOpen}
         onOpenChange={(open) => {
+          if (!open && savingAd) return;
           setDialogOpen(open);
           if (open) setNewAd(createEmptyAd(defaultDurations));
         }}
@@ -812,24 +860,28 @@ export default function AdManager({
         <DialogTrigger asChild>
           <span className="hidden" />
         </DialogTrigger>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
           {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
-          <DialogHeader>
+          <DialogHeader className="border-b border-border/80 px-5 py-4 sm:px-6">
             <DialogTitle>Novo patrocínio</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="max-w-2xl leading-6">
               O patrocínio será exibido em{" "}
-              <code>{publicTelaoPath || "/{slug}/ads-telao"}</code> quando
-              estiver ativo.
+              <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">
+                {publicTelaoPath || "/{slug}/ads-telao"}
+              </code>{" "}
+              quando estiver ativo.
             </DialogDescription>
           </DialogHeader>
-          <SponsorForm
-            ad={newAd}
-            setAd={setNewAd}
-            onUpload={readUpload}
-            onUploadStateChange={setUploadingMedia}
-            videoDurationSeconds={defaultDurations.VIDEO}
-          />
-          <DialogFooter>
+          <div className="min-h-0 overflow-y-auto px-5 sm:px-6">
+            <SponsorForm
+              ad={newAd}
+              setAd={setNewAd}
+              onUpload={readUpload}
+              onUploadStateChange={setUploadingMedia}
+              videoDurationSeconds={defaultDurations.VIDEO}
+            />
+          </div>
+          <DialogFooter className="border-t border-border/80 bg-muted/20 px-5 py-4 sm:px-6">
             <Button
               variant="outline"
               onClick={() => setDialogOpen(false)}
@@ -1177,26 +1229,34 @@ export default function AdManager({
       )}
 
       {/* Keep destructive actions and form state inside controlled dialogs. */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+      <Dialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && savingAd) return;
+          setEditDialogOpen(open);
+        }}
+      >
+        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
           {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
-          <DialogHeader>
+          <DialogHeader className="border-b border-border/80 px-5 py-4 sm:px-6">
             <DialogTitle>Editar patrocínio</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="max-w-2xl leading-6">
               Atualize a mídia, o link, o tipo e a duração de exibição.
             </DialogDescription>
           </DialogHeader>
-          {editingAd ? (
-            <SponsorForm
-              ad={editingAd}
-              setAd={setEditingAd}
-              onUpload={readUpload}
-              onUploadStateChange={setUploadingMedia}
-              allowMediaRemoval
-              videoDurationSeconds={defaultDurations.VIDEO}
-            />
-          ) : null}
-          <DialogFooter>
+          <div className="min-h-0 overflow-y-auto px-5 sm:px-6">
+            {editingAd ? (
+              <SponsorForm
+                ad={editingAd}
+                setAd={setEditingAd}
+                onUpload={readUpload}
+                onUploadStateChange={setUploadingMedia}
+                allowMediaRemoval
+                videoDurationSeconds={defaultDurations.VIDEO}
+              />
+            ) : null}
+          </div>
+          <DialogFooter className="border-t border-border/80 bg-muted/20 px-5 py-4 sm:px-6">
             <Button
               variant="outline"
               onClick={() => setEditDialogOpen(false)}
@@ -1243,28 +1303,34 @@ export default function AdManager({
 
       <AlertDialog
         open={Boolean(adPendingDelete)}
-        onOpenChange={(open) => !open && setAdPendingDelete(null)}
+        onOpenChange={(open) => !open && !deletingAd && setAdPendingDelete(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir patrocínio?</AlertDialogTitle>
             <AlertDialogDescription>
               {adPendingDelete
-                ? `O patrocínio "${adPendingDelete.name}" será removido do painel e do telão.`
+                ? `O patrocínio "${adPendingDelete.name}" e sua mídia serão removidos do painel e do telão.`
                 : "Confirme a exclusão do patrocínio."}
             </AlertDialogDescription>
+            <p className="text-sm font-medium text-destructive">
+              Esta ação não pode ser desfeita.
+            </p>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deletingAd}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAd}
+              disabled={deletingAd}
               className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
             >
-              Excluir
+              {deletingAd ? <Loader2 className="animate-spin" /> : null}
+              {deletingAd ? "Excluindo..." : "Excluir patrocinador"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 }

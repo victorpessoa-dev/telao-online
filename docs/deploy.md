@@ -6,13 +6,13 @@ Para configurar as variáveis e o redirect de convite, siga [Configuração de a
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SITE_URL=https://seu-dominio.com
-SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_SECRET_KEY=
 PROVISIONING_API_KEY=
 ```
 
-As chaves `NEXT_PUBLIC_*` podem ser usadas no cliente. `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` são exclusivas do servidor. Cadastre `${NEXT_PUBLIC_SITE_URL}/confirmar-convite` e `${NEXT_PUBLIC_SITE_URL}/redefinir-senha` em **Supabase Auth > URL Configuration > Redirect URLs**.
+As chaves `NEXT_PUBLIC_*` podem ser usadas no cliente. `SUPABASE_SECRET_KEY` e `PROVISIONING_API_KEY` são exclusivas do servidor. Cadastre `${NEXT_PUBLIC_SITE_URL}/confirmar-convite` e `${NEXT_PUBLIC_SITE_URL}/redefinir-senha` em **Supabase Auth > URL Configuration > Redirect URLs**.
 
 ## Pipeline GitHub Actions
 
