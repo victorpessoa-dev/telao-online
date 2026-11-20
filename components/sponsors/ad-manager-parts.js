@@ -511,11 +511,18 @@ export function SponsorForm({
     <Tabs value={activeTab} onValueChange={setActiveTab} className="py-4">
       <TabsList
         className={`grid w-full ${canAdjustMedia ? "grid-cols-3" : "grid-cols-2"}`}
+        aria-label="Etapas do patrocínio"
       >
         <TabsTrigger value="data">Dados</TabsTrigger>
-        <TabsTrigger value="media">Mídia e prévia</TabsTrigger>
+        <TabsTrigger value="media">
+          <span className="sm:hidden">Mídia</span>
+          <span className="hidden sm:inline">Mídia e prévia</span>
+        </TabsTrigger>
         {canAdjustMedia ? (
-          <TabsTrigger value="adjustment">Ajustar mídia</TabsTrigger>
+          <TabsTrigger value="adjustment">
+            <span className="sm:hidden">Ajustar</span>
+            <span className="hidden sm:inline">Ajustar mídia</span>
+          </TabsTrigger>
         ) : null}
       </TabsList>
 

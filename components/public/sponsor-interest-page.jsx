@@ -114,11 +114,11 @@ export default function SponsorInterestPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       <PublicNavbar projectBrand />
       <main className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-4 py-8 sm:px-6 md:px-8 lg:px-10">
-        <div className="flex items-center justify-between gap-4">
-          <Link href={`/${slug}`} className="back-link">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <Link href={`/${slug}`} className="back-link max-w-full">
             <ArrowLeft className="h-4 w-4" />
             Voltar para a página da igreja
           </Link>

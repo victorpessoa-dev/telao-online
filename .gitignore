@@ -1,24 +1,38 @@
-# v0 sandbox internal files
-__v0_runtime_loader.js
-__v0_devtools.tsx
-__v0_jsx-dev-runtime.ts
-.snowflake/
-.v0-trash/
-.vercel/
-next.user-config.*
-
-# Environment variables and server secrets. Keep only the documented template.
+# Environment variables and server credentials. Keep only the documented template.
 .env*
 !.env.example
+*.pem
+*.key
+*.p12
 
-# Common ignores
-node_modules
+# Dependencies, builds and test artifacts
+node_modules/
 .next/
 dist-electron/
+.turbo/
+.cache/
+coverage/
+playwright-report/
+test-results/
 *.tsbuildinfo
+*.log
+build-output.txt
 .DS_Store
-codex
+
+# Local tools and generated planning state
+codex/
 .agents/
 .planning/
 .codex/
 .aws/
+.snowflake/
+.v0-trash/
+.vercel/
+next.user-config.*
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+
+# Generated local review artifacts
+REA-*.md
+rea-analysis.txt

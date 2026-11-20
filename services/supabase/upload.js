@@ -488,7 +488,9 @@ export async function deleteUploadedMedia(source) {
         item.name === location.path.split("/").pop(),
     )
   ) {
-    throw new Error(`O Supabase não confirmou a exclusão de ${location.path}`);
+    throw new Error(
+      `O Supabase não confirmou a exclusão de ${location.path}. O patrocinador não foi removido.`,
+    );
   }
   return true;
 }

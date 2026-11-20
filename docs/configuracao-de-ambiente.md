@@ -14,11 +14,12 @@ O `.env` é ignorado pelo Git. Mantenha apenas `.env.example` versionado.
 
 ## 2. Obter as credenciais públicas do Supabase
 
-No painel do projeto Supabase, abra **Project Settings > API** e copie:
+No painel do projeto Supabase, abra **Settings > API Keys** e copie a chave
+**Publishable**:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable-ou-anon-key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 Essas variáveis são usadas pelo navegador e pelo servidor. O prefixo `NEXT_PUBLIC_` significa que seu valor pode chegar ao navegador; não use esse prefixo em segredos.
@@ -37,15 +38,15 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 Ela é usada pelo Supabase para direcionar o administrador convidado à página `/confirmar-convite`.
 
-## 4. Configurar a chave de serviço do Supabase
+## 4. Configurar a chave secreta do Supabase
 
-Ainda em **Project Settings > API**, copie a chave `service_role` e preencha:
+Ainda em **Settings > API Keys**, copie uma chave **Secret** e preencha:
 
 ```env
-SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+SUPABASE_SECRET_KEY=sb_secret_...
 ```
 
-Essa chave cria convites via Supabase Auth. Ela ignora RLS, portanto deve existir somente no servidor, no `.env` local e no cofre de variáveis da plataforma de deploy. Nunca a exponha em código de cliente, logs ou respostas de API.
+Essa chave cria convites via Supabase Auth e ignora RLS. Ela deve existir somente no servidor, no `.env` local e no cofre de variáveis da plataforma de deploy. Nunca a exponha em código de cliente, logs ou respostas de API.
 
 ## 5. Criar a chave do endpoint de convite
 
@@ -99,5 +100,5 @@ docker compose up --build
 - [ ] `NEXT_PUBLIC_SITE_URL` usa HTTPS e o domínio definitivo.
 - [ ] Os redirects `/confirmar-convite` e `/redefinir-senha` foram autorizados no Supabase.
 - [ ] Cadastros públicos estão desativados.
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` e `PROVISIONING_API_KEY` não aparecem em cliente, Git ou logs.
+- [ ] `SUPABASE_SECRET_KEY` e `PROVISIONING_API_KEY` não aparecem em cliente, Git ou logs.
 - [ ] A migration foi aplicada e uma igreja ativa aparece em `/igrejas` (ou abre pelo slug quando for a única ativa).

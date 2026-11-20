@@ -724,7 +724,10 @@ export default function AdManager({
       const updatedAd = await updateAd(editingAd.id, ad);
       if (!updatedAd)
         throw new Error("O banco não retornou o patrocínio atualizado");
-      if (previousMediaUrl && previousMediaUrl !== updatedAd.src) {
+      if (
+        previousMediaUrl &&
+        previousMediaUrl !== updatedAd.src
+      ) {
         try {
           await deleteUploadedMedia(previousMediaUrl);
         } catch {
@@ -770,14 +773,8 @@ export default function AdManager({
 
     setDeletingAd(true);
     try {
-      const result = await deleteAd(adPendingDelete.id);
-      if (result?.storageErrors?.length) {
-        toast.warning(
-          `Patrocínio "${adPendingDelete.name}" excluído, mas um arquivo não pôde ser removido.`,
-        );
-      } else {
-        toast.success(`Patrocínio "${adPendingDelete.name}" excluído.`);
-      }
+      await deleteAd(adPendingDelete.id);
+      toast.success(`Patrocínio "${adPendingDelete.name}" excluído.`);
       setAdPendingDelete(null);
     } catch (error) {
       toast.error(
@@ -1333,6 +1330,7 @@ export default function AdManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 }

@@ -31,7 +31,6 @@ import { HoverTip } from "@/components/shared/hover-tip";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatWhatsAppNumber } from "@/lib/utils/whatsapp";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -559,7 +558,7 @@ export function AppearanceSettingsSection({
                   updateSettings(
                     "appearance",
                     "parishSponsorshipGuidelines",
-                    formatWhatsAppNumber(event.target.value),
+                    event.target.value,
                   )
                 }
                 placeholder={
