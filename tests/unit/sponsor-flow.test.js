@@ -3,6 +3,7 @@ import {
   createSponsorForAdmin,
   updateSponsorForAdmin,
 } from "@/lib/services/sponsors";
+import { deleteSponsorById } from "@/lib/repositories/sponsors";
 
 function createSupabaseTableMock() {
   const calls = [];
@@ -150,5 +151,45 @@ describe("sponsor admin flow", () => {
       }),
     ]);
     expect(calls.some(([call]) => call === "update")).toBe(false);
+  });
+
+  it("confirms sponsor deletion in the database", async () => {
+    const calls = [];
+    const deleteBuilder = {
+      delete() {
+        calls.push("delete");
+        return deleteBuilder;
+      },
+      eq(column, value) {
+        calls.push(["eq", column, value]);
+        return deleteBuilder;
+      },
+      select(columns) {
+        calls.push(["select", columns]);
+        return Promise.resolve({ data: [{ id: "sponsor-1" }], error: null });
+      },
+    };
+    const ownershipBuilder = {
+      select() {
+        return ownershipBuilder;
+      },
+      eq() {
+        return ownershipBuilder;
+      },
+      single() {
+        return Promise.resolve({ data: { church_id: "church-1" }, error: null });
+      },
+    };
+    let fromCalls = 0;
+    const client = {
+      from() {
+        fromCalls += 1;
+        return fromCalls === 1 ? ownershipBuilder : deleteBuilder;
+      },
+    };
+
+    await expect(deleteSponsorById(client, "sponsor-1", "church-1")).resolves.toBeUndefined();
+    expect(calls).toContain("delete");
+    expect(calls).toContainEqual(["select", "id"]);
   });
 });
