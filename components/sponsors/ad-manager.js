@@ -514,7 +514,7 @@ export default function AdManager({
             videoStartSeconds: ad.videoTrim?.startSeconds,
             videoDurationSeconds: savedVideoDuration,
           });
-    const uploadedUrl = await uploadMedia(file, "sponsors", "", {
+    const uploadedUrl = await uploadMedia(file, "sponsors", churchId, {
       alreadyPrepared: true,
     });
     return {
@@ -526,7 +526,7 @@ export default function AdManager({
       imageCrop: undefined,
       videoTrim: undefined,
     };
-  }, [getImageFileFromUrl, getMediaDuration]);
+  }, [churchId, getImageFileFromUrl, getMediaDuration]);
 
   const normalizeAd = useCallback(
     (ad) => ({
@@ -790,6 +790,10 @@ export default function AdManager({
     toast.success(`URL ${path} copiada`);
   }, []);
 
+  const discardLocalMediaPreview = useCallback((ad) => {
+    if (ad?.pendingPreviewUrl) URL.revokeObjectURL(ad.pendingPreviewUrl);
+  }, []);
+
   if (!isLoaded) {
     return <AdManagerSkeleton />;
   }
@@ -854,13 +858,18 @@ export default function AdManager({
         onOpenChange={(open) => {
           if (!open && savingAd) return;
           setDialogOpen(open);
-          if (open) setNewAd(createEmptyAd(defaultDurations));
+          if (open) {
+            setNewAd(createEmptyAd(defaultDurations));
+          } else {
+            discardLocalMediaPreview(newAd);
+            setNewAd(createEmptyAd(defaultDurations));
+          }
         }}
       >
         <DialogTrigger asChild>
           <span className="hidden" />
         </DialogTrigger>
-        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogContent draggable className="grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
           {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
           <DialogHeader className="border-b border-border/80 px-5 py-4 sm:px-6">
             <DialogTitle>Novo patrocínio</DialogTitle>
@@ -884,7 +893,11 @@ export default function AdManager({
           <DialogFooter className="border-t border-border/80 bg-muted/20 px-5 py-4 sm:px-6">
             <Button
               variant="outline"
-              onClick={() => setDialogOpen(false)}
+              onClick={() => {
+                discardLocalMediaPreview(newAd);
+                setNewAd(createEmptyAd(defaultDurations));
+                setDialogOpen(false);
+              }}
               disabled={savingAd || uploadingMedia}
             >
               Cancelar
@@ -1234,9 +1247,13 @@ export default function AdManager({
         onOpenChange={(open) => {
           if (!open && savingAd) return;
           setEditDialogOpen(open);
+          if (!open) {
+            discardLocalMediaPreview(editingAd);
+            setEditingAd(null);
+          }
         }}
       >
-        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogContent draggable className="grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl">
           {savingAd ? <PendingOperationOverlay label="Salvando patrocínio..." /> : null}
           <DialogHeader className="border-b border-border/80 px-5 py-4 sm:px-6">
             <DialogTitle>Editar patrocínio</DialogTitle>
@@ -1259,7 +1276,11 @@ export default function AdManager({
           <DialogFooter className="border-t border-border/80 bg-muted/20 px-5 py-4 sm:px-6">
             <Button
               variant="outline"
-              onClick={() => setEditDialogOpen(false)}
+              onClick={() => {
+                discardLocalMediaPreview(editingAd);
+                setEditingAd(null);
+                setEditDialogOpen(false);
+              }}
               disabled={savingAd || uploadingMedia}
             >
               Cancelar

@@ -984,6 +984,15 @@ with
     and public.owns_media_object (name)
   );
 
+-- Storage API removals require SELECT in addition to DELETE. Keep this
+-- scoped to the object's church folder so an administrator can only inspect
+-- and remove files owned by their own church.
+create policy telao_online_media_owner_select on storage.objects for select to authenticated
+using (
+  bucket_id = 'telao-online-midia'
+  and public.owns_media_object (name)
+);
+
 create policy telao_online_media_owner_update on storage.objects
 for update
   to authenticated using (

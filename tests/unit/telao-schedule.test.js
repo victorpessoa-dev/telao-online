@@ -59,4 +59,16 @@ describe("global telão schedule", () => {
     );
     expect(millisecondsUntilScheduleChange(ads, schedule, enteredAt)).toBeGreaterThan(0);
   });
+
+  it("does not add an artificial delay at a schedule boundary", () => {
+    const position = getSchedulePosition(ads, schedule, Date.parse(schedule.startsAt));
+    const oneMillisecondBeforeChange =
+      Date.parse(schedule.startsAt) +
+      position.order[0].duration * 1000 -
+      1;
+
+    expect(
+      millisecondsUntilScheduleChange(ads, schedule, oneMillisecondBeforeChange),
+    ).toBe(1);
+  });
 });

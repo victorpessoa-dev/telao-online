@@ -824,10 +824,6 @@ export default function TelaoPlayer({
       body.style.backgroundColor = previousBodyBackground;
     };
   }, [masterOnlyMode]);
-  const currentAdDuration = getMediaDuration(
-    currentAd,
-    sponsorSettings.mediaDurations,
-  );
   // Master-only is a clean playback mode: it hides the background as well as
   // excluding NORMAL ads. The setting stays authoritative across all screens.
   const showBackground = useMemo(() => {
@@ -922,8 +918,6 @@ export default function TelaoPlayer({
               <TelaoMedia
                 ad={currentAd}
                 design={masterOnlyMode ? undefined : design}
-                onVideoEnded={avancarAd}
-                videoDurationLimit={currentAdDuration}
               />
             </div>
           </>
@@ -932,8 +926,6 @@ export default function TelaoPlayer({
             <TelaoMedia
               ad={currentAd}
               design={masterOnlyMode ? undefined : design}
-              onVideoEnded={avancarAd}
-              videoDurationLimit={currentAdDuration}
             />
           </div>
         )}

@@ -7,6 +7,7 @@ import {
   Minus,
   Move,
   Plus,
+  Pipette,
   RotateCcw,
   Trash2,
   Video,
@@ -29,6 +30,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -159,6 +168,153 @@ export function TypeBadge({ ad }) {
 }
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const COLOR_PRESETS = [
+  "#050505",
+  "#FFFFFF",
+  "#0F172A",
+  "#0B4F8A",
+  "#7C2D12",
+  "#166534",
+];
+
+function isHexColor(value) {
+  return /^#[0-9A-F]{6}$/i.test(String(value || ""));
+}
+
+/** A controlled color dialog keeps the edit reversible until it is applied. */
+function BackgroundColorPicker({ value = "#050505", onChange }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [pickerError, setPickerError] = useState("");
+  const [isCollectingScreenColor, setIsCollectingScreenColor] = useState(false);
+
+  useEffect(() => {
+    if (!open) setDraft(value);
+  }, [open, value]);
+
+  const collectScreenColor = async () => {
+    setPickerError("");
+    if (!("EyeDropper" in window)) {
+      setPickerError("O conta-gotas não é compatível com este navegador.");
+      return;
+    }
+
+    document.documentElement.dataset.nativeEyeDropperActive = "true";
+    setIsCollectingScreenColor(true);
+    try {
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      const result = await new window.EyeDropper().open();
+      setDraft(result.sRGBHex.toUpperCase());
+    } catch {
+      // Cancelling the browser picker is an expected outcome.
+    } finally {
+      delete document.documentElement.dataset.nativeEyeDropperActive;
+      setIsCollectingScreenColor(false);
+    }
+  };
+
+  const apply = () => {
+    if (!isHexColor(draft)) {
+      setPickerError("Informe uma cor hexadecimal no formato #RRGGBB.");
+      return;
+    }
+    onChange(draft.toUpperCase());
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        className="flex min-h-11 w-full items-center justify-between rounded-lg border border-input bg-background px-3 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={() => setOpen(true)}
+        aria-label={`Escolher cor de fundo atual ${value}`}
+      >
+        <span className="flex items-center gap-3">
+          <span
+            className="h-6 w-6 rounded-md border border-border shadow-sm"
+            style={{ backgroundColor: isHexColor(value) ? value : "#050505" }}
+            aria-hidden="true"
+          />
+          <span>Escolher cor</span>
+        </span>
+        <span className="font-mono text-xs uppercase text-muted-foreground">{value}</span>
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent draggable className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cor de fundo</DialogTitle>
+            <DialogDescription>
+              Use uma cor sólida, escolha uma sugestão ou colete uma cor visível na tela.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div
+              className="h-24 rounded-xl border border-border shadow-inner"
+              style={{ backgroundColor: isHexColor(draft) ? draft : "#050505" }}
+              aria-label={`Prévia da cor ${draft}`}
+            />
+            <div className="grid grid-cols-6 gap-2" aria-label="Cores sugeridas">
+              {COLOR_PRESETS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  aria-label={`Usar ${color}`}
+                  title={color}
+                  onClick={() => setDraft(color)}
+                  className={`h-10 rounded-md border-2 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${draft.toUpperCase() === color ? "border-primary" : "border-transparent"}`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value.toUpperCase())}
+                className="font-mono uppercase"
+                maxLength={7}
+                aria-label="Código hexadecimal da cor"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={collectScreenColor}
+                disabled={isCollectingScreenColor}
+                aria-label={
+                  isCollectingScreenColor
+                    ? "Conta-gotas ativo"
+                    : "Coletar cor da tela com conta-gotas"
+                }
+                title={
+                  isCollectingScreenColor
+                    ? "Conta-gotas ativo"
+                    : "Coletar cor da tela"
+                }
+              >
+                <Pipette className="h-4 w-4" />
+              </Button>
+            </div>
+            {isCollectingScreenColor ? (
+              <p className="sr-only" role="status">
+                Conta-gotas ativo. Clique para escolher uma cor ou pressione Escape para cancelar.
+              </p>
+            ) : null}
+            {pickerError ? <p className="text-sm text-destructive">{pickerError}</p> : null}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={apply}>Aplicar cor</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 function ImageCropCanvas({ ad, setAd }) {
   const frameRef = useRef(null);
@@ -832,37 +988,15 @@ export function SponsorForm({
           ) : null}
           <div className="space-y-2">
             <Label>Cor de fundo para transparência</Label>
-            <div className="flex items-center gap-3">
-              <Input
-                type="color"
-                aria-label="Cor de fundo da imagem transparente"
-                value={ad.imageCrop?.backgroundColor || "#050505"}
-                onChange={(event) =>
-                  setAd((prev) => ({
-                    ...prev,
-                    imageCrop: {
-                      ...prev.imageCrop,
-                      backgroundColor: event.target.value,
-                    },
-                  }))
-                }
-                className="h-10 w-14 cursor-pointer p-1"
-              />
-              <Input
-                value={ad.imageCrop?.backgroundColor || "#050505"}
-                onChange={(event) =>
-                  setAd((prev) => ({
-                    ...prev,
-                    imageCrop: {
-                      ...prev.imageCrop,
-                      backgroundColor: event.target.value,
-                    },
-                  }))
-                }
-                className="max-w-32 font-mono uppercase"
-                maxLength={7}
-              />
-            </div>
+            <BackgroundColorPicker
+              value={ad.imageCrop?.backgroundColor || "#050505"}
+              onChange={(backgroundColor) =>
+                setAd((prev) => ({
+                  ...prev,
+                  imageCrop: { ...prev.imageCrop, backgroundColor },
+                }))
+              }
+            />
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Maximize2 className="h-3.5 w-3.5" />
               A prévia mostra exatamente o enquadramento. Ao salvar, a imagem

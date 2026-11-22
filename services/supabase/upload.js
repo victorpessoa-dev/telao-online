@@ -5,7 +5,8 @@ const BUCKET = "telao-online-midia";
 // read and removed without breaking existing sponsor and branding URLs.
 const MAX_SOURCE_SIZE_BYTES = 100 * 1024 * 1024;
 export const MAX_IMAGE_SIZE_BYTES = 1_000_000;
-export const MAX_VIDEO_SIZE_BYTES = 5_000_000;
+export const MAX_VIDEO_SIZE_BYTES = 10_000_000;
+export const IMAGE_OPTIMIZATION_THRESHOLD_BYTES = MAX_IMAGE_SIZE_BYTES / 2;
 const ALLOWED_MEDIA_TYPES = new Set([
   "image/gif",
   "image/jpeg",
@@ -203,6 +204,13 @@ export async function optimizeImageForUpload(file) {
     validateFinalMediaFile(file);
     return file;
   }
+  // Small images do not benefit enough from a lossy re-encode to justify the
+  // extra CPU work or a possible loss of detail. The final 1 MB safety limit
+  // is still enforced immediately before upload.
+  if (file.size <= IMAGE_OPTIMIZATION_THRESHOLD_BYTES) {
+    validateFinalMediaFile(file);
+    return file;
+  }
   return optimizeImageToWebp(file);
 }
 
@@ -314,6 +322,11 @@ async function getFfmpeg() {
       });
       return ffmpeg;
     })();
+    // A failed worker/core load used to poison the shared promise for the
+    // rest of the session. Allow a later upload to start from a clean state.
+    ffmpegPromise.catch(() => {
+      ffmpegPromise = undefined;
+    });
   }
   return ffmpegPromise;
 }
@@ -325,7 +338,7 @@ function getVideoBitrateKbps(durationSeconds, quality) {
   const budgetKbps = Math.floor(
     (MAX_VIDEO_SIZE_BYTES * 8 * 0.9) / duration / 1000,
   );
-  return Math.max(500, Math.min(3200, Math.floor(budgetKbps * quality)));
+  return Math.max(500, Math.min(6400, Math.floor(budgetKbps * quality)));
 }
 
 async function optimizeVideoForUpload(file, onProgress, options = {}) {
@@ -377,7 +390,7 @@ async function optimizeVideoForUpload(file, onProgress, options = {}) {
     }
 
     throw new Error(
-      "Não foi possível otimizar o trecho do vídeo abaixo de 5 MB. Escolha outro trecho ou um vídeo menor.",
+      "Não foi possível otimizar o trecho do vídeo abaixo de 10 MB. Escolha outro trecho ou um vídeo menor.",
     );
   } finally {
     ffmpeg.off?.("progress", reportProgress);
@@ -412,22 +425,24 @@ export async function uploadMedia(
   validateFinalMediaFile(optimizedFile);
 
   const supabase = createSupabaseBrowserClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user)
-    throw new Error("Sessão administrativa não encontrada");
+  let targetChurchId = churchId;
+  if (!targetChurchId) {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user)
+      throw new Error("Sessão administrativa não encontrada");
 
-  let churchQuery = supabase
-    .from("churches")
-    .select("id")
-    .eq("admin_id", user.id);
-  if (churchId) churchQuery = churchQuery.eq("id", churchId);
-
-  const { data: church, error: churchError } = await churchQuery.maybeSingle();
-  if (churchError || !church?.id)
-    throw new Error("Nenhuma igreja vinculada a esta conta");
+    const { data: church, error: churchError } = await supabase
+      .from("churches")
+      .select("id")
+      .eq("admin_id", user.id)
+      .maybeSingle();
+    if (churchError || !church?.id)
+      throw new Error("Nenhuma igreja vinculada a esta conta");
+    targetChurchId = church.id;
+  }
 
   const extension = optimizedFile.name.includes(".")
     ? optimizedFile.name.split(".").pop()
@@ -435,7 +450,7 @@ export async function uploadMedia(
   const safeName = sanitizeFileName(optimizedFile.name || `media.${extension}`);
   // The first path segment is enforced by storage RLS, preventing one church
   // from deleting or replacing another church's media.
-  const path = `${church.id}/${folder}/${crypto.randomUUID()}-${safeName}`;
+  const path = `${targetChurchId}/${folder}/${crypto.randomUUID()}-${safeName}`;
 
   const { error } = await supabase.storage
     .from(BUCKET)

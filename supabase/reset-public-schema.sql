@@ -27,6 +27,7 @@
 -- Remove as políticas antes do bucket. Isto torna o reset repetível mesmo se
 -- o schema public tiver sido alterado manualmente antes da execução.
 drop policy if exists telao_online_media_owner_insert on storage.objects;
+drop policy if exists telao_online_media_owner_select on storage.objects;
 drop policy if exists telao_online_media_owner_update on storage.objects;
 drop policy if exists telao_online_media_owner_delete on storage.objects;
 
