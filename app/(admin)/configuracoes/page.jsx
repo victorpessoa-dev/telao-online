@@ -467,11 +467,13 @@ export default function ConfiguracoesPage() {
     if (!file) return;
     const previousUrl = sponsorSettings.designs[profile]?.backgroundUrl || "";
     const replace = async () => {
+      let uploadedUrl = "";
       try {
         const optimizedBackground = await optimizeTelaoBackgroundForUpload(file);
-        const url = await uploadMedia(optimizedBackground, "sponsors", "", {
+        const url = await uploadMedia(optimizedBackground, "sponsors", churchId, {
           alreadyPrepared: true,
         });
+        uploadedUrl = url;
         await updateSponsorDesign(profile, "backgroundUrl", url);
         const storageErrors = await deleteUploadedMediaBatch([previousUrl]);
         if (storageErrors.length) {
@@ -480,6 +482,7 @@ export default function ConfiguracoesPage() {
         }
         toast.success("Imagem de fundo otimizada em WebP e enviada");
       } catch (error) {
+        if (uploadedUrl) await deleteUploadedMediaBatch([uploadedUrl]);
         toast.error(error instanceof Error ? error.message : "Erro ao enviar a imagem de fundo");
       }
     };

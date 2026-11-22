@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getUploadedMediaPath,
   getMediaOptimizationSummary,
+  IMAGE_OPTIMIZATION_THRESHOLD_BYTES,
   MAX_IMAGE_SIZE_BYTES,
   MAX_VIDEO_SIZE_BYTES,
   sanitizeFileName,
@@ -61,13 +62,17 @@ describe("media upload validation", () => {
     ).toThrow("1 MB");
   });
 
-  it("enforces the final 5 MB video budget", () => {
+  it("enforces the final 10 MB video budget", () => {
     expect(() =>
       validateFinalMediaFile({
         size: MAX_VIDEO_SIZE_BYTES + 1,
         type: "video/mp4",
       }),
-    ).toThrow("5 MB");
+    ).toThrow("10 MB");
+  });
+
+  it("only optimizes images above half of the final image limit", () => {
+    expect(IMAGE_OPTIMIZATION_THRESHOLD_BYTES).toBe(MAX_IMAGE_SIZE_BYTES / 2);
   });
 
   it("reports the actual media reduction from file sizes", () => {

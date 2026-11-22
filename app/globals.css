@@ -43,6 +43,14 @@
   --sidebar-muted: oklch(0.5 0.015 245);
 }
 
+/* The browser eye dropper samples the visible screen, so temporarily remove
+   modal dimming and blur without changing the modal interaction model. */
+html[data-native-eye-dropper-active="true"] [data-slot="dialog-overlay"],
+html[data-native-eye-dropper-active="true"] [data-slot="dialog-overlay-root"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+}
+
 .brand-logo-dark {
   display: none;
 }

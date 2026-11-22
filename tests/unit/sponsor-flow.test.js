@@ -169,22 +169,9 @@ describe("sponsor admin flow", () => {
         return Promise.resolve({ data: [{ id: "sponsor-1" }], error: null });
       },
     };
-    const ownershipBuilder = {
-      select() {
-        return ownershipBuilder;
-      },
-      eq() {
-        return ownershipBuilder;
-      },
-      single() {
-        return Promise.resolve({ data: { church_id: "church-1" }, error: null });
-      },
-    };
-    let fromCalls = 0;
     const client = {
       from() {
-        fromCalls += 1;
-        return fromCalls === 1 ? ownershipBuilder : deleteBuilder;
+        return deleteBuilder;
       },
     };
 

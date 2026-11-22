@@ -325,8 +325,6 @@ export function useMediaBackgroundColor(src, mediaType) {
 export default function TelaoMedia({
   ad,
   design,
-  onVideoEnded,
-  videoDurationLimit,
   transparentBackground = false,
 }) {
   const backgroundColor = useMediaBackgroundColor(ad?.src, ad?.mediaType);
@@ -388,17 +386,6 @@ export default function TelaoMedia({
             disablePictureInPicture
             controlsList="nodownload nofullscreen noremoteplayback"
             tabIndex={-1}
-            onTimeUpdate={(event) => {
-              const limit = Number(videoDurationLimit);
-              if (
-                Number.isFinite(limit) &&
-                limit > 0 &&
-                event.currentTarget.currentTime >= limit
-              ) {
-                event.currentTarget.pause();
-                onVideoEnded?.();
-              }
-            }}
           />
         )
       ) : (

@@ -192,7 +192,10 @@ export default function AdsScheduleGrid() {
 
   useEffect(() => {
     if (!isMetricsEnabled) return undefined;
-    const clock = window.setInterval(() => setNow(Date.now()), 1000);
+    // The public display switches at the precise schedule boundary. Refresh
+    // more often than once a second so "Agora no telão" never keeps the
+    // previous image merely because the guide clock has not ticked yet.
+    const clock = window.setInterval(() => setNow(Date.now()), 100);
     return () => window.clearInterval(clock);
   }, [isMetricsEnabled]);
 

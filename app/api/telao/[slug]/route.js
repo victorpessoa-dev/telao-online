@@ -5,7 +5,7 @@ import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
 import { isValidChurchSlug, normalizeChurchSlug } from "@/lib/utils/church-slug";
 
 /**
- * Delivers the cacheable playlist and design payload for a public display.
+ * Delivers the current playlist and design payload for a public display.
  */
 export async function GET(request, { params }) {
   const rate = await checkRateLimit(`public-telao:${getClientIp(request)}`, {
