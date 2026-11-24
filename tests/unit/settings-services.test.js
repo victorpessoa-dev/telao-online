@@ -71,14 +71,14 @@ describe("settings services", () => {
     expect(supabase.calls[0].value.appearance).toBeUndefined();
   });
 
-  it("caps legacy Telão durations at 25 seconds", async () => {
+  it("caps legacy Telão durations at 30 seconds", async () => {
     const supabase = createSettingsSupabaseMock({
       telao: { defaultDurationImage: 60, defaultDurationVideo: 30 },
     });
 
     await expect(
       getTelaoDefaultDurations(supabase, "church-1"),
-    ).resolves.toEqual({ IMAGE: 25, VIDEO: 25 });
+    ).resolves.toEqual({ IMAGE: 30, VIDEO: 30 });
   });
 
   it("normalizes paused sponsor counters by screen", () => {

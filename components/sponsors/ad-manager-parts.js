@@ -781,10 +781,10 @@ export function SponsorForm({
             disabled={uploading}
             onFileSelect={handleUpload}
             title="Arraste a mídia ou clique para enviar"
-            description={"Imagens são otimizadas para até 1 MB; vídeos sem áudio para MP4 de até 5 MB"}
+            description="Imagens são otimizadas para até 1 MB; vídeos de até 10 MB e 30 s."
           />
           <p className="text-xs text-muted-foreground">
-            A duração é definida em Configurações &gt; Telão. Para vídeos, escolha o trecho com essa duração antes de salvar.
+            Para vídeos, escolha o trecho com a duração definida em Configurações &gt; Telão antes de salvar.
           </p>
           {uploadError ? (
             <p className="text-xs font-medium text-destructive">

@@ -328,7 +328,7 @@ export function TelaoSettingsSection({ settings, updateSettings }) {
               step={1}
             />
             <p className="text-xs text-muted-foreground">
-              Aplicada a vídeos de patrocinadores NORMAL e MASTER.
+              Define o tamanho do trecho salvo para vídeos de patrocinadores.
             </p>
           </div>
         </div>

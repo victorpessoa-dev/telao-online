@@ -4,6 +4,7 @@ import {
   getMediaOptimizationSummary,
   IMAGE_OPTIMIZATION_THRESHOLD_BYTES,
   MAX_IMAGE_SIZE_BYTES,
+  MAX_VIDEO_DURATION_SECONDS,
   MAX_VIDEO_SIZE_BYTES,
   sanitizeFileName,
   validateFinalMediaFile,
@@ -26,7 +27,7 @@ describe("media upload validation", () => {
     ).not.toThrow();
   });
 
-  it("accepts browser-processable MOV uploads before MP4 conversion", () => {
+  it("accepts MOV uploads for video processing", () => {
     expect(() =>
       validateMediaFile({
         size: 1024,
@@ -69,6 +70,10 @@ describe("media upload validation", () => {
         type: "video/mp4",
       }),
     ).toThrow("10 MB");
+  });
+
+  it("sets the maximum accepted video duration to 30 seconds", () => {
+    expect(MAX_VIDEO_DURATION_SECONDS).toBe(30);
   });
 
   it("only optimizes images above half of the final image limit", () => {
