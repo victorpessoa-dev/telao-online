@@ -24,24 +24,8 @@ const MAX_IMAGE_SIDE = 2560;
 const MIN_IMAGE_SIDE = 960;
 const TELAO_BACKGROUND_MAX_SIDE = 1920;
 const TELAO_BACKGROUND_WEBP_QUALITY = 0.82;
-const VIDEO_OPTIMIZATION_ATTEMPTS = [
-  { maxSide: 1280, quality: 1 },
-  { maxSide: 1080, quality: 0.8 },
-  { maxSide: 960, quality: 0.62 },
-];
-let ffmpegPromise;
 
-function loadFfmpegScript() {
-  if (window.FFmpegWASM) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "/api/ffmpeg/ffmpeg.js";
-    script.async = true;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error("Não foi possível carregar o editor de vídeo"));
-    document.head.appendChild(script);
-  });
-}
+
 const ALLOWED_UPLOAD_FOLDERS = new Set(["branding", "sponsors"]);
 
 export function sanitizeFileName(name) {
@@ -339,84 +323,12 @@ export async function validateVideoForUpload(file) {
   return duration;
 }
 
-async function getFfmpeg() {
-  if (!ffmpegPromise) {
-    ffmpegPromise = (async () => {
-      await loadFfmpegScript();
-      const { FFmpeg } = window.FFmpegWASM || {};
-      if (!FFmpeg) throw new Error("O editor de vídeo não foi carregado");
-      const ffmpeg = new FFmpeg();
-      const coreBase = new URL("/api/ffmpeg/", window.location.origin);
-      await ffmpeg.load({
-        coreURL: new URL("ffmpeg-core.js", coreBase).toString(),
-        wasmURL: new URL("ffmpeg-core.wasm", coreBase).toString(),
-      });
-      return ffmpeg;
-    })();
-    ffmpegPromise.catch(() => {
-      ffmpegPromise = undefined;
-    });
-  }
-  return ffmpegPromise;
-}
-
-function getVideoBitrateKbps(durationSeconds, quality) {
-  const duration = Math.max(3, Number(durationSeconds) || 10);
-  const budgetKbps = Math.floor(
-    (MAX_VIDEO_SIZE_BYTES * 8 * 0.9) / duration / 1000,
-  );
-  return Math.max(500, Math.min(6400, Math.floor(budgetKbps * quality)));
-}
-
-async function optimizeVideoForUpload(file, onProgress, options = {}) {
-  const trimStartSeconds = Math.max(0, Number(options.videoStartSeconds) || 0);
-  const trimDurationSeconds = Math.min(
-    MAX_VIDEO_DURATION_SECONDS,
-    Math.max(3, Number(options.videoDurationSeconds) || 10),
-  );
-  onProgress?.(20);
-  const ffmpeg = await getFfmpeg();
-  const inputName = `input-${crypto.randomUUID()}.${file.name.split(".").pop() || "mp4"}`;
-  const reportProgress = ({ progress }) => {
-    onProgress?.(Math.min(90, Math.max(35, 35 + progress * 55)));
-  };
-  try {
-    await ffmpeg.writeFile(inputName, new Uint8Array(await file.arrayBuffer()));
-    onProgress?.(35);
-    ffmpeg.on("progress", reportProgress);
-    for (const [attemptIndex, attempt] of VIDEO_OPTIMIZATION_ATTEMPTS.entries()) {
-      const outputName = `video-${crypto.randomUUID()}.mp4`;
-      const bitrateKbps = getVideoBitrateKbps(trimDurationSeconds, attempt.quality);
-      await ffmpeg.exec([
-        "-i", inputName,
-        "-ss", String(trimStartSeconds),
-        "-t", String(trimDurationSeconds),
-        "-map", "0:v:0",
-        "-an",
-        "-vf", `scale='min(${attempt.maxSide},iw)':-2`,
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-b:v", `${bitrateKbps}k`,
-        "-maxrate", `${bitrateKbps}k`,
-        "-bufsize", `${bitrateKbps * 2}k`,
-        "-movflags", "+faststart",
-        outputName,
-      ]);
-      const data = await ffmpeg.readFile(outputName);
-      await ffmpeg.deleteFile(outputName);
-      const optimizedFile = new File(
-        [data],
-        `${file.name.replace(/\.[^.]+$/, "") || "video"}.mp4`,
-        { type: "video/mp4", lastModified: file.lastModified },
-      );
-      onProgress?.(Math.min(92, 60 + attemptIndex * 16));
-      if (optimizedFile.size <= MAX_VIDEO_SIZE_BYTES) return optimizedFile;
-    }
-    throw new Error("Não foi possível gerar o trecho do vídeo abaixo de 10 MB.");
-  } finally {
-    ffmpeg.off?.("progress", reportProgress);
-    await Promise.allSettled([ffmpeg.deleteFile(inputName)]);
-  }
+// Simple video preparation: validates the video using native HTML5 APIs
+// and returns the file as-is (no FFmpeg transcoding needed).
+async function prepareSimpleVideo(file, onProgress, options = {}) {
+  await validateVideoForUpload(file);
+  onProgress?.(90);
+  return file;
 }
 
 // This runs locally while the form is being edited. It never writes to
@@ -424,7 +336,7 @@ async function optimizeVideoForUpload(file, onProgress, options = {}) {
 export async function prepareMediaForUpload(file, onProgress, options = {}) {
   validateMediaFile(file);
   const prepared = file.type.startsWith("video/")
-    ? (await validateVideoForUpload(file), await optimizeVideoForUpload(file, onProgress, options))
+    ? await prepareSimpleVideo(file, onProgress, options)
     : await optimizeImageForUpload(file);
   validateFinalMediaFile(prepared);
   onProgress?.(96);
