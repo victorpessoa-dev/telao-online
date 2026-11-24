@@ -27,7 +27,7 @@ O fluxo atual nao pode ser interrompido: uma URL antiga do Supabase Storage cont
 | --- | --- | --- |
 | Configuracao | `.env.example`, `docs/configuracao-de-ambiente.md` | adicionar credenciais R2 somente de servidor e URL publica da midia |
 | Cliente R2 | novo `lib/media/r2-server.js` | criar cliente S3, gerar chave, URL publica, URL temporaria e exclusao |
-| Validacao de midia | `services/supabase/upload.js` | preservar otimizacao/crop/FFmpeg no navegador; substituir upload e exclusao por adaptador R2 + legado Supabase |
+| Validacao de midia | `services/supabase/upload.js` | preservar otimizacao/crop/FFmpeg no navegador; limitar videos originais a 10 MB e 30 s; substituir upload e exclusao por adaptador R2 + legado Supabase |
 | API autenticada | novo `app/api/media/upload-url/route.js` | emitir URL temporaria de upload apos validar usuario, igreja, finalidade, MIME e tamanho |
 | Interface | `components/sponsors/ad-manager.js`, `app/(admin)/configuracoes/page.jsx`, `app/(admin)/configurar-igreja/page.jsx` | usar a nova funcao de upload sem alterar o dialogo, crop, preview ou fluxo de salvar |
 | Banco | nova migration em `supabase/migrations/` e `supabase/schema.sql` | registrar origem/chave R2 de forma compativel e manter URLs existentes |
@@ -100,7 +100,7 @@ Comportamento:
 1. Limitar chamadas por IP e usuario para evitar abuso de assinaturas.
 2. Recuperar usuario com `createSupabaseServerClient()`.
 3. Consultar a igreja cujo `admin_id` pertence ao usuario. Nunca confiar em identificador enviado pelo navegador.
-4. Validar tipo permitido e limite de 100 MB; para video manter tambem o limite funcional atual de 20 segundos apos otimizacao.
+4. Validar tipo permitido e limite de 100 MB; para video, limitar o arquivo original a 10 MB e 30 segundos antes de permitir o recorte e a otimizacao.
 5. Criar chave UUID e URL `PUT` com expiração curta, de cinco minutos.
 6. Retornar somente `uploadUrl`, `publicUrl`, `key` e headers obrigatorios.
 
@@ -110,7 +110,7 @@ O endpoint usa `NO_STORE_HEADERS`, nunca registra segredos em log e retorna mens
 
 O arquivo `services/supabase/upload.js` ja concentra validacao, compressao de imagem, crop e processamento de video. Preservar essas partes e trocar somente a camada de persistencia:
 
-1. `prepareMediaForUpload()` permanece como esta.
+1. `prepareMediaForUpload()` preserva a otimizacao de imagens e o recorte/otimizacao de videos.
 2. `uploadMedia()` chama `/api/media/upload-url`, faz `fetch(uploadUrl, { method: "PUT" })` e retorna uma referencia R2 estruturada.
 3. Introduzir `deleteMedia(reference)` que identifica R2 ou Supabase legado. Objetos R2 sao removidos por uma rota autenticada de servidor, nunca com segredo no cliente.
 4. Manter temporariamente `deleteUploadedMedia()` como fachada compativel para os chamadores atuais e migrar os nomes numa alteracao posterior de baixo risco.

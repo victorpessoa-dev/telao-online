@@ -22,6 +22,7 @@ import {
   prepareMediaForUpload,
   uploadMedia,
   validateMediaFile,
+  validateVideoForUpload,
 } from "@/services/supabase/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,6 +413,7 @@ export default function AdManager({
       onProgress?.(12);
       validateMediaFile(file);
       if (file.type.startsWith("video/")) {
+        await validateVideoForUpload(file);
         const previewUrl = URL.createObjectURL(file);
         const videoDurationSeconds = getMediaDuration("video");
         setter((prev) => {
@@ -499,9 +501,7 @@ export default function AdManager({
     const videoDurationSeconds = getMediaDuration("video");
     const sourceVideoDuration = Number(ad.videoTrim?.sourceDurationSeconds);
     if (ad.mediaType === "video" && sourceVideoDuration <= 0) {
-      throw new Error(
-        "Aguarde a duração do vídeo carregar antes de salvar.",
-      );
+      throw new Error("Aguarde a duração do vídeo carregar antes de salvar.");
     }
     const savedVideoDuration = Math.min(
       videoDurationSeconds,

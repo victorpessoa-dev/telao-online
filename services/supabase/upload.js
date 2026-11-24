@@ -1,11 +1,10 @@
 import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 
 const BUCKET = "telao-online-midia";
-// Kept only so media uploaded before the Telão Online migration can still be
-// read and removed without breaking existing sponsor and branding URLs.
 const MAX_SOURCE_SIZE_BYTES = 100 * 1024 * 1024;
 export const MAX_IMAGE_SIZE_BYTES = 1_000_000;
 export const MAX_VIDEO_SIZE_BYTES = 10_000_000;
+export const MAX_VIDEO_DURATION_SECONDS = 30;
 export const IMAGE_OPTIMIZATION_THRESHOLD_BYTES = MAX_IMAGE_SIZE_BYTES / 2;
 const ALLOWED_MEDIA_TYPES = new Set([
   "image/gif",
@@ -36,12 +35,10 @@ function loadFfmpegScript() {
   if (window.FFmpegWASM) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    // The runtime and its worker are served by this application. Keeping them
-    // same-origin avoids browser security policies blocking the worker chunk.
     script.src = "/api/ffmpeg/ffmpeg.js";
     script.async = true;
     script.onload = resolve;
-    script.onerror = () => reject(new Error("Não foi possível carregar o otimizador de vídeo"));
+    script.onerror = () => reject(new Error("Não foi possível carregar o editor de vídeo"));
     document.head.appendChild(script);
   });
 }
@@ -55,27 +52,30 @@ export function sanitizeFileName(name) {
     .toLowerCase();
 }
 
-/**
- * Validates the source file before browser-side conversion starts. The higher
- * source cap prevents exhausting memory; final caps are enforced separately.
- */
+/** Validates the original file before it is prepared for upload. */
 export function validateMediaFile(file) {
   if (!file) return;
-
-  if (file.size > MAX_SOURCE_SIZE_BYTES) {
-    throw new Error("Arquivo maior que 100MB");
-  }
 
   if (!file.type || !ALLOWED_MEDIA_TYPES.has(file.type)) {
     throw new Error(
       "Tipo de arquivo não permitido. Envie imagem, MP4, WebM, MOV ou M4V.",
     );
   }
+
+  const maxBytes = file.type.startsWith("video/")
+    ? MAX_VIDEO_SIZE_BYTES
+    : MAX_SOURCE_SIZE_BYTES;
+  if (file.size > maxBytes) {
+    throw new Error(
+      file.type.startsWith("video/")
+        ? `Vídeo maior que ${formatBytes(MAX_VIDEO_SIZE_BYTES)}`
+        : "Arquivo maior que 100MB",
+    );
+  }
 }
 
 /**
- * Rejects converted media that would exceed the Storage and delivery budget.
- * This check runs after processing and immediately before upload.
+ * Rejects media that would exceed the Storage and delivery budget.
  */
 export function validateFinalMediaFile(file) {
   const maxBytes = file?.type?.startsWith("video/")
@@ -85,7 +85,7 @@ export function validateFinalMediaFile(file) {
 
   if (!file || file.size > maxBytes) {
     throw new Error(
-      `${mediaLabel} otimizado excede o limite de ${formatBytes(maxBytes)}. Escolha uma mídia menor ou reduza sua qualidade.`,
+      `${mediaLabel} excede o limite de ${formatBytes(maxBytes)}. Escolha uma mídia menor ou reduza sua qualidade.`,
     );
   }
 }
@@ -308,12 +308,43 @@ export async function cropImageForUpload(file, crop = {}) {
   }
 }
 
+export async function getVideoDurationSeconds(file) {
+  const source = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.preload = "metadata";
+
+  try {
+    const duration = await new Promise((resolve, reject) => {
+      video.onloadedmetadata = () => resolve(video.duration);
+      video.onerror = () => reject(new Error("Não foi possível ler a duração do vídeo."));
+      video.src = source;
+    });
+
+    if (!Number.isFinite(duration) || duration <= 0) {
+      throw new Error("Não foi possível identificar a duração do vídeo.");
+    }
+    return duration;
+  } finally {
+    video.removeAttribute("src");
+    video.load();
+    URL.revokeObjectURL(source);
+  }
+}
+
+export async function validateVideoForUpload(file) {
+  const duration = await getVideoDurationSeconds(file);
+  if (duration > MAX_VIDEO_DURATION_SECONDS) {
+    throw new Error(`Vídeo maior que ${MAX_VIDEO_DURATION_SECONDS}s`);
+  }
+  return duration;
+}
+
 async function getFfmpeg() {
   if (!ffmpegPromise) {
     ffmpegPromise = (async () => {
       await loadFfmpegScript();
       const { FFmpeg } = window.FFmpegWASM || {};
-      if (!FFmpeg) throw new Error("O otimizador de vídeo não foi carregado");
+      if (!FFmpeg) throw new Error("O editor de vídeo não foi carregado");
       const ffmpeg = new FFmpeg();
       const coreBase = new URL("/api/ffmpeg/", window.location.origin);
       await ffmpeg.load({
@@ -322,8 +353,6 @@ async function getFfmpeg() {
       });
       return ffmpeg;
     })();
-    // A failed worker/core load used to poison the shared promise for the
-    // rest of the session. Allow a later upload to start from a clean state.
     ffmpegPromise.catch(() => {
       ffmpegPromise = undefined;
     });
@@ -332,8 +361,6 @@ async function getFfmpeg() {
 }
 
 function getVideoBitrateKbps(durationSeconds, quality) {
-  // Reserve a small container margin. Removing audio leaves the available
-  // budget for a sharper image at the configured Telão duration.
   const duration = Math.max(3, Number(durationSeconds) || 10);
   const budgetKbps = Math.floor(
     (MAX_VIDEO_SIZE_BYTES * 8 * 0.9) / duration / 1000,
@@ -343,9 +370,9 @@ function getVideoBitrateKbps(durationSeconds, quality) {
 
 async function optimizeVideoForUpload(file, onProgress, options = {}) {
   const trimStartSeconds = Math.max(0, Number(options.videoStartSeconds) || 0);
-  const trimDurationSeconds = Math.max(
-    3,
-    Number(options.videoDurationSeconds) || 10,
+  const trimDurationSeconds = Math.min(
+    MAX_VIDEO_DURATION_SECONDS,
+    Math.max(3, Number(options.videoDurationSeconds) || 10),
   );
   onProgress?.(20);
   const ffmpeg = await getFfmpeg();
@@ -359,10 +386,7 @@ async function optimizeVideoForUpload(file, onProgress, options = {}) {
     ffmpeg.on("progress", reportProgress);
     for (const [attemptIndex, attempt] of VIDEO_OPTIMIZATION_ATTEMPTS.entries()) {
       const outputName = `video-${crypto.randomUUID()}.mp4`;
-      const bitrateKbps = getVideoBitrateKbps(
-        trimDurationSeconds,
-        attempt.quality,
-      );
+      const bitrateKbps = getVideoBitrateKbps(trimDurationSeconds, attempt.quality);
       await ffmpeg.exec([
         "-i", inputName,
         "-ss", String(trimStartSeconds),
@@ -388,15 +412,10 @@ async function optimizeVideoForUpload(file, onProgress, options = {}) {
       onProgress?.(Math.min(92, 60 + attemptIndex * 16));
       if (optimizedFile.size <= MAX_VIDEO_SIZE_BYTES) return optimizedFile;
     }
-
-    throw new Error(
-      "Não foi possível otimizar o trecho do vídeo abaixo de 10 MB. Escolha outro trecho ou um vídeo menor.",
-    );
+    throw new Error("Não foi possível gerar o trecho do vídeo abaixo de 10 MB.");
   } finally {
     ffmpeg.off?.("progress", reportProgress);
-    await Promise.allSettled([
-      ffmpeg.deleteFile(inputName),
-    ]);
+    await Promise.allSettled([ffmpeg.deleteFile(inputName)]);
   }
 }
 
@@ -404,12 +423,12 @@ async function optimizeVideoForUpload(file, onProgress, options = {}) {
 // Storage; the actual upload remains part of the Save action.
 export async function prepareMediaForUpload(file, onProgress, options = {}) {
   validateMediaFile(file);
-  const optimized = file.type.startsWith("video/")
-    ? await optimizeVideoForUpload(file, onProgress, options)
+  const prepared = file.type.startsWith("video/")
+    ? (await validateVideoForUpload(file), await optimizeVideoForUpload(file, onProgress, options))
     : await optimizeImageForUpload(file);
-  validateFinalMediaFile(optimized);
+  validateFinalMediaFile(prepared);
   onProgress?.(96);
-  return optimized;
+  return prepared;
 }
 
 export async function uploadMedia(
@@ -421,8 +440,8 @@ export async function uploadMedia(
   if (!file) return "";
   if (!ALLOWED_UPLOAD_FOLDERS.has(folder))
     throw new Error("Pasta de upload inválida");
-  const optimizedFile = alreadyPrepared ? file : await prepareMediaForUpload(file);
-  validateFinalMediaFile(optimizedFile);
+  const mediaFile = alreadyPrepared ? file : await prepareMediaForUpload(file);
+  validateFinalMediaFile(mediaFile);
 
   const supabase = createSupabaseBrowserClient();
   let targetChurchId = churchId;
@@ -444,20 +463,20 @@ export async function uploadMedia(
     targetChurchId = church.id;
   }
 
-  const extension = optimizedFile.name.includes(".")
-    ? optimizedFile.name.split(".").pop()
+  const extension = mediaFile.name.includes(".")
+    ? mediaFile.name.split(".").pop()
     : "bin";
-  const safeName = sanitizeFileName(optimizedFile.name || `media.${extension}`);
+  const safeName = sanitizeFileName(mediaFile.name || `media.${extension}`);
   // The first path segment is enforced by storage RLS, preventing one church
   // from deleting or replacing another church's media.
   const path = `${targetChurchId}/${folder}/${crypto.randomUUID()}-${safeName}`;
 
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, optimizedFile, {
+    .upload(path, mediaFile, {
       cacheControl: "31536000",
       upsert: false,
-      contentType: optimizedFile.type || undefined,
+      contentType: mediaFile.type || undefined,
     });
 
   if (error) throw error;

@@ -26,7 +26,6 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# The FFmpeg API route reads these runtime files from node_modules.
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@ffmpeg ./node_modules/@ffmpeg
 
 USER nextjs
