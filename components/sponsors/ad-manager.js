@@ -317,8 +317,8 @@ export default function AdManager({
   // from its slug instead of retaining the legacy global public routes.
   const publicTelaoPath = churchSlug ? `/${churchSlug}/ads-telao` : "";
   const getReportPath = useCallback(
-    (sponsorId) =>
-      churchSlug ? `/${churchSlug}/parceiros/${sponsorId}` : "",
+    (sponsor) =>
+      churchSlug ? `/${churchSlug}/parceiros/${sponsor.slug}` : "",
     [churchSlug],
   );
 
@@ -433,7 +433,7 @@ export default function AdManager({
           };
         });
         onProgress?.(100);
-        toast.success("Escolha o trecho de vídeo que será salvo no telão.");
+        toast.success("Vídeo validado com duração de " + videoDurationSeconds + "s, pronto para ajuste.");
         return;
       }
       const preparedFile = await prepareMediaForUpload(file, onProgress);
@@ -486,7 +486,8 @@ export default function AdManager({
       throw new Error("A mídia atual não é uma imagem válida para ajuste.");
     }
 
-    const pathname = new URL(sourceUrl, window.location.origin).pathname;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const pathname = new URL(sourceUrl, origin).pathname;
     const filename = pathname.split("/").pop() || "imagem";
     return new File([blob], filename, { type: blob.type });
   }, []);
@@ -497,7 +498,9 @@ export default function AdManager({
         ? await getImageFileFromUrl(ad.src)
         : null;
     const pendingFile = ad.pendingFile || imageFileToAdjust;
-    if (!pendingFile) return ad;
+    if (!pendingFile) {
+      throw new Error("Nenhuma mídia para upload. Selecione um arquivo ou imagem primeiro.");
+    }
     const videoDurationSeconds = getMediaDuration("video");
     const sourceVideoDuration = Number(ad.videoTrim?.sourceDurationSeconds);
     if (ad.mediaType === "video" && sourceVideoDuration <= 0) {
@@ -705,18 +708,19 @@ export default function AdManager({
     }
 
     setSavingAd(true);
-    let uploadedUrl = "";
     try {
       ad = normalizeAd(await uploadPendingMedia(ad));
-      const adjustedSavedImage =
+      const hasNewPendingFile = ad.pendingFile !== editingAd.pendingFile;
+      const isCroppingSavedImage =
         editingAd.mediaType === "image" &&
         editingAd.sourceType === "supabase" &&
         Boolean(editingAd.imageCrop);
-      uploadedUrl =
-        ad.sourceType === "upload" &&
-        (editingAd.pendingFile || adjustedSavedImage)
-          ? ad.src
-          : "";
+      // uploadedUrl is the URL to keep/overwrite after update
+      // - new pending file: use the new uploaded URL
+      // - cropping a saved image: keep the current URL (crop baked in)
+      // - otherwise: no new upload, preserve existing URL
+      const shouldKeepCurrentUrl = hasNewPendingFile || isCroppingSavedImage;
+      const uploadedUrl = shouldKeepCurrentUrl ? ad.src : "";
       if (ad.mediaType === "video" && !uploadedUrl)
         await validatePublicVideoSource(ad.src);
       const previousMediaUrl =
@@ -1092,7 +1096,7 @@ export default function AdManager({
                           className="border-primary/30 text-primary hover:border-primary-hover hover:bg-primary-hover hover:text-primary-foreground"
                         >
                           <Link
-                            href={getReportPath(ad.id) || "#"}
+                            href={getReportPath(ad) || "#"}
                             target="_blank"
                             aria-disabled={!churchSlug}
                           >
@@ -1208,7 +1212,7 @@ export default function AdManager({
                       className="border-primary/30 text-primary hover:border-primary-hover hover:bg-primary-hover hover:text-primary-foreground"
                     >
                       <Link
-                        href={getReportPath(ad.id) || "#"}
+                        href={getReportPath(ad) || "#"}
                         target="_blank"
                         aria-disabled={!churchSlug}
                       >

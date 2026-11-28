@@ -193,9 +193,10 @@ export default function AdsScheduleGrid() {
   useEffect(() => {
     if (!isMetricsEnabled) return undefined;
     // The public display switches at the precise schedule boundary. Refresh
-    // more often than once a second so "Agora no telão" never keeps the
-    // previous image merely because the guide clock has not ticked yet.
-    const clock = window.setInterval(() => setNow(Date.now()), 100);
+    // at most once per second so "Agora no telão" stays in sync without
+    // unnecessary re-renders. The schedule position is recomputed from
+    // `now` whenever this value changes below.
+    const clock = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(clock);
   }, [isMetricsEnabled]);
 
@@ -206,16 +207,30 @@ export default function AdsScheduleGrid() {
 
   const cycles = useMemo(() => {
     if (!currentPosition || !schedule) return [];
-    return Array.from({ length: 11 }, (_, index) =>
+    // Calculate cycle window avoiding negative cycles. When the current cycle
+    // is near the beginning (cycle 1-5), shift the window to start from cycle 1
+    // instead of showing negative cycle numbers.
+    const half = CYCLES_BEFORE_AND_AFTER; // 5
+    let startCycle = currentPosition.cycle - half;
+    let endCycle = currentPosition.cycle + half;
+    // If start cycle would be negative, shift window right to start from cycle 1
+    if (startCycle < 1) {
+      const shift = 1 - startCycle;
+      startCycle = 1;
+      endCycle = endCycle + shift;
+    }
+    return Array.from({ length: endCycle - startCycle + 1 }, (_, index) =>
       getScheduledCycle(
         ads,
         schedule,
-        currentPosition.cycle - CYCLES_BEFORE_AND_AFTER + index,
+        startCycle + index,
       ),
     );
   }, [ads, currentPosition, schedule]);
 
-  const activeCycle = cycles[CYCLES_BEFORE_AND_AFTER] || null;
+  const activeCycle = cycles.find(
+    (cycle) => cycle.cycle === currentPosition?.cycle,
+  ) || null;
   const currentEntry = activeCycle?.entries[currentPosition?.index] || null;
   const selectedCycle = cycles.find((cycle) => cycle.cycle === selectedEntry?.cycle);
   const selectedDetails = selectedCycle?.entries.find(

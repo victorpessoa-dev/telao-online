@@ -34,7 +34,7 @@ flowchart LR
 | `/{slug}` — patrocinadores | RPC do navegador | `get_public_sponsor_directory(church_id)` | retorna somente patrocinadores ativos da igreja |
 | `/{slug}` — visita | `POST /api/igreja/{slug}/visita` | `record_public_church_visit(slug)` | no máximo uma contagem por IP/slug a cada 30 min |
 | `/{slug}/ads-telao` | primeiro obtém a igreja; depois `GET /api/telao/{slug}` | `get_public_church_by_slug` e `get_public_telao_payload(slug)` | resposta do telão: browser 60 s, CDN 5 min, stale-while-revalidate de 1 h |
-| `/{slug}/parceiros/{id}` | primeiro obtém a igreja; depois `GET /api/parceiros/{id}?churchId=…&page=…&pageSize=20` | validação de vínculo, `get_public_sponsor_detail` e `get_public_sponsor_report` | detalhe: browser 30 s, CDN 2 min, stale-while-revalidate 5 min |
+| `/{slug}/parceiros/{slug}` | primeiro obtém a igreja; depois `GET /api/parceiros/{slug}?churchId=…&page=…&pageSize=20` | validação de vínculo, `get_public_sponsor_detail` e `get_public_sponsor_report` | detalhe: browser 30 s, CDN 2 min, stale-while-revalidate 5 min |
 | exibição no telão | `POST /api/parceiros/logs` | `log_sponsor_impressions(logs_arg)` | fila local; lotes de até 100 eventos, a cada 2 min |
 
 ## Igrejas: `/igrejas`
@@ -102,15 +102,15 @@ Para cada evento novo, a mesma transação atualiza:
 - o evento bruto em `sponsor_impressions`, para auditoria;
 - o resumo de dia em `sponsor_impression_daily_rollups`, usado em gráficos e totais.
 
-## Detalhe e planilha do patrocinador: `/{slug}/parceiros/{id}`
+## Detalhe e planilha do patrocinador: `/{slug}/parceiros/{slug}`
 
 A página solicita explicitamente a página atual:
 
 ```text
-/api/parceiros/{id}?churchId={uuid}&page=1&pageSize=20
+/api/parceiros/{slug}?churchId={uuid}&page=1&pageSize=20
 ```
 
-A API valida `id`, `churchId`, página e tamanho (máximo 100), verifica se o patrocinador pertence à igreja e carrega em paralelo:
+A API valida `slug`, `churchId`, página e tamanho (máximo 100), verifica se o patrocinador pertence à igreja e carrega em paralelo:
 
 - dados do patrocinador (`get_public_sponsor_detail`);
 - relatório (`get_public_sponsor_report`).

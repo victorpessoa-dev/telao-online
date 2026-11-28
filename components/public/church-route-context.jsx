@@ -8,7 +8,7 @@ import AnuncianteDetalhePage from "@/components/public/advertiser-detail-page";
 
 function useChurchFromSlug() {
   const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const slug = typeof params?.churchSlug === "string" ? params.churchSlug : "";
   const [state, setState] = useState({
     church: null,
     loading: true,
@@ -58,7 +58,7 @@ function ChurchGate({ children }) {
 
 export function ChurchTelaoPage() {
   const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const slug = typeof params?.churchSlug === "string" ? params.churchSlug : "";
 
   return (
     <TelaoPlayer
@@ -70,10 +70,20 @@ export function ChurchTelaoPage() {
 }
 
 export function ChurchAdvertiserPage() {
+  const params = useParams();
+  const churchSlug =
+    typeof params?.churchSlug === "string" ? params.churchSlug : "";
+  const sponsorSlug =
+    typeof params?.sponsorSlug === "string" ? params.sponsorSlug : "";
+
   return (
     <ChurchGate>
-      {({ church, slug }) => (
-        <AnuncianteDetalhePage churchId={church.id} slug={slug} />
+      {({ church }) => (
+        <AnuncianteDetalhePage
+          churchId={church.id}
+          churchSlug={churchSlug}
+          sponsorSlug={sponsorSlug}
+        />
       )}
     </ChurchGate>
   );

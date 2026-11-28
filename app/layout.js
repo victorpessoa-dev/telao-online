@@ -1,5 +1,4 @@
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
 import localFont from "next/font/local";
 import NetworkStatus from "@/components/shared/network-status";
 import PwaServiceWorker from "@/components/shared/pwa-service-worker";
@@ -66,7 +65,6 @@ export default function RootLayout({ children }) {
           <AppMotion>{children}</AppMotion>
           <NetworkStatus />
           <PwaServiceWorker />
-          <Analytics />
         </HoverTipProvider>
       </body>
     </html>

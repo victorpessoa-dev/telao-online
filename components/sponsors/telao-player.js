@@ -178,6 +178,8 @@ export default function TelaoPlayer({
   const flushTimerRef = useRef(null);
   const rotationTimerRef = useRef(null);
   const advancingRef = useRef(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const pauseStartTimeRef = useRef(Date.now());
   const flushingLogsRef = useRef(false);
   const imagePreloadsRef = useRef(new Map());
   const displayScope = churchId || churchSlug || "default";
@@ -320,7 +322,7 @@ export default function TelaoPlayer({
         .filter((item) => item?.mediaType === "image" && item.src)
         .map((item) => preload(item.src)),
     );
-  }, []);
+  }, [ads, currentIndex]);
 
   const enqueueLog = useCallback(
     (log) => {
@@ -476,15 +478,23 @@ export default function TelaoPlayer({
       // part of the public settings payload, so every public display follows
       // the same mode rather than depending on the browser URL.
       const masterOnly = Boolean(filterMaster || publicSettings?.adsFilterMaster);
+      // Master setting takes precedence over the kind prop. When masterOnly
+      // is active, only MASTER sponsors are shown. Otherwise, use the kind
+      // prop to determine the mode (NORMAL, MASTER, ALL).
+      const effectiveKind = masterOnly ? "MASTER" : kind;
       const filteredAds = (data || [])
         .map(mapSponsorRow)
         .filter(Boolean)
         .filter((ad) => {
           const adKind = ad.kind || ad.type || "NORMAL";
-          if (masterOnly && adKind !== "MASTER") return false;
-          if (kind !== "ALL" && adKind !== kind) return false;
           // Apenas patrocinadores ativos
-          return ad.active !== false;
+          if (ad.active === false) return false;
+          // ALL: inclui NORMAL e MASTER
+          if (effectiveKind === "ALL") return true;
+          // MASTER: somente patrocinadores do tipo MASTER
+          if (effectiveKind === "MASTER") return adKind === "MASTER";
+          // NORMAL: somente patrocinadores do tipo NORMAL
+          return adKind === "NORMAL";
         });
 
       // Merge with settings from the API
@@ -725,6 +735,16 @@ export default function TelaoPlayer({
   useEffect(() => {
     if (!loaded || ads.length === 0) return undefined;
 
+    // Se o player estiver pausado, não iniciar o timer e apenas atualizar
+    // o startTimeRef para refletir o tempo decorrido até o pause.
+    if (isPaused) {
+      const elapsedSincePause = Date.now() - pauseStartTimeRef.current;
+      // Ajusta o startTimeRef como se o tempo tivesse continuado decorrendo
+      // assim que retomarmos, o cálculo de posição será correto.
+      startTimeRef.current = Date.now() - (Date.now() - pauseStartTimeRef.current - (Date.now() - startTimeRef.current));
+      return undefined;
+    }
+
     const currentAd = ads[currentIndex] || ads[0];
     const duration = getMediaDuration(
       currentAd,
@@ -753,6 +773,8 @@ export default function TelaoPlayer({
     currentIndex,
     globalSchedule,
     loaded,
+    isPaused,
+    pauseStartTimeRef,
     sponsorSettings.mediaDurations,
   ]);
 
@@ -789,6 +811,19 @@ export default function TelaoPlayer({
     };
   }, [checkContentVersion, eventActive, flushLogQueue]);
 
+
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+    if (!isPaused) {
+      // Retomando: ajustar startTimeRef para contar o tempo que ficou pausado
+      const pausedDuration = Date.now() - pauseStartTimeRef.current;
+      startTimeRef.current = Date.now() - pausedDuration;
+      pauseStartTimeRef.current = Date.now();
+    } else {
+      // Pausando: registrar quando começou o pause
+      pauseStartTimeRef.current = Date.now();
+    }
+  };
   const telaoProfile = useTelaoProfile();
   const currentAd = useMemo(
     () => ads[currentIndex] || ads[0],

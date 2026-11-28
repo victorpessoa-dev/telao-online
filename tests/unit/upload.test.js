@@ -9,7 +9,23 @@ import {
   sanitizeFileName,
   validateFinalMediaFile,
   validateMediaFile,
+  validateVideoForUpload,
+  getVideoDurationSeconds,
+  prepareMediaForUpload,
 } from "@/services/supabase/upload";
+
+function createVideoFile(durationSeconds = 10, sizeBytes = 5 * 1024 * 1024) {
+  const blob = new Blob(
+    new Uint8Array(sizeBytes),
+    { type: "video/mp4" },
+  );
+  return new File([blob], "test.mp4", { type: "video/mp4" });
+}
+
+function createImageFile(sizeBytes = 512 * 1024) {
+  const blob = new Blob(new Uint8Array(sizeBytes), { type: "image/jpeg" });
+  return new File([blob], "test.jpg", { type: "image/jpeg" });
+}
 
 describe("media upload validation", () => {
   it("sanitizes filenames for storage paths", () => {
@@ -101,5 +117,94 @@ describe("media upload validation", () => {
       ),
     ).toBe("");
     expect(getUploadedMediaPath("https://youtube.com/watch?v=abc")).toBe("");
+  });
+});
+
+describe("video duration validation", () => {
+  it("validates video duration within limit", async () => {
+    const videoFile = createVideoFile(20, 5 * 1024 * 1024);
+    const duration = await getVideoDurationSeconds(videoFile);
+    expect(Number.isFinite(duration)).toBe(true);
+    expect(duration).toBeLessThanOrEqual(30);
+  });
+
+  it("rejects videos longer than 30 seconds", async () => {
+    const videoFile = createVideoFile(35, 5 * 1024 * 1024);
+    await expect(validateVideoForUpload(videoFile)).rejects.toThrow(
+      "Vídeo maior que 30s",
+    );
+  });
+
+  it("getVideoDurationSeconds throws on unreadable file", async () => {
+    const unreadableFile = new File(["invalid"], "broken.mp4", {
+      type: "video/mp4",
+    });
+    await expect(getVideoDurationSeconds(unreadableFile)).rejects.toThrow();
+  });
+});
+
+describe("media preparation", () => {
+  it("prepareMediaForUpload prepares video by validating duration", async () => {
+    const videoFile = createVideoFile(15, 5 * 1024 * 1024);
+    const onProgress = vi.fn();
+    const result = await prepareMediaForUpload(videoFile, onProgress, {});
+    expect(result).toBe(videoFile);
+    expect(onProgress).toHaveBeenCalled();
+  });
+
+  it("prepareMediaForUpload optimizes images above threshold", async () => {
+    const largeFile = createImageFile(2_000_000);
+    const onProgress = vi.fn();
+    const result = await prepareMediaForUpload(largeFile, onProgress, {});
+    expect(result.type).toBe("image/webp");
+    expect(onProgress).toHaveBeenCalled();
+  });
+
+  it("prepareMediaForUpload passes small images through without optimization", async () => {
+    const smallFile = createImageFile(100_000);
+    const onProgress = vi.fn();
+    const result = await prepareMediaForUpload(smallFile, onProgress, {});
+    expect(result.type).toBe("image/jpeg");
+  });
+
+  it("prepareMediaForUpload validates final file size", async () => {
+    const largeFile = createVideoFile(15, 20_000_000);
+    const onProgress = vi.fn();
+    await expect(
+      prepareMediaForUpload(largeFile, onProgress, {}),
+    ).rejects.toThrow("10 MB");
+  });
+});
+
+describe("video size and duration combined validation", () => {
+  it("accepts video of 5 MB and 20 seconds", async () => {
+    const videoFile = createVideoFile(20, 5 * 1024 * 1024);
+    await expect(validateMediaFile(videoFile)).resolves.toBeUndefined();
+    await expect(validateVideoForUpload(videoFile)).resolves.toBeLessThanOrEqual(30);
+  });
+
+  it("accepts video of exactly 10 MB and 30 seconds metadata", async () => {
+    const videoFile = createVideoFile(30, 10 * 1024 * 1024);
+    await expect(validateMediaFile(videoFile)).resolves.toBeUndefined();
+    await expect(validateVideoForUpload(videoFile)).resolves.toBeLessThanOrEqual(30);
+  });
+
+  it("rejects video of 11 MB and 20 seconds", async () => {
+    const videoFile = createVideoFile(20, 11 * 1024 * 1024);
+    await expect(validateMediaFile(videoFile)).rejects.toThrow(
+      "Vídeo maior que 10 MB",
+    );
+  });
+
+  it("rejects video of 5 MB and 31 seconds", async () => {
+    const videoFile = createVideoFile(31, 5 * 1024 * 1024);
+    await expect(validateVideoForUpload(videoFile)).rejects.toThrow(
+      "Vídeo maior que 30s",
+    );
+  });
+
+  it("rejects video of 15 MB and 40 seconds", async () => {
+    const videoFile = createVideoFile(40, 15 * 1024 * 1024);
+    await expect(validateVideoForUpload(videoFile)).rejects.toThrow();
   });
 });

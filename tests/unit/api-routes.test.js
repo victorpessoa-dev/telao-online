@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as getSponsorDetail } from "@/app/api/parceiros/[id]/route";
+import { GET as getSponsorDetail } from "@/app/api/parceiros/[slug]/route";
 import { POST as postSponsorLogs } from "@/app/api/parceiros/logs/route";
 import { POST as postLogout } from "@/app/logout/route";
 import { GET as getSlugAvailability } from "@/app/api/igrejas/slug-disponivel/route";
@@ -16,7 +16,35 @@ vi.mock("@/lib/services/sponsors", () => ({
 describe("API routes", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 404 when a sponsor detail does not exist", async () => {
+  it("returns 404 when a sponsor detail does not exist by slug", async () => {
+    const sponsorSlug = "patrocinador-exemplo";
+    const churchId = "00000000-0000-4000-8000-000000000002";
+    const supabase = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: null, error: null }),
+            })),
+          })),
+        })),
+      })),
+    };
+    createSupabaseServerClient.mockResolvedValue(supabase);
+    getSponsorDetailPayload.mockResolvedValue(null);
+    const response = await getSponsorDetail(
+      new Request(
+        `https://example.test/api/parceiros/${sponsorSlug}?churchId=${churchId}`,
+      ),
+      { params: Promise.resolve({ slug: sponsorSlug }) },
+    );
+    expect(response.status).toBe(404);
+    expect(getSponsorDetailPayload).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when a sponsor detail does not exist by id", async () => {
     const sponsorId = "00000000-0000-4000-8000-000000000001";
     const churchId = "00000000-0000-4000-8000-000000000002";
     const supabase = {
@@ -26,7 +54,7 @@ describe("API routes", () => {
             eq: vi.fn(() => ({
               maybeSingle: vi
                 .fn()
-                .mockResolvedValue({ data: { id: "missing" }, error: null }),
+                .mockResolvedValue({ data: null, error: null }),
             })),
           })),
         })),
@@ -41,12 +69,7 @@ describe("API routes", () => {
       { params: Promise.resolve({ id: sponsorId }) },
     );
     expect(response.status).toBe(404);
-    expect(getSponsorDetailPayload).toHaveBeenCalledWith(
-      supabase,
-      sponsorId,
-      churchId,
-      { page: 1, pageSize: 20 },
-    );
+    expect(getSponsorDetailPayload).not.toHaveBeenCalled();
   });
 
   it("does not query a sponsor report without its church id", async () => {

@@ -6,7 +6,7 @@
 
 | Metodo | Rota                    | Responsabilidade                                         |
 | ------ | ----------------------- | -------------------------------------------------------- |
-| GET    | `/api/parceiros/:id`  | Detalhe público e logs de patrocinador                   |
+| GET    | `/api/parceiros/{slug}`  | Detalhe público e logs de patrocinador                   |
 | POST   | `/api/parceiros/logs` | Registro de exibições do telão                           |
 | GET    | `/api/igrejas`          | Lista igrejas com rota pública ativa                     |
 | GET    | `/api/igreja/:slug`     | Dados públicos de uma igreja ativa                       |

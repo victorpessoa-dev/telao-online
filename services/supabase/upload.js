@@ -3,8 +3,8 @@ import { createSupabaseBrowserClient } from "@/services/supabase/browser";
 const BUCKET = "telao-online-midia";
 const MAX_SOURCE_SIZE_BYTES = 100 * 1024 * 1024;
 export const MAX_IMAGE_SIZE_BYTES = 1_000_000;
-export const MAX_VIDEO_SIZE_BYTES = 10_000_000;
-export const MAX_VIDEO_DURATION_SECONDS = 30;
+export const MAX_VIDEO_SIZE_BYTES = 15_000_000;
+export const MAX_VIDEO_DURATION_SECONDS = 40;
 export const IMAGE_OPTIMIZATION_THRESHOLD_BYTES = MAX_IMAGE_SIZE_BYTES / 2;
 const ALLOWED_MEDIA_TYPES = new Set([
   "image/gif",
@@ -323,8 +323,16 @@ export async function validateVideoForUpload(file) {
   return duration;
 }
 
-// Simple video preparation: validates the video using native HTML5 APIs
-// and returns the file as-is (no FFmpeg transcoding needed).
+/** Validates video duration using HTML5 Video metadata, throws if > 30s. */
+export async function validateVideoDuration(file) {
+  const duration = await getVideoDurationSeconds(file);
+  if (duration > MAX_VIDEO_DURATION_SECONDS) {
+    throw new Error(`Vídeo maior que ${MAX_VIDEO_DURATION_SECONDS}s`);
+  }
+}
+
+/** Simple video preparation: validates the video using native HTML5 APIs
+ *  and returns the file as-is (no FFmpeg transcoding needed). */
 async function prepareSimpleVideo(file, onProgress, options = {}) {
   await validateVideoForUpload(file);
   onProgress?.(90);

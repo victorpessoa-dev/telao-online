@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   Clock3,
@@ -121,16 +120,6 @@ function MediaPreview({ advertiser }) {
             controlsList="nodownload nofullscreen noremoteplayback"
             tabIndex={-1}
             referrerPolicy="no-referrer"
-            onTimeUpdate={(event) => {
-              const video = event.currentTarget;
-              if (
-                Number.isFinite(video.duration) &&
-                video.duration > 10 &&
-                video.duration - video.currentTime <= 10
-              ) {
-                video.pause();
-              }
-            }}
           />
         )}
       </div>
@@ -149,9 +138,11 @@ function MediaPreview({ advertiser }) {
   );
 }
 
-export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
-  const params = useParams();
-  const id = params?.id;
+export default function AnuncianteDetalhePage({
+  churchId = "",
+  churchSlug = "",
+  sponsorSlug = "",
+}) {
   const [data, setData] = useState({
     advertiser: null,
     logs: [],
@@ -174,7 +165,9 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
         const query = churchId
           ? `?churchId=${encodeURIComponent(churchId)}&page=${currentPage}&pageSize=${REPORT_PAGE_SIZE}`
           : "";
-        const response = await fetch(`/api/parceiros/${id}${query}`);
+        const response = await fetch(
+          `/api/parceiros/${encodeURIComponent(sponsorSlug)}${query}`,
+        );
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.advertiser)
           throw new Error(payload.error || "Falha ao carregar parceiro");
@@ -196,7 +189,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
       }
     }
 
-    if (id) carregar();
+    if (sponsorSlug) carregar();
     else {
       setError("Parceiro não encontrado");
       setLoading(false);
@@ -204,11 +197,11 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     return () => {
       cancelled = true;
     };
-  }, [churchId, currentPage, id, reloadVersion]);
+  }, [churchId, currentPage, sponsorSlug, reloadVersion]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [id]);
+  }, [sponsorSlug]);
 
   const advertiser = data?.advertiser ?? null;
   const logs = useMemo(() => data?.logs ?? [], [data?.logs]);
@@ -239,7 +232,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     [chronologicalLogs],
   );
 
-  const rotaPublica = slug ? `/${slug}/ads-telao` : "";
+  const rotaPublica = churchSlug ? `/${churchSlug}/ads-telao` : "";
   const totalExibicoes = advertiser?.views || 0;
   const totalDuracao = advertiser?.totalSeconds || 0;
   const mediaPorExibicao =
@@ -280,7 +273,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
     <div className="public-page-shell min-h-dvh bg-background">
       <PublicNavbar />
       <PageContainer>
-        <Link href={slug ? `/${slug}` : "/"} className="back-link">
+        <Link href={churchSlug ? `/${churchSlug}` : "/"} className="back-link">
           <ArrowLeft className="h-4 w-4" />
           Voltar para a página pública
         </Link>
@@ -446,7 +439,7 @@ export default function AnuncianteDetalhePage({ churchId = "", slug = "" }) {
 
       </PageContainer>
       <AppFooter />
-      <SponsorInterestFloatingCta slug={slug} />
+      <SponsorInterestFloatingCta slug={churchSlug} />
     </div>
   );
 }

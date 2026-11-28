@@ -52,11 +52,13 @@ create table public.sponsors (
   website_url text,
   duration_seconds integer not null default 10 check (duration_seconds > 0),
   active boolean not null default true,
+  slug text not null check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
   views integer not null default 0 check (views >= 0),
   total_seconds integer not null default 0 check (total_seconds >= 0),
   last_displayed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  unique (church_id, slug),
   check (
     length(trim(coalesce(media_url, image_url, ''))) > 0
   )
@@ -139,6 +141,7 @@ create or replace function public.create_admin_sponsor (
   website_url_arg text,
   duration_seconds_arg integer,
   active_arg boolean,
+  slug_arg text,
   church_id_arg uuid
 ) returns setof public.sponsors
 language plpgsql security definer
@@ -152,7 +155,7 @@ begin
   return query
   insert into public.sponsors (
     church_id, name, kind, media_url, media_type, website_url,
-    duration_seconds, active
+    duration_seconds, active, slug
   ) values (
     church_id_arg,
     trim(name_arg),
@@ -161,7 +164,8 @@ begin
     media_type_arg,
     nullif(trim(website_url_arg), ''),
     greatest(coalesce(duration_seconds_arg, 10), 1),
-    coalesce(active_arg, true)
+    coalesce(active_arg, true),
+    lower(trim(coalesce(slug_arg, '')))
   ) returning *;
 end $$;
 
@@ -173,7 +177,8 @@ create or replace function public.update_admin_sponsor (
   media_type_arg public.media_type,
   website_url_arg text,
   duration_seconds_arg integer,
-  active_arg boolean
+  active_arg boolean,
+  slug_arg text
 ) returns setof public.sponsors
 language plpgsql security definer
 set search_path = public as $$
@@ -187,7 +192,8 @@ begin
     media_type = media_type_arg,
     website_url = nullif(trim(website_url_arg), ''),
     duration_seconds = greatest(coalesce(duration_seconds_arg, 10), 1),
-    active = coalesce(active_arg, true)
+    active = coalesce(active_arg, true),
+    slug = lower(trim(coalesce(slug_arg, s.slug)))
   where s.id = sponsor_id_arg
     and public.owns_church(s.church_id)
   returning s.*;
@@ -208,6 +214,22 @@ execute function public.update_updated_at ();
 create trigger sponsors_updated_at before
 update on public.sponsors for each row
 execute function public.update_updated_at ();
+
+create or replace function public.handle_new_sponsor_slug () returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.slug := trim(both '-' from regexp_replace(lower(coalesce(new.slug, '')), '[^a-z0-9]+', '-', 'g'));
+  if new.slug is null or new.slug = '' then
+    new.slug := coalesce(
+      nullif(trim(both '-' from regexp_replace(lower(trim(new.name)), '[^a-z0-9]+', '-', 'g')), ''),
+      'patrocinador'
+    ) || '-' || replace(new.id::text, '-', '');
+  end if;
+  return new;
+end $$;
+
+create trigger sponsors_auto_slug_trigger before insert or update of slug, name
+on public.sponsors for each row execute function public.handle_new_sponsor_slug ();
 
 create trigger app_settings_updated_at before
 update on public.app_settings for each row
@@ -482,6 +504,7 @@ $$;
 
 create or replace function public.get_public_sponsor_directory (church_id_arg uuid) returns table (
   id uuid,
+  slug text,
   name text,
   kind public.sponsor_kind,
   media_url text,
@@ -498,7 +521,7 @@ create or replace function public.get_public_sponsor_directory (church_id_arg uu
 ) language sql stable security definer
 set
   search_path = public as $$
-  select s.id,s.name,s.kind,coalesce(s.media_url,s.image_url),s.media_type,s.image_url,s.website_url,s.duration_seconds,s.views,s.total_seconds,s.active,s.last_displayed_at,s.created_at,s.updated_at from public.sponsors s where s.church_id = church_id_arg and s.active and public.is_public_church(s.church_id) order by s.created_at desc
+  select s.id,s.slug,s.name,s.kind,coalesce(s.media_url,s.image_url),s.media_type,s.image_url,s.website_url,s.duration_seconds,s.views,s.total_seconds,s.active,s.last_displayed_at,s.created_at,s.updated_at from public.sponsors s where s.church_id = church_id_arg and s.active and public.is_public_church(s.church_id) order by s.created_at desc
 $$;
 
 create or replace function public.get_public_church_page (slug_arg text) returns jsonb
@@ -956,12 +979,18 @@ authenticated;
 -- Administrative mutations and official-display session creation must not be
 -- callable by the anonymous role. The functions also validate ownership.
 revoke execute on function public.create_admin_sponsor(
-  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, uuid
+  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text, uuid
+) from anon;
+revoke execute on function public.update_admin_sponsor(
+  uuid, text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text
 ) from anon;
 revoke execute on function public.open_official_display_session(text) from anon;
 revoke all on function public.check_api_rate_limit(text, integer, integer) from public;
 grant execute on function public.create_admin_sponsor(
-  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, uuid
+  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text, uuid
+) to authenticated;
+grant execute on function public.update_admin_sponsor(
+  uuid, text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text
 ) to authenticated;
 grant execute on function public.open_official_display_session(text) to authenticated;
 grant execute on function public.check_api_rate_limit(text, integer, integer) to anon, authenticated;

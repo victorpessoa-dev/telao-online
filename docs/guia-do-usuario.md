@@ -42,7 +42,7 @@ O contador de exibicoes fica no painel do telao.
 
 ## Relatorios
 
-Cada patrocinador tem página pública em `/{slug}/parceiros/:id`, com:
+Cada patrocinador tem página pública em `/{slug}/parceiros/{slug}`, com:
 
 - midia;
 - total de exibicoes;

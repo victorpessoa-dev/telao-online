@@ -11,7 +11,6 @@ const ADMIN_PATHS = [
 const SETUP_PATH = "/configurar-igreja";
 const PUBLIC_PATHS = [
   "/",
-  "/anunciantes",
   "/login",
   "/ads-telao",
   "/esqueci-senha",

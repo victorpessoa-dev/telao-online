@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSponsorDetailPayload } from "@/lib/services/sponsors";
+import { SPONSOR_SELECT } from "@/lib/repositories/sponsors";
 import { NO_STORE_HEADERS, PUBLIC_DETAIL_CACHE_HEADERS } from "@/lib/utils/http";
 import { createSupabaseServerClient } from "@/services/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/cache/rate-limit";
@@ -18,15 +19,8 @@ export async function GET(request, context) {
       );
     }
 
-    const { id } = await context.params;
-    const sponsorId = z.string().uuid().safeParse(id);
-    if (!sponsorId.success) {
-      return NextResponse.json(
-        { error: "Identificador de parceiro inválido" },
-        { status: 400, headers: NO_STORE_HEADERS },
-      );
-    }
-
+    const params = await context.params;
+    const paramValue = params.slug || params.id || "";
     const supabase = await createSupabaseServerClient();
     const url = new URL(request.url);
     const churchId = url.searchParams.get("churchId");
@@ -43,14 +37,35 @@ export async function GET(request, context) {
     const pageSize = z.coerce.number().int().min(1).max(100).catch(20)
       .parse(url.searchParams.get("pageSize") || "20");
 
-    const { data: sponsor, error: sponsorError } = await supabase
-      .from("sponsors")
-      .select("id")
-      .eq("id", sponsorId.data)
-      .eq("church_id", parsedChurchId.data)
-      .maybeSingle();
+    let sponsor = null;
 
-    if (sponsorError) throw sponsorError;
+    if (paramValue && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(paramValue)) {
+      const { data: sponsorBySlug, error: sponsorError } = await supabase
+        .from("sponsors")
+        .select(SPONSOR_SELECT)
+        .eq("slug", paramValue.toLowerCase())
+        .eq("church_id", parsedChurchId.data)
+        .maybeSingle();
+      if (!sponsorError && sponsorBySlug) {
+        sponsor = sponsorBySlug;
+      }
+    }
+
+    if (!sponsor) {
+      const sponsorId = z.string().uuid().safeParse(paramValue);
+      if (sponsorId.success) {
+        const { data: sponsorById, error: sponsorError } = await supabase
+          .from("sponsors")
+          .select(SPONSOR_SELECT)
+          .eq("id", sponsorId.data)
+          .eq("church_id", parsedChurchId.data)
+          .maybeSingle();
+        if (!sponsorError && sponsorById) {
+          sponsor = sponsorById;
+        }
+      }
+    }
+
     if (!sponsor) {
       return NextResponse.json(
         { error: "Parceiro não encontrado" },
@@ -60,7 +75,7 @@ export async function GET(request, context) {
 
     const payload = await getSponsorDetailPayload(
       supabase,
-      sponsorId.data,
+      sponsor.id,
       parsedChurchId.data,
       { page, pageSize },
     );

@@ -14,6 +14,8 @@ import {
   Play,
   Search,
   Users,
+  Video,
+  ImageIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,14 +40,47 @@ function formatDuration(seconds) {
 }
 
 function SponsorPreview({ sponsor }) {
+  const mediaType = sponsor.mediaType || "image";
+  // Check for video or image type, otherwise show "media" badge
+  const isVideo = mediaType === "video";
+  const isImage = mediaType === "image";
+  const isMedia = !isVideo && !isImage;
+  // Tag sizes: "sm" for small/media, "md" for video/image
+  const tagSize = isMedia ? "sm" : "md";
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-black">
+    <div
+      className={`flex h-full w-full items-center justify-center overflow-hidden bg-black relative`}
+    >
       <StaticMediaFrame
         src={sponsor.src}
         alt={sponsor.name}
-        type={sponsor.mediaType}
+        type={mediaType}
         className="h-full w-full object-cover object-center"
       />
+      {isVideo && (
+        <span
+          className={`absolute top-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-medium text-gray-800 shadow-sm inline-flex items-center`}
+        >
+          <Video className="h-2.5 w-2.5 mr-1" />
+          Vídeo
+        </span>
+      )}
+      {!isVideo && !isMedia && (
+        <span
+          className={`absolute top-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-medium text-gray-800 shadow-sm inline-flex items-center`}
+        >
+          <ImageIcon className="h-2.5 w-2.5 mr-1" />
+          Imagem
+        </span>
+      )}
+      {isMedia && (
+        <span
+          className={`absolute top-2 left-2 rounded-md bg-white/95 px-1 py-0.5 text-xs font-medium text-gray-800 shadow-sm inline-flex items-center`}
+        >
+          <Video className="h-2 w-2 mr-0.5" />
+          Mídia
+        </span>
+      )}
     </div>
   );
 }
@@ -87,7 +122,7 @@ function ProfileMetric({
 
 export default function ChurchPublicPage() {
   const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const slug = typeof params?.churchSlug === "string" ? params.churchSlug : "";
   const [church, setChurch] = useState(null);
   const [sponsors, setSponsors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -381,7 +416,7 @@ export default function ChurchPublicPage() {
                 }}
               >
                 <Link
-                  href={`/${slug}/parceiros/${sponsor.id}`}
+                  href={`/${slug}/parceiros/${sponsor.slug}`}
                   className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Card className="h-full overflow-hidden transition group-hover:border-primary/60 group-hover:shadow-md">

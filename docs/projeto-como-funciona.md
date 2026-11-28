@@ -1,6 +1,6 @@
 # O Que E o Projeto e Como Funciona
 
-> Atualizado em 2026-10: as rotas públicas da igreja usam seu slug, como `/{slug}/ads-telao` e `/{slug}/parceiros/:id`.
+> Atualizado em 2026-10: as rotas públicas da igreja usam seu slug, como `/{slug}/ads-telao` e `/{slug}/parceiros/{slug}`.
 
 ## Ideia do Projeto
 
