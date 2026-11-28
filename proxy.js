@@ -6,7 +6,6 @@ const ADMIN_PATHS = [
   "/configuracoes",
   "/painel-igreja",
   "/painel-telao",
-  "/grade-ads",
 ];
 const SETUP_PATH = "/configurar-igreja";
 const PUBLIC_PATHS = [

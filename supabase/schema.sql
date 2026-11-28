@@ -1043,5 +1043,131 @@ create policy telao_online_media_owner_delete on storage.objects for delete to a
 -- Its tables are read-only from SQL; sponsor/church delete flows remove their
 -- files through the application before database cascades remove the rows.
 
+create or replace function public.reset_sponsor_display_statistics (church_id_arg uuid) returns text language plpgsql security definer set search_path = public as $$
+declare
+  is_admin_check boolean;
+  sponsor_settings jsonb;
+  metrics_enabled boolean;
+  ads_filter_master boolean;
+  metrics_paused_normal boolean;
+  active_session_count integer;
+  recent_impression_count integer;
+  church_name text;
+  sponsors_affected integer;
+  reset_result text;
+begin
+  -- Verify administrative permission
+  is_admin_check := public.is_admin();
+  if not is_admin_check then
+    raise exception 'Usuário não tem permissão administrativa' using errcode = '42501';
+  end if;
+
+  -- Fetch church name for display in reset result
+  select name into church_name from public.churches where id = church_id_arg;
+
+  -- Fetch sponsor settings
+  select value into sponsor_settings
+  from public.app_settings
+  where church_id = church_id_arg and key = 'sponsor_settings';
+
+  if sponsor_settings is null then
+    raise exception 'Configurações de patrocinadores não encontradas para esta igreja' using errcode = '42P02';
+  end if;
+
+  -- Parse settings values
+  metrics_enabled := coalesce(sponsor_settings->>'metricsEnabled', 'false') = 'true';
+  ads_filter_master := coalesce(sponsor_settings->>'adsFilterMaster', 'false') = 'true';
+  metrics_paused_normal := coalesce((sponsor_settings->>'metricsPaused')::jsonb->>'NORMAL', 'false') = 'true';
+
+  -- ===========================================
+  -- 1. Verificar sessão de exibição ativa
+  -- ===========================================
+  select count(*) into active_session_count
+  from public.official_display_sessions
+  where church_id = church_id_arg and revoked_at is null;
+
+  if active_session_count > 0 then
+    raise exception 'Reset bloqueado: existem sessões de exibição ativas.' using errcode = '42000';
+  end if;
+
+  -- ===========================================
+  -- 2. Verificar modos de exibição e contagem
+  -- ===========================================
+  -- Verificar modos apenas quando o contador está ativo (metricsEnabled = true)
+  -- Se o contador estiver desativado (metricsEnabled = false), o telão está inativo
+  -- e os modos são considerados implicitamente inativos, permitindo o reset.
+  if metrics_enabled then
+    -- Modo MASTER ativo: adsFilterMaster = true (apenas patrocinadores MASTER)
+    if ads_filter_master then
+      raise exception 'Reset bloqueado: modo MASTER ativo.' using errcode = '42000';
+    end if;
+
+    -- Modo NORMAL ativo: adsFilterMaster = false e contador de NORMAL não está pausado
+    -- (NORMAL patrocinadores estão sendo contados normalmente)
+    if not metrics_paused_normal then
+      raise exception 'Reset bloqueado: modo NORMAL ativo.' using errcode = '42000';
+    end if;
+
+    -- Modo ALL ativo: adsFilterMaster = false e contador de NORMAL está pausado,
+    -- mas como metrics_enabled = true, isso significa que todos os patrocinadores
+    -- estão configurados para exibição (modo ALL)
+    if not ads_filter_master and metrics_paused_normal then
+      raise exception 'Reset bloqueado: modo ALL ativo.' using errcode = '42000';
+    end if;
+  end if;
+
+  -- ===========================================
+  -- 3. Verificar métricas pendentes (impressões recentes)
+  -- ===========================================
+  -- Bloqueia se houver impressões registradas nos últimos minuto,
+  -- indicando que há dados pending prestes a serem gravados
+  select count(*) into recent_impression_count
+  from public.sponsor_impressions
+  where displayed_at >= now() - interval '1 minute';
+
+  if recent_impression_count > 0 then
+    raise exception 'Reset bloqueado: existem métricas pendentes.' using errcode = '42000';
+  end if;
+
+  -- ===========================================
+  -- 7. Verificar estado do telão indisponível
+  -- ===========================================
+  -- Se não conseguirmos confirmar o estado, bloqueamos
+  if church_id_arg is null then
+    raise exception 'Não foi possível confirmar o estado do telão. Tente novamente.' using errcode = '42000';
+  end if;
+
+  -- ===========================================
+  -- Executar reset transacional
+  -- ===========================================
+
+  -- Atualizar totais dos patrocinadores para zero
+  update public.sponsors s
+  set views = 0,
+      total_seconds = 0,
+      last_displayed_at = null
+  where s.church_id = church_id_arg;
+
+  -- Remover todas as impressões individuais
+  delete from public.sponsor_impressions s
+  where s.church_id = church_id_arg;
+
+  -- Remover todos os rollups diários
+  delete from public.sponsor_impression_daily_rollups s
+  where s.church_id = church_id_arg;
+
+  -- Obter quantidade de patrocinadores afetados
+  select count(*) into sponsors_affected
+  from public.sponsors s
+  where s.church_id = church_id_arg;
+
+  reset_result := 'Estatísticas de exibição dos patrocinadores zeradas com sucesso.' ;
+  return reset_result;
+end$$;
+
+-- Grant execute on the new RPC function to authenticated users
+-- (anonymous access revoked, same as other admin mutations)
+grant execute on function public.reset_sponsor_display_statistics(uuid) to authenticated;
+
 -- Supabase Auth configuration: disable public signups. Invite administrators
 -- only from the server endpoint using a secret key.

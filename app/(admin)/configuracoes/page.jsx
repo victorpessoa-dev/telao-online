@@ -36,6 +36,7 @@ import {
   uploadMedia,
 } from "@/services/supabase/upload";
 import { syncSponsorDurationsForChurch } from "@/lib/repositories/sponsors";
+import { resetSponsorDisplayStatistics } from "@/lib/services/sponsor-statistics";
 import {
   getChurchAppearance,
   mapChurchAppearance,
@@ -442,6 +443,29 @@ export default function ConfiguracoesPage() {
     }
   };
 
+  const resetDisplayStatistics = async () => {
+    if (!churchId) {
+      toast.error("Cadastre sua igreja antes de zerar as estatísticas.");
+      return;
+    }
+
+    try {
+      const message = await resetSponsorDisplayStatistics(
+        createSupabaseBrowserClient(),
+        churchId,
+      );
+      await reload();
+      toast.success(message || "Estatísticas de exibição zeradas com sucesso.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível zerar as estatísticas de exibição.",
+      );
+      throw error;
+    }
+  };
+
   const updateSponsorDesignValues = async (profile, values) => {
     try {
       await updateSponsorSettings({
@@ -625,6 +649,7 @@ export default function ConfiguracoesPage() {
               onExport={exportData}
               onImport={importData}
               onClearData={clearAllData}
+              onResetDisplayStatistics={resetDisplayStatistics}
             />
           </TabsContent>
 

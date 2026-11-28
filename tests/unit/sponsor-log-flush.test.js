@@ -41,7 +41,7 @@ describe("flushPendingSponsorLogs", () => {
     const storage = createStorage({ [queueKey]: JSON.stringify([log(), log()]) });
     const request = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ processed: 2 }),
+      json: async () => ({ ok: true, processed: 2 }),
     });
 
     await expect(flushPendingSponsorLogs({ storage, churchId, request })).resolves.toBe(2);
@@ -49,17 +49,15 @@ describe("flushPendingSponsorLogs", () => {
     expect(storage.getItem(queueKey)).toBeNull();
   });
 
-  it("keeps the queue and stops deactivation when Supabase does not confirm it", async () => {
+  it("clears an idempotent retry when the API acknowledges zero new rows", async () => {
     const pending = [log()];
     const storage = createStorage({ [queueKey]: JSON.stringify(pending) });
     const request = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ processed: 0 }),
+      json: async () => ({ ok: true, processed: 0 }),
     });
 
-    await expect(flushPendingSponsorLogs({ storage, churchId, request })).rejects.toThrow(
-      "O banco não confirmou a última exibição",
-    );
-    expect(JSON.parse(storage.getItem(queueKey))).toEqual(pending);
+    await expect(flushPendingSponsorLogs({ storage, churchId, request })).resolves.toBe(1);
+    expect(storage.getItem(queueKey)).toBeNull();
   });
 });

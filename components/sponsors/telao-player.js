@@ -380,7 +380,12 @@ export default function TelaoPlayer({
               body: JSON.stringify({ logs: batch }),
             });
             const payload = await response.json().catch(() => ({}));
-            if (!response.ok || Number(payload.processed) < 1) {
+            // A successful request is an acknowledgement even when the RPC
+            // reports zero inserted rows. That happens for an idempotent retry
+            // (the event_id already exists) and for an event from an expired
+            // display session. Retrying either case forever only leaves a
+            // stale queue and repeatedly warns the operator.
+            if (!response.ok || payload.ok !== true) {
               throw new Error(payload.error || "O banco não confirmou a exibição");
             }
             groupPending = groupPending.slice(batch.length);

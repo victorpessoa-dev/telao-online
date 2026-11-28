@@ -455,7 +455,7 @@ function VideoTrimEditor({ ad, setAd, durationSeconds }) {
   const [sourceDuration, setSourceDuration] = useState(
     Number(ad.videoTrim?.sourceDurationSeconds) || 0,
   );
-  const clipDuration = clamp(Number(durationSeconds) || 10, 3, 25);
+  const clipDuration = clamp(Number(durationSeconds) || 10, 3, 30);
   const maximumStart = Math.max(0, sourceDuration - clipDuration);
   const requiresTrim = sourceDuration > clipDuration;
   const startSeconds = clamp(
@@ -528,8 +528,8 @@ function VideoTrimEditor({ ad, setAd, durationSeconds }) {
     <div className="space-y-4">
       <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-sm text-muted-foreground">
         {requiresTrim
-          ? `Escolha o trecho de ${clipDuration}s que será salvo, sem áudio e em MP4.`
-          : "O vídeo será salvo inteiro, sem áudio e em MP4."}
+          ? `Selecione um trecho de até ${clipDuration}s. Vídeo final será sem áudio e em MP4, com no máximo 40s totais.`
+          : "O vídeo será salvo inteiro, sem áudio e em MP4, com no máximo 40s totais."}
       </div>
       <video
         ref={videoRef}
