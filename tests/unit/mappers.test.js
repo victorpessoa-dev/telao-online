@@ -10,6 +10,7 @@ describe("sponsor mappers", () => {
   it("maps sponsor database rows to the public domain shape", () => {
     const sponsor = mapSponsorRow({
       id: "sponsor-1",
+      slug: "empresa-exemplo",
       name: "Empresa Exemplo",
       kind: "MASTER",
       media_url: "",
@@ -27,6 +28,7 @@ describe("sponsor mappers", () => {
 
     expect(sponsor).toMatchObject({
       id: "sponsor-1",
+      slug: "empresa-exemplo",
       type: "MASTER",
       src: "https://cdn.example/logo.png",
       duration: 15,

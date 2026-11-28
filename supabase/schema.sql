@@ -52,11 +52,13 @@ create table public.sponsors (
   website_url text,
   duration_seconds integer not null default 10 check (duration_seconds > 0),
   active boolean not null default true,
+  slug text not null check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
   views integer not null default 0 check (views >= 0),
   total_seconds integer not null default 0 check (total_seconds >= 0),
   last_displayed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  unique (church_id, slug),
   check (
     length(trim(coalesce(media_url, image_url, ''))) > 0
   )
@@ -139,6 +141,7 @@ create or replace function public.create_admin_sponsor (
   website_url_arg text,
   duration_seconds_arg integer,
   active_arg boolean,
+  slug_arg text,
   church_id_arg uuid
 ) returns setof public.sponsors
 language plpgsql security definer
@@ -152,7 +155,7 @@ begin
   return query
   insert into public.sponsors (
     church_id, name, kind, media_url, media_type, website_url,
-    duration_seconds, active
+    duration_seconds, active, slug
   ) values (
     church_id_arg,
     trim(name_arg),
@@ -161,7 +164,8 @@ begin
     media_type_arg,
     nullif(trim(website_url_arg), ''),
     greatest(coalesce(duration_seconds_arg, 10), 1),
-    coalesce(active_arg, true)
+    coalesce(active_arg, true),
+    lower(trim(coalesce(slug_arg, '')))
   ) returning *;
 end $$;
 
@@ -173,7 +177,8 @@ create or replace function public.update_admin_sponsor (
   media_type_arg public.media_type,
   website_url_arg text,
   duration_seconds_arg integer,
-  active_arg boolean
+  active_arg boolean,
+  slug_arg text
 ) returns setof public.sponsors
 language plpgsql security definer
 set search_path = public as $$
@@ -187,7 +192,8 @@ begin
     media_type = media_type_arg,
     website_url = nullif(trim(website_url_arg), ''),
     duration_seconds = greatest(coalesce(duration_seconds_arg, 10), 1),
-    active = coalesce(active_arg, true)
+    active = coalesce(active_arg, true),
+    slug = lower(trim(coalesce(slug_arg, s.slug)))
   where s.id = sponsor_id_arg
     and public.owns_church(s.church_id)
   returning s.*;
@@ -208,6 +214,22 @@ execute function public.update_updated_at ();
 create trigger sponsors_updated_at before
 update on public.sponsors for each row
 execute function public.update_updated_at ();
+
+create or replace function public.handle_new_sponsor_slug () returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.slug := trim(both '-' from regexp_replace(lower(coalesce(new.slug, '')), '[^a-z0-9]+', '-', 'g'));
+  if new.slug is null or new.slug = '' then
+    new.slug := coalesce(
+      nullif(trim(both '-' from regexp_replace(lower(trim(new.name)), '[^a-z0-9]+', '-', 'g')), ''),
+      'patrocinador'
+    ) || '-' || replace(new.id::text, '-', '');
+  end if;
+  return new;
+end $$;
+
+create trigger sponsors_auto_slug_trigger before insert or update of slug, name
+on public.sponsors for each row execute function public.handle_new_sponsor_slug ();
 
 create trigger app_settings_updated_at before
 update on public.app_settings for each row
@@ -482,6 +504,7 @@ $$;
 
 create or replace function public.get_public_sponsor_directory (church_id_arg uuid) returns table (
   id uuid,
+  slug text,
   name text,
   kind public.sponsor_kind,
   media_url text,
@@ -498,7 +521,7 @@ create or replace function public.get_public_sponsor_directory (church_id_arg uu
 ) language sql stable security definer
 set
   search_path = public as $$
-  select s.id,s.name,s.kind,coalesce(s.media_url,s.image_url),s.media_type,s.image_url,s.website_url,s.duration_seconds,s.views,s.total_seconds,s.active,s.last_displayed_at,s.created_at,s.updated_at from public.sponsors s where s.church_id = church_id_arg and s.active and public.is_public_church(s.church_id) order by s.created_at desc
+  select s.id,s.slug,s.name,s.kind,coalesce(s.media_url,s.image_url),s.media_type,s.image_url,s.website_url,s.duration_seconds,s.views,s.total_seconds,s.active,s.last_displayed_at,s.created_at,s.updated_at from public.sponsors s where s.church_id = church_id_arg and s.active and public.is_public_church(s.church_id) order by s.created_at desc
 $$;
 
 create or replace function public.get_public_church_page (slug_arg text) returns jsonb
@@ -956,12 +979,18 @@ authenticated;
 -- Administrative mutations and official-display session creation must not be
 -- callable by the anonymous role. The functions also validate ownership.
 revoke execute on function public.create_admin_sponsor(
-  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, uuid
+  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text, uuid
+) from anon;
+revoke execute on function public.update_admin_sponsor(
+  uuid, text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text
 ) from anon;
 revoke execute on function public.open_official_display_session(text) from anon;
 revoke all on function public.check_api_rate_limit(text, integer, integer) from public;
 grant execute on function public.create_admin_sponsor(
-  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, uuid
+  text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text, uuid
+) to authenticated;
+grant execute on function public.update_admin_sponsor(
+  uuid, text, public.sponsor_kind, text, public.media_type, text, integer, boolean, text
 ) to authenticated;
 grant execute on function public.open_official_display_session(text) to authenticated;
 grant execute on function public.check_api_rate_limit(text, integer, integer) to anon, authenticated;
@@ -1013,6 +1042,132 @@ create policy telao_online_media_owner_delete on storage.objects for delete to a
 -- Storage objects are intentionally managed only through the Storage API.
 -- Its tables are read-only from SQL; sponsor/church delete flows remove their
 -- files through the application before database cascades remove the rows.
+
+create or replace function public.reset_sponsor_display_statistics (church_id_arg uuid) returns text language plpgsql security definer set search_path = public as $$
+declare
+  is_admin_check boolean;
+  sponsor_settings jsonb;
+  metrics_enabled boolean;
+  ads_filter_master boolean;
+  metrics_paused_normal boolean;
+  active_session_count integer;
+  recent_impression_count integer;
+  church_name text;
+  sponsors_affected integer;
+  reset_result text;
+begin
+  -- Verify administrative permission
+  is_admin_check := public.is_admin();
+  if not is_admin_check then
+    raise exception 'Usuário não tem permissão administrativa' using errcode = '42501';
+  end if;
+
+  -- Fetch church name for display in reset result
+  select name into church_name from public.churches where id = church_id_arg;
+
+  -- Fetch sponsor settings
+  select value into sponsor_settings
+  from public.app_settings
+  where church_id = church_id_arg and key = 'sponsor_settings';
+
+  if sponsor_settings is null then
+    raise exception 'Configurações de patrocinadores não encontradas para esta igreja' using errcode = '42P02';
+  end if;
+
+  -- Parse settings values
+  metrics_enabled := coalesce(sponsor_settings->>'metricsEnabled', 'false') = 'true';
+  ads_filter_master := coalesce(sponsor_settings->>'adsFilterMaster', 'false') = 'true';
+  metrics_paused_normal := coalesce((sponsor_settings->>'metricsPaused')::jsonb->>'NORMAL', 'false') = 'true';
+
+  -- ===========================================
+  -- 1. Verificar sessão de exibição ativa
+  -- ===========================================
+  select count(*) into active_session_count
+  from public.official_display_sessions
+  where church_id = church_id_arg and revoked_at is null;
+
+  if active_session_count > 0 then
+    raise exception 'Reset bloqueado: existem sessões de exibição ativas.' using errcode = '42000';
+  end if;
+
+  -- ===========================================
+  -- 2. Verificar modos de exibição e contagem
+  -- ===========================================
+  -- Verificar modos apenas quando o contador está ativo (metricsEnabled = true)
+  -- Se o contador estiver desativado (metricsEnabled = false), o telão está inativo
+  -- e os modos são considerados implicitamente inativos, permitindo o reset.
+  if metrics_enabled then
+    -- Modo MASTER ativo: adsFilterMaster = true (apenas patrocinadores MASTER)
+    if ads_filter_master then
+      raise exception 'Reset bloqueado: modo MASTER ativo.' using errcode = '42000';
+    end if;
+
+    -- Modo NORMAL ativo: adsFilterMaster = false e contador de NORMAL não está pausado
+    -- (NORMAL patrocinadores estão sendo contados normalmente)
+    if not metrics_paused_normal then
+      raise exception 'Reset bloqueado: modo NORMAL ativo.' using errcode = '42000';
+    end if;
+
+    -- Modo ALL ativo: adsFilterMaster = false e contador de NORMAL está pausado,
+    -- mas como metrics_enabled = true, isso significa que todos os patrocinadores
+    -- estão configurados para exibição (modo ALL)
+    if not ads_filter_master and metrics_paused_normal then
+      raise exception 'Reset bloqueado: modo ALL ativo.' using errcode = '42000';
+    end if;
+  end if;
+
+  -- ===========================================
+  -- 3. Verificar métricas pendentes (impressões recentes)
+  -- ===========================================
+  -- Bloqueia se houver impressões registradas nos últimos minuto,
+  -- indicando que há dados pending prestes a serem gravados
+  select count(*) into recent_impression_count
+  from public.sponsor_impressions
+  where displayed_at >= now() - interval '1 minute';
+
+  if recent_impression_count > 0 then
+    raise exception 'Reset bloqueado: existem métricas pendentes.' using errcode = '42000';
+  end if;
+
+  -- ===========================================
+  -- 7. Verificar estado do telão indisponível
+  -- ===========================================
+  -- Se não conseguirmos confirmar o estado, bloqueamos
+  if church_id_arg is null then
+    raise exception 'Não foi possível confirmar o estado do telão. Tente novamente.' using errcode = '42000';
+  end if;
+
+  -- ===========================================
+  -- Executar reset transacional
+  -- ===========================================
+
+  -- Atualizar totais dos patrocinadores para zero
+  update public.sponsors s
+  set views = 0,
+      total_seconds = 0,
+      last_displayed_at = null
+  where s.church_id = church_id_arg;
+
+  -- Remover todas as impressões individuais
+  delete from public.sponsor_impressions s
+  where s.church_id = church_id_arg;
+
+  -- Remover todos os rollups diários
+  delete from public.sponsor_impression_daily_rollups s
+  where s.church_id = church_id_arg;
+
+  -- Obter quantidade de patrocinadores afetados
+  select count(*) into sponsors_affected
+  from public.sponsors s
+  where s.church_id = church_id_arg;
+
+  reset_result := 'Estatísticas de exibição dos patrocinadores zeradas com sucesso.' ;
+  return reset_result;
+end$$;
+
+-- Grant execute on the new RPC function to authenticated users
+-- (anonymous access revoked, same as other admin mutations)
+grant execute on function public.reset_sponsor_display_statistics(uuid) to authenticated;
 
 -- Supabase Auth configuration: disable public signups. Invite administrators
 -- only from the server endpoint using a secret key.

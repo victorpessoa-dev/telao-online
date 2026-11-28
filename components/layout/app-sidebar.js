@@ -39,7 +39,6 @@ import { useAdminSidebarState } from "@/components/layout/admin-sidebar-state";
 const navItems = [
   { title: "Início", href: "/admin", icon: LayoutDashboard },
   { title: "Patrocínios", href: "/painel-telao", icon: Megaphone },
-  { title: "Grade Ads", href: "/grade-ads", icon: Monitor },
   {
     title: "Configurações",
     href: "/configuracoes?tab=telao",
@@ -253,6 +252,7 @@ export default function AppSidebar({ mobileOpen = false, onMobileClose }) {
                   <AlertDialogTrigger asChild>
                     <button
                       type="button"
+                      aria-label="Sair do painel"
                       className="flex w-full items-center justify-center rounded-lg p-2.5 text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
                     >
                       <LogOut className="h-5 w-5" />

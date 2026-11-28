@@ -455,7 +455,7 @@ function VideoTrimEditor({ ad, setAd, durationSeconds }) {
   const [sourceDuration, setSourceDuration] = useState(
     Number(ad.videoTrim?.sourceDurationSeconds) || 0,
   );
-  const clipDuration = clamp(Number(durationSeconds) || 10, 3, 25);
+  const clipDuration = clamp(Number(durationSeconds) || 10, 3, 30);
   const maximumStart = Math.max(0, sourceDuration - clipDuration);
   const requiresTrim = sourceDuration > clipDuration;
   const startSeconds = clamp(
@@ -528,8 +528,8 @@ function VideoTrimEditor({ ad, setAd, durationSeconds }) {
     <div className="space-y-4">
       <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-sm text-muted-foreground">
         {requiresTrim
-          ? `Escolha o trecho de ${clipDuration}s que será salvo, sem áudio e em MP4.`
-          : "O vídeo será salvo inteiro, sem áudio e em MP4."}
+          ? `Selecione um trecho de até ${clipDuration}s. Vídeo final será sem áudio e em MP4, com no máximo 40s totais.`
+          : "O vídeo será salvo inteiro, sem áudio e em MP4, com no máximo 40s totais."}
       </div>
       <video
         ref={videoRef}
@@ -643,6 +643,16 @@ export function SponsorForm({
     hadPendingAdjustmentRef.current = hasPendingAdjustment;
   }, [activeTab, canAdjustMedia, hasPendingImage, hasPendingVideo]);
 
+  useEffect(() => {
+    if (!ad.slug && ad.name) {
+      const generated = String(ad.name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      setAd((prev) => ({ ...prev, slug: generated || "---" }));
+    }
+  }, [ad.name, ad.slug]);
+
   const handleUpload = async (file) => {
     if (!file) return;
 
@@ -703,6 +713,34 @@ export function SponsorForm({
               setAd((prev) => ({ ...prev, websiteUrl: e.target.value }))
             }
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Slug</Label>
+          {/* Slug é gerado automaticamente a partir do nome; pode ser editado manualmente */}
+          <Input
+            value={ad.slug || ""}
+            onChange={(e) =>
+              setAd((prev) => ({ ...prev, slug: e.target.value }))
+            }
+            placeholder="ex: patrocinador-novo"
+            title={ad.slug
+              ? "Campo habilitado para edição"
+              : "Slug será gerado automaticamente a partir do nome"}
+          />
+          {ad.slug && ad.slug !== String(ad.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Slug gerado a partir do nome: {ad.slug}
+            </p>
+          )}
+          {!ad.slug && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Slug: {String(ad.name || "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "") || "---"}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -781,7 +819,7 @@ export function SponsorForm({
             disabled={uploading}
             onFileSelect={handleUpload}
             title="Arraste a mídia ou clique para enviar"
-            description="Imagens são otimizadas para até 1 MB; vídeos de até 10 MB e 30 s."
+            description="Imagens são otimizadas para até 1 MB; vídeos de até 15 MB e 40 s."
           />
           <p className="text-xs text-muted-foreground">
             Para vídeos, escolha o trecho com a duração definida em Configurações &gt; Telão antes de salvar.

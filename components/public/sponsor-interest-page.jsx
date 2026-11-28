@@ -33,7 +33,7 @@ function getWhatsAppUrl(socialLinks = []) {
 
 export default function SponsorInterestPage() {
   const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const slug = typeof params?.churchSlug === "string" ? params.churchSlug : "";
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -275,6 +275,7 @@ describe("sponsor services", () => {
         media_url_arg: "https://cdn.example/a.mp4",
         media_type_arg: "video",
         duration_seconds_arg: 15,
+        slug_arg: "empresa-a",
       }),
     ]);
     expect(calls.some(([call]) => call === "insert")).toBe(false);
@@ -335,6 +336,7 @@ describe("sponsor services", () => {
         name_arg: "Empresa A editada",
         kind_arg: "NORMAL",
         duration_seconds_arg: 20,
+        slug_arg: "empresa-a-editada",
       }),
     ]);
     expect(calls.some(([call]) => call === "update")).toBe(false);

@@ -21,9 +21,11 @@ import {
 import { useStore } from "@/lib/store/store";
 
 function formatDuration(seconds) {
-  const total = Math.max(0, Number(seconds) || 0);
+  // Round before splitting the value so 59.6 seconds becomes "1m 0s",
+  // rather than the misleading "60s".
+  const total = Math.round(Math.max(0, Number(seconds) || 0));
   const minutes = Math.floor(total / 60);
-  const remainingSeconds = Math.round(total % 60);
+  const remainingSeconds = total % 60;
   return minutes > 0
     ? `${minutes}m ${remainingSeconds}s`
     : `${remainingSeconds}s`;
@@ -52,12 +54,14 @@ function SummaryCard({
           <div className="rounded-lg bg-primary/10 p-3 text-primary">
             <Icon className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="mt-0.5 text-2xl font-semibold tracking-tight">
               {value}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
+            <p className="mt-0.5 break-words text-xs text-muted-foreground">
+              {detail}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -246,7 +250,8 @@ export default function DashboardContent() {
             <CardHeader>
               <CardTitle>Patrocinadores mais exibidos</CardTitle>
               <CardDescription>
-                Passe sobre as barras para comparar as exibições registradas.
+                Toque ou passe sobre as barras para comparar as exibições
+                registradas.
               </CardDescription>
             </CardHeader>
             <CardContent className="min-w-0">
